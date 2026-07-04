@@ -1,0 +1,3 @@
+.DS_Store
+# NOT: .kurulum-tamam bilerek İZLENİR (GENESIS onu commit'ler; dış temizlik/git clean
+# kurulum işaretini uçuramasın). Bu yüzden burada yok.

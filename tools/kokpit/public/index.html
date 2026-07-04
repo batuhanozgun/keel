@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>pano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="home-hit" id="home-btn">pano<span class="dot">.</span></span>
+      <span class="wm-sub">panosu</span>
+    </div>
+    <div class="tb-status">
+      <span id="sys-light" class="sys-pill">—</span>
+      <span id="stamp" class="tb-muted"></span>
+      <span id="updated" class="tb-muted"></span>
+      <button id="howto" class="tb-btn" title="Nasıl kullanılır">nasıl kullanılır</button>
+      <button id="refresh" class="tb-btn" title="Şimdi yenile">↻ yenile</button>
+      <span class="ro-badge">salt-okunur</span>
+    </div>
+  </header>
+  <div id="ribbon" class="ribbon" hidden></div>
+  <div id="howto-panel" class="howto-panel" hidden></div>
+  <div class="cockpit">
+    <aside class="tree-pane">
+      <div class="tree-head">dosyalar</div>
+      <div id="tree" class="tree"></div>
+    </aside>
+    <main class="stage">
+      <div id="pano-view" class="grid"></div>
+      <div id="file-view" class="fileview" hidden></div>
+    </main>
+  </div>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
