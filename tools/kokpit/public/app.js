@@ -70,7 +70,7 @@ function renderTopbar() {
   var chip = $('sys-light');
   var g = s.sistemGenel || 'VERI-YOK';
   chip.className = 'sys-pill ' + lightClass(g);
-  chip.textContent = s.stale ? 'sistem: kırmızı · tazelik' : ('sistem: ' + (g === 'VERI-YOK' ? 'veri yok' : g.toLowerCase()));
+  chip.textContent = s.stale ? 'sistem: kırmızı · tazelik' : ('sistem: ' + (g === 'VERI-YOK' ? 'veri yok' : g.toLocaleLowerCase('tr')));
   $('stamp').textContent = s.lastRun ? ('sağlık koşusu ' + s.lastRun + ' · #' + (s.runNo == null ? '?' : s.runNo)) : 'damga yok';
   $('updated').textContent = 'güncel ' + new Date().toLocaleTimeString('tr-TR');
 
