@@ -1,9 +1,9 @@
 {
-  "name": "agent-os-kokpit",
+  "name": "keel-kokpit",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Agent-OS şablonu için salt-okunur yerel izleme panosu (dashboard + dosya gezgini)",
+  "description": "KEEL şablonu için salt-okunur yerel izleme panosu (dashboard + dosya gezgini)",
   "scripts": {
     "start": "node server.mjs",
     "pano": "node server.mjs",
