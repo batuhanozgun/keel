@@ -131,7 +131,7 @@ function renderPano() {
   if (s.items && s.items.length) {
     s.items.forEach(function (it) {
       var c = it.level === 'KIRMIZI' ? 'red' : (it.level === 'SARI' ? 'amber' : 'gray');
-      var lab = it.level === 'BILGI' ? 'bilgi' : it.level.toLowerCase();
+      var lab = it.level === 'BILGI' ? 'bilgi' : it.level.toLocaleLowerCase('tr');
       lb += '<div class="item"><span class="tag ' + c + '">' + lab + '</span><span class="itext">' + jsInline(it.text) + '</span></div>';
     });
   }
