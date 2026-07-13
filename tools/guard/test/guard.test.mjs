@@ -21,7 +21,7 @@ tools/guard/
 00_genesis/
 `;
 
-function kurulum({ liste = VARSAYILAN_LISTE, kurulumTamam = true } = {}) {
+function kurulum({ liste = VARSAYILAN_LISTE, kurulumTamam = true, aktifRol = null } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'guard-test-'));
   mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
   mkdirSync(join(kok, '02_kanon', 'kilitli'), { recursive: true });
@@ -32,6 +32,7 @@ function kurulum({ liste = VARSAYILAN_LISTE, kurulumTamam = true } = {}) {
   writeFileSync(join(kok, '.claude', 'settings.json'), '{}\n');
   writeFileSync(join(kok, '02_kanon', 'kilitli', 'K-01.md'), '# kilitli karar\n');
   if (kurulumTamam) writeFileSync(join(kok, '.kurulum-tamam'), 'kuruldu\n');
+  if (aktifRol) writeFileSync(join(kok, 'tools', 'guard', '.aktif-rol'), aktifRol);
   return kok;
 }
 
@@ -229,4 +230,106 @@ test('../ kaçışı: kök içine geri çözülen HAM yol yine yakalanır', () =
   // join KULLANMA — join ".."yu testin içinde normalize eder, kancaya temiz yol gider (kanıt değeri kalmaz).
   const r = kos(kok, { tool_name: 'Edit', tool_input: { file_path: kok + '/01_x/../02_kanon/kilitli/K-01.md' } });
   assert.equal(r.status, 2);
+});
+
+test('rol kafesi: denetci (yazamaz) açıkken serbest yola Edit → exit 2 + "rol kafesi" gerekçesi', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  mkdirSync(join(kok, '01_kutular'), { recursive: true });
+  const r = kos(kok, edit(kok, '01_kutular/KT-001.md'));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /rol kafesi/);
+  assert.match(r.stderr, /denetci/);
+});
+
+test('rol kafesi: Write ile de kesilir (kapı ölçütü b — iki yazma aracı ayrı kanıt)', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  mkdirSync(join(kok, '01_kutular'), { recursive: true });
+  assert.equal(kos(kok, write(kok, '01_kutular/deneme.md')).status, 2);
+});
+
+test('rol kafesi İSTİSNA: rolün kendi klasörü yazılabilir (DURUM.md kapanışı)', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  mkdirSync(join(kok, '03_roller', 'denetci'), { recursive: true });
+  const r = kos(kok, write(kok, '03_roller/denetci/DURUM.md'));
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('istisna SÖZLEŞMEYE işlemez: kendi ROL.md\'sine Write → exit 2 (rol kendi sözleşmesini yazamaz)', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  mkdirSync(join(kok, '03_roller', 'denetci'), { recursive: true });
+  const r = kos(kok, write(kok, '03_roller/denetci/ROL.md'));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /rol kafesi/);
+});
+
+test('sahte ev damgası (köke çözülen "ev") → istisnasız kilit (savunma-derinliği)', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t.\n' });
+  mkdirSync(join(kok, '01_kutular'), { recursive: true });
+  assert.equal(kos(kok, edit(kok, '01_kutular/KT-001.md')).status, 2);
+});
+
+test('rol kafesi: SERT yine önce — kilitli karara Edit denetci modunda da [SERT] gerekçesiyle engellenir', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  const r = kos(kok, edit(kok, '02_kanon/kilitli/K-01.md'));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /\[SERT\]/);
+});
+
+test('rol kafesi SORULUR\'u da keser: yazamaz rolde golden\'a Edit → exit 2 (ask düşmez)', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  const r = kos(kok, edit(kok, '02_kanon/golden/ornek.md'));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /rol kafesi/);
+});
+
+test('rol kafesi: mod tam → davranış değişmez (serbest serbest, golden yine sorulur)', () => {
+  const kok = kurulum({ aktifRol: 'uygulayici\ttam\t03_roller/uygulayici/\n' });
+  mkdirSync(join(kok, '01_kutular'), { recursive: true });
+  assert.equal(kos(kok, edit(kok, '01_kutular/KT-001.md')).status, 0);
+  const r = kos(kok, edit(kok, '02_kanon/golden/ornek.md'));
+  assert.equal(r.status, 0);
+  assert.equal(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, 'ask');
+});
+
+test('rol kafesi fail-closed: bozuk damga → yazma engellenir, gerekçede çözüm yolu', () => {
+  const kok = kurulum({ aktifRol: 'anlamsız içerik\n' });
+  const r = kos(kok, edit(kok, 'herhangi.md'));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /aktif-rol/);
+});
+
+test('rol kafesi okumaya karışmaz: Read yazamaz rolde bile serbest (demo dersi sürer)', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  const r = kos(kok, { tool_name: 'Read', tool_input: { file_path: join(kok, '02_kanon/kilitli/K-01.md') } });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('damga-dikişi: .aktif-rol\'e dokunan Bash komutu → sahibe sor (kabuk-kaçağının tek dikişi)', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'rm -f tools/guard/.aktif-rol' } });
+  assert.equal(r.status, 0);
+  const j = JSON.parse(r.stdout);
+  assert.equal(j.hookSpecificOutput.permissionDecision, 'ask');
+  assert.match(j.hookSpecificOutput.permissionDecisionReason, /damga/);
+});
+
+test('damga-dikişi okumayı kilitlemez: Read .aktif-rol → serbest, çıktısız', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  const r = kos(kok, { tool_name: 'Read', tool_input: { file_path: join(kok, 'tools/guard/.aktif-rol') } });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('kurulum istisnası (faz-2): .kurulum-tamam YOKKEN .claude/skills/ yazılabilir (GENESIS beceri kurar)', () => {
+  const kok = kurulum({ kurulumTamam: false });
+  const r = kos(kok, write(kok, '.claude/skills/rol-denetci/SKILL.md'));
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('kurulum bitince .claude/skills/ SERT geri (beceri = kafes tanımı, ajan değiştiremez)', () => {
+  const kok = kurulum();
+  assert.equal(kos(kok, write(kok, '.claude/skills/rol-denetci/SKILL.md')).status, 2);
 });

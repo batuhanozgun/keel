@@ -3,3 +3,6 @@
 # kurulum işaretini uçuramasın). Bu yüzden burada yok.
 
 .claude/settings.local.json
+# rol töreni damgası — oturum-durumu, izlenmez (bekçi koruma-hattı yanlış-KIRMIZI basmasın;
+# damga-güvencesi bekçi değil: file-guard damga-dikişi + SessionStart temizliği)
+tools/guard/.aktif-rol

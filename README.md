@@ -63,7 +63,7 @@ GENESIS sabit bir plan izler (G0–G5):
 Kurulum bitince döngün çok basit:
 
 1. `00_pano/PANO.md`'yi aç → **"SIRADAKİ OTURUM: &lt;rol&gt;"** satırını gör.
-2. O rolün klasöründe bir Claude Code oturumu aç → **"devam"** yaz.
+2. Proje kökünde bir Claude Code oturumu aç → **`/rol-<slug>`** yaz → tören **"ROL AÇIK"** deyince **"devam"** yaz. (Rolü SEN açarsın; ajan kendi rolünü açamaz — kilit bilinçli.)
 3. Kararlarda senden mühür istenir; sen onaylarsın.
 
 Kurulumdan sonra kökte **`NASIL_KULLANILIR.md`** adlı bir sahip kılavuzu oluşur — ekibinin ne iş yaptığı, günlük döngü, nerede senin dâhil olduğun, hepsi jargonsuz orada.
@@ -92,7 +92,7 @@ keel/
 ├── CLAUDE.md            ← ilk oturumu yönlendiren giriş ("kurulu mu?")
 ├── GENESIS.md           ← GENESIS'in sabit kurulum planı (G0–G5)
 ├── .template-source     ← kopya-guard'ı (kurulumda Claude, onayınla otomatik siler)
-├── .claude/             ← dosya korumasının kablosu: kanca + sor-izin kuralları (doğuştan açık)
+├── .claude/             ← koruma kablosu (kanca + sor-izin) · yazamayan doğrulayıcı ajan · rol becerileri (kurulumda doğar)
 ├── 00_genesis/          ← GENESIS koltuğu + yarım-kurulum toparlama çapası
 ├── tools/guard/         ← dosya koruma kancası (file-guard) + korunan-yollar listesi
 └── tools/kokpit/        ← salt-okunur izleme panosu + format sözleşmesi + testler

@@ -1,6 +1,6 @@
 #!/bin/bash
-# file-guard — araç-kancası (PreToolUse): korunan yollara YAZMA araçlarını (Edit/MultiEdit/Write/NotebookEdit) mekanik keser.
-# Koruma YAZMAYA karşıdır — okuma/komut araçlarına hiç karışmaz (Faz-1 demo dersi: aksi, oturumu kullanılmaz kılar).
+# file-guard — araç-kancası (PreToolUse): korunan yollara + (rol kafesi) yazamaz-rol oturumlarında her yola YAZMA araçlarını (Edit/MultiEdit/Write/NotebookEdit) mekanik keser.
+# Koruma YAZMAYA karşıdır — okuma/komut araçlarına karışılmaz (Faz-1 demo dersi); TEK BELGELİ İSTİSNA: rol damgasına (.aktif-rol) dokunan Bash komutu sahibe SORULUR (damganın git-izi yok, bekçi göremez — plan kararı 2).
 # Matcher GENİŞ (*), daraltma bu script'in içinde (anayasa m.5).
 # Girdi: stdin'de Claude Code araç JSON'u. Çıkış sözleşmesi:
 #   exit 2                = ENGEL ([SERT]; stderr'daki gerekçe ajana döner)
@@ -21,6 +21,7 @@ INPUT="$(cat)"
 # (Kesin araç-adı kontrolü aşağıda node içinde yapılır; burası yalnız gereksiz node koşusunu keser.)
 case "$INPUT" in
   *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*) : ;;
+  *'.aktif-rol'*) : ;; # rol damgasına dokunan çağrı — kesin karar aşağıda node'da
   *) exit 0 ;;
 esac
 
@@ -63,12 +64,20 @@ const ROOT = kanonik(resolve(process.env.GUARD_ROOT));
 let j;
 try { j = JSON.parse(readFileSync(0, "utf8")); } catch { console.log("HATA\tstdin JSON cozulemedi"); process.exit(0); }
 
+const ti = j.tool_input || {};
+
+// Damga-dikisi (Faz 2, tek belgeli istisna — plan karari 2): rol damgasina (.aktif-rol)
+// dokunan Bash komutu sahibe SORULUR (damga git-izsiz, bekci goremez). Baska hicbir
+// komut-araci mudahalesi yok; okuma serbest.
+if ((j.tool_name || "") === "Bash") {
+  if (String(ti.command || "").includes(".aktif-rol")) { console.log("SOR-DAMGA\ttools/guard/.aktif-rol"); process.exit(0); }
+  console.log("GEC"); process.exit(0);
+}
+
 // KESIN daraltma: koruma yalniz YAZMA araclarina karsi. Okuma (Read vb.) ve komut araclari
 // dosya-yolu tasisa bile serbesttir; taninmayan yeni yazma araclarini ikinci hat (bekci) izler.
 const YAZMA = new Set(["Edit", "MultiEdit", "Write", "NotebookEdit"]);
 if (!YAZMA.has(j.tool_name || "")) { console.log("GEC"); process.exit(0); }
-
-const ti = j.tool_input || {};
 const ham = ti.file_path || ti.notebook_path || "";
 if (!ham) { console.log("GEC"); process.exit(0); }
 const hedef = kanonik(resolve(ROOT, ham));
@@ -104,10 +113,33 @@ if (sert) {
     // onun icinde de korunan-yollar.txt yazilabilir (GENESIS veri doldurur).
     const cekirdekte = altinda("tools/guard") || altinda(".claude");
     const listeDosyasi = hedef === kanonik(resolve(ROOT, "tools/guard/korunan-yollar.txt"));
-    if (!cekirdekte || listeDosyasi) { console.log("GEC"); process.exit(0); }
+    const beceriAlani = altinda(".claude/skills"); // GENESIS rol becerilerini kurulumda buraya yazar (G3.3c)
+    if (!cekirdekte || listeDosyasi || beceriAlani) { console.log("GEC"); process.exit(0); }
   }
   console.log("ENGEL\t" + sert.yol); process.exit(0);
 }
+// Rol kafesi (Faz 2): tören (rol-ac.sh) .aktif-rol damgasini bastiysa ve mod "yazamaz" ise,
+// YAZMA sinifi rolun kendi klasoru disinda kesilir; ROL.md sozlesme dosyasi istisnanin
+// DISINDADIR (rol kendi sozlesmesini yazamaz). Koke/disari cozulen sahte "ev" istisnasiz
+// kilitler (savunma-derinligi). Oncelik: [SERT] > rol-kafesi > [SORULUR].
+const damgaYolu = resolve(ROOT, "tools/guard/.aktif-rol");
+if (existsSync(damgaYolu)) {
+  let rol = null;
+  try {
+    const [slug, mod, ev] = readFileSync(damgaYolu, "utf8").split("\n")[0].split("\t");
+    if (slug && (mod === "yazamaz" || mod === "tam")) rol = { slug, mod, ev: (ev || "").trim() };
+  } catch {}
+  if (!rol) { console.log("HATA\ttools/guard/.aktif-rol bozuk/okunamadi — rol durumu belirsiz, yazma guvenli tarafta engellendi. Cozum: yeni oturum ac (SessionStart temizler) ya da dosyayi sil"); process.exit(0); }
+  if (rol.mod === "yazamaz") {
+    const evYolu = rol.ev.endsWith("/") ? rol.ev.slice(0, -1) : rol.ev;
+    const evTam = evYolu ? kanonik(resolve(ROOT, evYolu)) : "";
+    const evGecerli = evTam && evTam !== ROOT && evTam.startsWith(ROOT + sep);
+    const evIci = evGecerli && (hedef === evTam || hedef.startsWith(evTam + sep));
+    const sozlesme = evIci && hedef === join(evTam, "ROL.md");
+    if (!evIci || sozlesme) { console.log("ROL-ENGEL\t" + rol.slug); process.exit(0); }
+  }
+}
+
 const sor = kurallar.find((k) => k.bolum === "[SORULUR]" && eslesir(k));
 if (sor) { console.log(kurulumSuruyor ? "GEC" : "SOR\t" + sor.yol); process.exit(0); }
 console.log("GEC");
@@ -123,6 +155,14 @@ case "$DURUM" in
     ;;
   SOR)
     GEREKCE="Korumalı alan ([SORULUR] sınıfı: $DETAY) — bu değişiklik meşru olabilir ama sahip kararı ister." \
+      "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
+    exit 0
+    ;;
+  ROL-ENGEL)
+    engel "rol kafesi: aktif rol '$DETAY' YAZAMAZ modundadır — dosya-yazma araçları bu oturumda mekanik kilitli (kendi 03_roller/ klasörü hariç; ROL.md sözleşmesi istisnanın DIŞINDA; tören kaydı: tools/guard/.aktif-rol). Bulguyu DEĞİŞTİRME, raporla — yazma işi 'tam' profilli rol oturumunundur (EL_KITABI rol-töreni kuralı)."
+    ;;
+  SOR-DAMGA)
+    GEREKCE="Bu kabuk komutu rol-töreni damgasına (tools/guard/.aktif-rol) dokunuyor. Damga oturum-durumudur; meşru yolu /rol-<slug> töreni ve yeni oturumdur. Elle müdahale sahip kararı ister." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;

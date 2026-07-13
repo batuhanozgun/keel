@@ -14,6 +14,6 @@ Yanıta göre:
 `.template-source` YOKSA (düzgün bir kopyadasın) → kökte **`.kurulum-tamam`** dosyası var mı diye bak:
 
 - **YOKSA** → sistem henüz kurulmadı. **`00_genesis/`** klasöründe oturum açıp GENESIS'i başlat (kurallar: `GENESIS.md`). Yarım kurulmuş olabilir; önce `00_genesis/GENESIS_DURUM.md`yi okuyup **kaldığın yerden** devam et.
-- **VARSA** → sistem kurulu. **`00_pano/PANO.md`**yi aç, **"SIRADAKİ OTURUM"** satırını izle — normal döngü. (Kurucu/GENESIS artık çekilmiştir.)
+- **VARSA** → sistem kurulu. **`00_pano/PANO.md`**yi aç, **"SIRADAKİ OTURUM"** satırını izle — normal döngü. (Kurucu/GENESIS artık çekilmiştir.) Rol oturumunu İNSAN açar: sahip `/rol-<slug>` törenini yazar; sen rol becerisini kendiliğinden tetikleyemezsin, tören çıktısında "ROL AÇIK" görmeden rol işi yapma.
 
 > `.kurulum-tamam` dosyasını yalnız GENESIS, kurulumu bitirip çekilirken (G5) bırakır. Başka hiç kimse dokunmaz.
