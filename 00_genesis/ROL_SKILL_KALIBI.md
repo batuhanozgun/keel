@@ -10,7 +10,7 @@ description: «ROL-ADI» rolü oturum açılış töreni. Yalnız insan /rol-«S
 disable-model-invocation: true
 ---
 
-!`bash "$CLAUDE_PROJECT_DIR/tools/guard/rol-ac.sh" «SLUG» «MOD»`
+!`bash "${CLAUDE_PROJECT_DIR:-.}/tools/guard/rol-ac.sh" «SLUG» «MOD»`
 
 # Rol töreni — «ROL-ADI»
 
