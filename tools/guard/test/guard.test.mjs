@@ -110,6 +110,37 @@ test('dosya-yolu taşımayan araç çağrısı → karışmaz (exit 0, çıktıs
   assert.equal(r.stdout.trim(), '');
 });
 
+test('koruma YAZMAYA karşıdır: Read korunan dosyada bile serbest (demo dersi)', () => {
+  const kok = kurulum();
+  const r = kos(kok, { tool_name: 'Read', tool_input: { file_path: join(kok, '02_kanon/kilitli/K-01.md') } });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('MultiEdit de yazma sınıfı → exit 2', () => {
+  const kok = kurulum();
+  const r = kos(kok, { tool_name: 'MultiEdit', tool_input: { file_path: join(kok, '02_kanon/kilitli/K-01.md') } });
+  assert.equal(r.status, 2);
+});
+
+test('tanınmayan araç file_path taşısa bile karışılmaz (bilinçli sınır — ikinci hat bekçidedir)', () => {
+  const kok = kurulum();
+  const r = kos(kok, { tool_name: 'YeniBirArac', tool_input: { file_path: join(kok, '02_kanon/kilitli/K-01.md') } });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('dar PATH (GUI oturumu simülasyonu): aday-keşif node bulur, koruma çalışır', () => {
+  const kok = kurulum();
+  const r = spawnSync('bash', [GUARD], {
+    input: JSON.stringify(edit(kok, '02_kanon/kilitli/K-01.md')),
+    encoding: 'utf8',
+    env: { PATH: '/usr/bin:/bin', CLAUDE_PROJECT_DIR: kok, LC_ALL: 'C.UTF-8' },
+  });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /\[SERT\]/, 'engel node-yokluğundan değil koruma kuralından gelmeli (aday-keşif kanıtı)');
+});
+
 test('göreli file_path proje köküne göre çözülür', () => {
   const kok = kurulum();
   const r = kos(kok, { tool_name: 'Edit', tool_input: { file_path: '02_kanon/kilitli/K-01.md' } });
@@ -159,9 +190,14 @@ test('fail-closed: liste dosyası yok → exit 2', () => {
   assert.equal(r.status, 2);
 });
 
-test('fail-closed: bozuk stdin JSON → exit 2', () => {
+test('fail-closed KAPSAMLI DOĞRU: bozuk girdi yazma-izi taşıyorsa kilitler, taşımıyorsa karışmaz', () => {
   const kok = kurulum();
-  assert.equal(kos(kok, 'bu json değil {').status, 2);
+  // Yazma-aracı izi taşıyan bozuk JSON → karar verilemez → fail-closed engel.
+  assert.equal(kos(kok, 'bozuk { "tool_name":"Edit" ...').status, 2);
+  // Hiç yazma izi olmayan çöp girdi → yazma çağrısı olamaz → oturumu kilitleme (demo dersi).
+  const r = kos(kok, 'bu json değil {');
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
 });
 
 test('fail-closed: bölüm başlıksız/boş liste → exit 2', () => {

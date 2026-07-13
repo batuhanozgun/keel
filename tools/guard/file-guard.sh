@@ -1,11 +1,12 @@
 #!/bin/bash
-# file-guard — araç-kancası (PreToolUse): korunan yollara Edit/Write/NotebookEdit'i mekanik keser.
-# Matcher GENİŞ (*), daraltma bu script'in içinde (anayasa m.5): dosya-yolu taşımayan çağrıya karışmaz.
+# file-guard — araç-kancası (PreToolUse): korunan yollara YAZMA araçlarını (Edit/MultiEdit/Write/NotebookEdit) mekanik keser.
+# Koruma YAZMAYA karşıdır — okuma/komut araçlarına hiç karışmaz (Faz-1 demo dersi: aksi, oturumu kullanılmaz kılar).
+# Matcher GENİŞ (*), daraltma bu script'in içinde (anayasa m.5).
 # Girdi: stdin'de Claude Code araç JSON'u. Çıkış sözleşmesi:
 #   exit 2                = ENGEL ([SERT]; stderr'daki gerekçe ajana döner)
 #   exit 0 + JSON çıktı   = SAHİBE SOR ([SORULUR]; permissionDecision "ask")
-#   exit 0, çıktısız      = serbest yol (karar verme, karışma)
-# Fail-closed: script kendi içinde hata verirse işlem ENGELLENİR (sessiz YEŞİL yok).
+#   exit 0, çıktısız      = serbest (yazma-dışı araç ya da korunmayan yol — karar verme, karışma)
+# Fail-closed: script kendi içinde hata verirse YAZMA işlemi ENGELLENİR (sessiz YEŞİL yok); yazma-dışı akış etkilenmez.
 # Türkçe harf güvenliği: eşleştirme BİREBİR bayttır; kanca hiçbir harf dönüşümü yapmaz.
 set -euo pipefail
 shopt -s nullglob
@@ -15,13 +16,31 @@ engel() { printf 'file-guard ENGEL: %s\n' "$1" >&2; exit 2; }
 trap 'engel "ic hata (fail-closed): kanca beklenmedik durdu; islem guvenli tarafta engellendi. Bakim: tools/guard/README.md"' ERR
 
 INPUT="$(cat)"
-command -v node >/dev/null 2>&1 || engel "node bulunamadı — kanca çalışamıyor (fail-closed; kokpit gibi kanca da node ister)"
+
+# Ucuz ön-eleme (node gerekmeden): girdide yazma-aracı adı hiç geçmiyorsa bu çağrı konumuz değil.
+# (Kesin araç-adı kontrolü aşağıda node içinde yapılır; burası yalnız gereksiz node koşusunu keser.)
+case "$INPUT" in
+  *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*) : ;;
+  *) exit 0 ;;
+esac
+
+# node keşfi — GUI'den açılan oturumlarda PATH dardır (Homebrew yolları görünmez; Faz-1 demo bulgusu, 2026-07-13):
+# önce PATH, sonra bilinen mutlak adaylar (keg-only Homebrew dahil).
+NODE_BIN="$(command -v node 2>/dev/null || true)"
+if [ -z "$NODE_BIN" ]; then
+  for aday in /usr/local/bin/node /opt/homebrew/bin/node /usr/local/opt/node*/bin/node /opt/homebrew/opt/node*/bin/node; do
+    if [ -x "$aday" ]; then NODE_BIN="$aday"; break; fi
+  done
+fi
+if [ -z "$NODE_BIN" ]; then
+  engel "node bulunamadı — kanca karar veremiyor; GÜVENLİ taraf: yalnız BU YAZMA işlemi engellendi (okuma ve komutlar serbest). Çözüm: node kur (kokpit de istiyor). Bakım: tools/guard/README.md"
+fi
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 LIST="$ROOT/tools/guard/korunan-yollar.txt"
 [ -r "$LIST" ] || engel "korunan-yollar.txt okunamadı ($LIST) — koruma tanımsız (fail-closed)"
 
-KARAR="$(printf '%s' "$INPUT" | GUARD_ROOT="$ROOT" GUARD_LIST="$LIST" node --input-type=module -e '
+KARAR="$(printf '%s' "$INPUT" | GUARD_ROOT="$ROOT" GUARD_LIST="$LIST" "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync, realpathSync } from "node:fs";
 import { resolve, dirname, join, sep } from "node:path";
 
@@ -43,9 +62,15 @@ function kanonik(p) {
 const ROOT = kanonik(resolve(process.env.GUARD_ROOT));
 let j;
 try { j = JSON.parse(readFileSync(0, "utf8")); } catch { console.log("HATA\tstdin JSON cozulemedi"); process.exit(0); }
+
+// KESIN daraltma: koruma yalniz YAZMA araclarina karsi. Okuma (Read vb.) ve komut araclari
+// dosya-yolu tasisa bile serbesttir; taninmayan yeni yazma araclarini ikinci hat (bekci) izler.
+const YAZMA = new Set(["Edit", "MultiEdit", "Write", "NotebookEdit"]);
+if (!YAZMA.has(j.tool_name || "")) { console.log("GEC"); process.exit(0); }
+
 const ti = j.tool_input || {};
 const ham = ti.file_path || ti.notebook_path || "";
-if (!ham) { console.log("GEC"); process.exit(0); } // dosya-yolu tasimayan cagri — konumuz degil
+if (!ham) { console.log("GEC"); process.exit(0); }
 const hedef = kanonik(resolve(ROOT, ham));
 
 // Liste: satir basina bir yol; sondaki "/" = dizin-oneki; "#" ile baslayan satir yorum;
@@ -98,7 +123,7 @@ case "$DURUM" in
     ;;
   SOR)
     GEREKCE="Korumalı alan ([SORULUR] sınıfı: $DETAY) — bu değişiklik meşru olabilir ama sahip kararı ister." \
-      node -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
+      "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;
   HATA) engel "$DETAY (fail-closed)" ;;
