@@ -111,7 +111,7 @@ function yargiField(pano, label) {
   return m ? m[1].trim() : null;
 }
 
-// --- KUTU.md kapı tablosu → [{id, is, sahip, durum}] ---
+// --- KUTU.md kapı tablosu → [{id, is, sahip, durum, kanit}] ---
 // Sözleşme: kapılar "## Kapılar" bölümü altındadır. Tek-faz (Faz başlığı yok) →
 // tüm satırlar aktif. Çok-faz → yalnız "### Faz A" aktif; Faz B+ ve "Kapanan aşama"
 // gibi diğer alt başlıklar pasif (mevcut çok-faz davranışı korunur).
@@ -134,7 +134,9 @@ function parseGates(kutu, warnings) {
     const is = cells[2] || '';
     const sahip = (cells[3] || '').split(/[\s/]/)[0]; // ilk rol
     const durum = (cells[4] || '').split(DASH)[0].trim();
-    gates.push({ id, is, sahip, durum });
+    const kanitHam = (cells[5] || '').trim();
+    const kanit = kanitHam && kanitHam !== DASH ? kanitHam : null; // 5. sütun (Kanıt); boş/'—'/4-sütun → null (bekçiyle aynı dil: '—' = işaretçisiz)
+    gates.push({ id, is, sahip, durum, kanit });
   }
   return gates;
 }

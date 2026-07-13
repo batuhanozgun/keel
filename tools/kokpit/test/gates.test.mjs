@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildState } from '../lib/status.mjs';
@@ -31,4 +33,38 @@ test('iki-faz: Faz A durum DASH öncesi alınır (açık — sevkte → açık)'
   const g07 = s.kutu.gates.find((g) => g.id === 'G-07');
   assert.equal(g07.durum, 'açık', 'em-dash sonrası atılır');
   assert.equal(g07.sahip, 'analiz');
+});
+
+test('kanıt sütunu: tekfaz 5. hücre kanit alanına düşer', async () => {
+  const s = await buildState(TEKFAZ);
+  const g02 = s.kutu.gates.find((g) => g.id === 'G-02');
+  assert.equal(g02.kanit, 'test: model.test.mjs');
+  const g05 = s.kutu.gates.find((g) => g.id === 'G-05');
+  assert.equal(g05.kanit, '02_kanon/golden/akis-ornegi.md');
+});
+
+test('kanıt sütunu: ikifaz Faz A kanit okunur', async () => {
+  const s = await buildState(IKIFAZ);
+  const g08 = s.kutu.gates.find((g) => g.id === 'G-08');
+  assert.equal(g08.kanit, 'test: matris.test.mjs');
+});
+
+test('geri-uyum: 4 sütunlu eski tablo kanit=null ile okunur (eski vault kırılmaz)', async () => {
+  const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-4sutun-'));
+  await fs.mkdir(path.join(kok, '01_kutular', 'KT-009-eski'), { recursive: true });
+  await fs.writeFile(path.join(kok, '01_kutular', 'KT-009-eski', 'KUTU.md'),
+    '# KT-009 — Eski biçim\n\n## Kapılar\n| Kapı | İş | Sahip | Durum |\n|---|---|---|---|\n| G-01 | Eski iş | uygulayici | açık |\n');
+  const s = await buildState(kok);
+  assert.equal(s.kutu.gates.length, 1);
+  assert.equal(s.kutu.gates[0].kanit, null);
+  assert.equal(s.kutu.gates[0].durum, 'açık');
+});
+
+test('— hücresi işaretçisiz sayılır: kanit=null (bekçiyle aynı dil; UI "kanıt: —" basmaz)', async () => {
+  const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-tire-'));
+  await fs.mkdir(path.join(kok, '01_kutular', 'KT-010-tire'), { recursive: true });
+  await fs.writeFile(path.join(kok, '01_kutular', 'KT-010-tire', 'KUTU.md'),
+    '# KT-010 — Tire\n\n## Kapılar\n| Kapı | İş | Sahip | Durum | Kanıt |\n|---|---|---|---|---|\n| G-01 | İş | uygulayici | açık | — |\n');
+  const s = await buildState(kok);
+  assert.equal(s.kutu.gates[0].kanit, null);
 });

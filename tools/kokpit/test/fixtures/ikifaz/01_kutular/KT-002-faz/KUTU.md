@@ -6,10 +6,10 @@
 ## Kapılar
 
 ### Faz A — devir (SEVKTE)
-| Kapı | İş | Sahip | Durum |
-|---|---|---|---|
-| G-07 | Zemin devri | analiz | açık — sevkte |
-| G-08 | Matris bölme | tasarim | açık — sevkte |
+| Kapı | İş | Sahip | Durum | Kanıt |
+|---|---|---|---|---|
+| G-07 | Zemin devri | analiz | açık — sevkte | 02_kanon/zemin-devri.md |
+| G-08 | Matris bölme | tasarim | açık — sevkte | test: matris.test.mjs |
 
 ### Faz B — doğrulama (iskelet)
 | Kapı | İş | Sahip | Ön koşul |

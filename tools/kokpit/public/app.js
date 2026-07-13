@@ -143,7 +143,9 @@ function renderPano() {
     (k.gates || []).forEach(function (g) {
       var d = g.durumKanon || g.durum || '';
       gb += '<div class="gate"><span class="gid">' + esc(g.id) + '</span>' +
-        '<span class="gis">' + esc(g.is) + '</span>' +
+        '<span class="gis">' + esc(g.is) +
+        (g.kanit ? '<span class="gkanit">kanıt: ' + esc(g.kanit) + '</span>' : '') +
+        '</span>' +
         '<span class="gsahip">' + esc(g.sahip) + '</span>' +
         '<span class="pill ' + pillClass(d) + '">' + esc(d) + '</span></div>';
     });

@@ -6,7 +6,8 @@ içerik serbest.** GENESIS her projede bu iskeleti aynen üretir.
 
 ## Sabit (söz dizimi — değişmez)
 
-- **Dizin şeması:** `00_pano/{PANO,SAGLIK,ERTELENENLER}.md` · `01_kutular/KT-*/**/KUTU.md` ·
+- **Dizin şeması:** `00_pano/{PANO,SAGLIK,ERTELENENLER}.md` (+ `00_pano/oturum-gunlugu.jsonl` —
+  makine günlüğü; tek yazarı kapanış kancası, kokpit okumaz) · `01_kutular/KT-*/**/KUTU.md` ·
   `01_kutular/_arsiv/` · `03_roller/<rol>/DURUM.md` · `02_kanon/`
 - **Ayıraçlar:** alan ayıracı ` · ` (U+00B7, boşluklu) · durum ayıracı ` — ` (U+2014, em-dash).
   ASCII'ye normalize edilmez; `toLowerCase` uygulanmaz (Türkçe İ/ı).
@@ -18,7 +19,11 @@ içerik serbest.** GENESIS her projede bu iskeleti aynen üretir.
 - **Ciddiyet sözlüğü (sabit Türkçe):** `YEŞİL` · `SARI` · `KIRMIZI` · `VERİ-YOK` (nötr).
 - **PANO yargı bloğu (koordinatör nesri):** kalın etiketli satırlar —
   `- **Aktif kutu:** …` · `- **SIRADAKİ OTURUM:** <rol> — …` · `- **Paralel açılabilir:** …` · `- **Blokaj:** …`
-- **KUTU kapı tablosu:** `## Kapılar` başlığı altında `| Kapı | İş | Sahip | Durum |` tablosu.
+- **KUTU kapı tablosu:** `## Kapılar` başlığı altında `| Kapı | İş | Sahip | Durum | Kanıt |` tablosu.
+  **Kanıt** = kanıt-işaretçisi (`test:`/`demo:` öneki ya da vault yolu); varlık denetimini bekçinin
+  bağ-varlık kategorisi yapar (yeni projelerde zorunlu; açık kapıda `test:`/`demo:` tipi — yol-tipi
+  kapı kapanırken yazılır). Kokpit 4 sütunlu eski tabloyu da okur (Kanıt boş kalır — geri-uyum);
+  `—` hücresi "işaretçisiz" sayılır.
   - **Tek-faz:** Faz alt-başlığı yok → tablo doğrudan aktif.
   - **Çok-faz:** `### Faz A …` (aktif) · `### Faz B …` (iskelet, pasif). Kapı ID öneki `G-`.
 - **Rol durumu:** `03_roller/<rol>/DURUM.md`, `# DURUM — <Ad>` başlığı; `**Son oturum:** …` satırı.

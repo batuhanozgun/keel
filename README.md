@@ -94,7 +94,7 @@ keel/
 ├── .template-source     ← kopya-guard'ı (kurulumda Claude, onayınla otomatik siler)
 ├── .claude/             ← koruma kablosu (kanca + sor-izin) · yazamayan doğrulayıcı ajan · rol becerileri (kurulumda doğar)
 ├── 00_genesis/          ← GENESIS koltuğu + yarım-kurulum toparlama çapası
-├── tools/guard/         ← dosya koruma kancası (file-guard) + korunan-yollar listesi
+├── tools/guard/         ← koruma kancası (file-guard) + rol töreni (rol-ac) + kapanış kancası (kapanis) + korunan-yollar
 └── tools/kokpit/        ← salt-okunur izleme panosu + format sözleşmesi + testler
 ```
 

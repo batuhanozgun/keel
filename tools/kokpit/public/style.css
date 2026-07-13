@@ -180,6 +180,7 @@ body {
 .gate .gid { font-family: var(--mono); font-size: 11.5px; color: var(--forecast); flex: none; width: 40px; }
 .gate .gis { flex: 1; min-width: 0; font-size: 13px; color: var(--ink); line-height: 1.4;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.gate .gkanit { display: block; font-size: 11px; color: var(--ink-3); font-family: var(--mono); margin-top: 2px; }
 .gate .gsahip { font-size: 12px; color: var(--ink-3); flex: none; }
 .pill { font-size: 10.5px; padding: 3px 10px; border-radius: 999px; white-space: nowrap; flex: none; background: var(--gray-bg); color: var(--gray); }
 .pill.acik { background: rgba(91,143,214,0.16); color: var(--forecast); }

@@ -23,9 +23,18 @@ Bash komutu sahibe SORULUR — damganın git-izi olmadığından bekçi ona kör
 o deliği insan-sorusuna çevirir (metin-eşleşmeli olduğundan kusursuz değildir; bilinen
 sınırdır).
 
+Kapanış kancası (`kapanis.sh`, SessionEnd): oturum kapanırken bekçiyi koşar
+(`tools/bekci/bekci.sh` varsa — konvansiyon-yol) ve `00_pano/oturum-gunlugu.jsonl`e
+tek satır oturum-meta düşürür (tarih · oturum · neden · rol · süre · token · damga-yaşı —
+transcript'ten okunabildiği kadar; biçim Claude Code'un iç formatıdır, okunamayan
+alan null düşer, satır HEP düşer). Günlüğün tek yazarı bu kancadır; append-only.
+FAIL-OPEN: SessionEnd zaten engelleyemez (doc-teyitli) — kapanış hijyeni oturumu
+rehin almaz; kancanın ölümünü bekçinin kablo-denetimi KIRMIZI basar. Vault değilse
+(00_pano yoksa) kanca susar. Rol damgasını yalnız OKUR; temizlik SessionStart'ta.
+
 İş bölümü (çift hat):
 1. Ön hat = bu kanca (araç katmanı, anında).
-2. Yedek hat = bekçi: her koşuda guard + SessionStart kablosu yerinde mi + git-İZLİ
+2. Yedek hat = bekçi: her koşuda guard + SessionStart/SessionEnd kablosu yerinde mi + git-İZLİ
    korunan yollarda commit dışı değişim var mı diye bakar (kanca sessiz ölse bile tören
    yakalar). DİKKAT: damga git-izsizdir — rol kafesinin kabuk-yazımına karşı yedeği
    bekçi DEĞİL, yukarıdaki damga-dikişi + oturum-başı temizliktir.

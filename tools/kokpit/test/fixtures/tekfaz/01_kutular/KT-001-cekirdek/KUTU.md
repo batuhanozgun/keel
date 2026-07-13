@@ -4,13 +4,13 @@
 **Durum:** AÇIK. Tek faz · tek demo.
 
 ## Kapılar (≤5 görev — iskelet)
-| Kapı | İş | Sahip | Durum |
-|---|---|---|---|
-| G-01 | Akış tasarımı | uygulayici | açık |
-| G-02 | Veri modeli | uygulayici | açık |
-| G-03 | Ekleme ekranı | uygulayici | açık |
-| G-04 | Liste ekranı | uygulayici | açık |
-| G-05 | Uçtan uca doğrulama | denetci | açık |
+| Kapı | İş | Sahip | Durum | Kanıt |
+|---|---|---|---|---|
+| G-01 | Akış tasarımı | uygulayici | açık | demo: akış ekranda uçtan uca gezilir |
+| G-02 | Veri modeli | uygulayici | açık | test: model.test.mjs |
+| G-03 | Ekleme ekranı | uygulayici | açık | demo: yeni kayıt eklenip listede görünür |
+| G-04 | Liste ekranı | uygulayici | açık | test: liste.test.mjs |
+| G-05 | Uçtan uca doğrulama | denetci | açık | 02_kanon/golden/akis-ornegi.md |
 
 ## Kabul kriterleri
 - Üst düzey: demo gözle doğrulanır.
