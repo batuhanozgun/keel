@@ -1,0 +1,19 @@
+# korunan-yollar — file-guard.sh'ın okuduğu VERİ dosyası (kod değil).
+# Biçim: satır başına bir yol, proje köküne göre; sondaki "/" = dizin (altındaki her şey).
+# Eşleştirme BİREBİR bayttır — kanca hiçbir büyük/küçük harf dönüşümü yapmaz (Türkçe İ/ı güvenliği);
+# yol, diskin gerçek yazımına çözülerek karşılaştırılır.
+# "#" ile BAŞLAYAN satır yorumdur. Bölümler: [SERT] ve [SORULUR].
+# GENESIS (G3.3b) bu dosyayı projenin kanon/golden yapısına göre günceller;
+# kurulumdan sonra bu dosyanın kendisi de [SERT] korumasındadır (öz-koruma).
+
+[SERT]
+# Kesin engel (exit 2): oturum içinde ASLA değiştirilmez. Meşru ihtiyaç → sahip kararı + tören.
+tools/guard/
+.claude/
+.kurulum-tamam
+02_kanon/kilitli/
+
+[SORULUR]
+# Sahibe sorulur (ask): golden güncellemesi meşru olabilir, karar sahibindir.
+02_kanon/golden/
+00_genesis/

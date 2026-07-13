@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "ask": [
+      "Edit(/02_kanon/kilitli/**)",
+      "Write(/02_kanon/kilitli/**)",
+      "NotebookEdit(/02_kanon/kilitli/**)",
+      "Edit(/02_kanon/golden/**)",
+      "Write(/02_kanon/golden/**)",
+      "NotebookEdit(/02_kanon/golden/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/guard/file-guard.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

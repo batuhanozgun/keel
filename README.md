@@ -92,7 +92,9 @@ keel/
 ├── CLAUDE.md            ← ilk oturumu yönlendiren giriş ("kurulu mu?")
 ├── GENESIS.md           ← GENESIS'in sabit kurulum planı (G0–G5)
 ├── .template-source     ← kopya-guard'ı (kurulumda Claude, onayınla otomatik siler)
+├── .claude/             ← dosya korumasının kablosu: kanca + sor-izin kuralları (doğuştan açık)
 ├── 00_genesis/          ← GENESIS koltuğu + yarım-kurulum toparlama çapası
+├── tools/guard/         ← dosya koruma kancası (file-guard) + korunan-yollar listesi
 └── tools/kokpit/        ← salt-okunur izleme panosu + format sözleşmesi + testler
 ```
 
