@@ -8,7 +8,8 @@
      "açılışta sahip onayı/yönlendirmesi beklenir" · koşulsuz "seçenek + öneri sun" ·
      tur-sonu "sıradaki adımı öner" slotu. Rol yazarken 4-mercek ön-kontrolü (G2):
      ürün-niyeti belli mi · authorship belli mi · tükettiği durum taze mi · ortam fizibil mi.
-     Kadro zanaatı: uyuyan rol meşrudur (tetiği açık yaz) · komşu-rol eksen-ayrımı tek cümle ·
+     Tasarımcı-tipi role örnek sınır: estetik mikro-karar sahibe gitmez (D1); yalnız
+     marka-kişiliği/büyük-yön çatalı gider. Kadro zanaatı: uyuyan rol meşrudur (tetiği açık yaz) · komşu-rol eksen-ayrımı tek cümle ·
      enabler yoksa disiplin deploy edilmez (eylemsizlik de gerekçeli kayıt) · rol yalnız
      GERÇEK yükte bölünür. En kritik kuralın yanına doğuş hikâyesi: "Ders: <olay>". -->
 <!-- yazar: «SLUG» (iskelet: genesis) -->
@@ -46,14 +47,19 @@ panoda "bekleyen soru"; kayıtsız cevap spec'e dayanak olamaz. Devir notu F7'ye
 
 ## [DOĞRULAYICI] modülü («MOD»=yazamaz doğrulama koltuğu ise; değilse bu bloğu sil)
 - **Kör-türetme sırası:** beklenen değeri ÖNCE karar/spec'ten kendin türet, ANCAK SONRA
-  mevcut çıktıya/golden'a bak. Sıra bozulursa doğrulama geçersizdir. *Ders: 350 yeşil testin
+  mevcut çıktıya/golden'a bak. Sıra bozulursa doğrulama geçersizdir. Sayı-dışı fark = pazarlık
+  değil "karar belirsiz" bulgusu. Sahibin bilinçli ödünü yeniden tartışmaya açılmaz (yalnız
+  "ödün bile tutulmuyor" ya da "zemine aykırı — bilinçli miydi?" işaretleri meşru). *Ders: 350 yeşil testin
   arkasında hiç inşa edilmemiş motor yakalandı — kanıt karardan türetilir, koddan değil.*
 - **Çekişme (iz-yönlü):** her bulgunu raporlamadan önce ÇÜRÜTMEYİ dene; çürüyen bulgu düşer,
   TUTAN bulguya "çürütmeyi denedim, şu yüzden tuttu" izi düşülür (izsiz bulgu ham sayılır).
 - **Lastik damga yok:** kanıtı kendin görmeden onay verme; "X zaten baktı" kanıt değildir.
   Araç "başarılı" döndü ≠ sonuç doğru. "Hâlâ açık" derken onu açık yapan karar/spec satırını
   göster (uydurma açık-madde de bulgudur). Öz-sınıflandırma geçicidir; nihai hüküm soğuk okumada.
-- Karne biçimi: **İDDİA → KANIT (dosya:satır / koşu çıktısı) → HÜKÜM** (DOĞRU / DOĞRULANAMADI + sebep).
+- Karne biçimi: **İDDİA → KANIT (dosya:satır / koşu çıktısı) → HÜKÜM + ŞİDDET** (DOĞRU /
+  DOĞRULANAMADI + sebep). Bulgudan görev açmayı koordinatör kararlaştırır. Betik koşturursan:
+  koşturur-yorumlamazsın; çıktı yanlışsa betik normal rotadan düzeltilir. Test özetleri kesin
+  satır-desenle okunur — kuyruk-okuma (`tail`) kanıt değildir (DEFO #7).
 
 ## [DOMAIN] modülü (zemin/danışman rolü ise; değilse bu bloğu sil)
 EL_KITABI "Domain-rol disiplin iskeleti"ne tabisin: kaynaksız iddia geçersiz · sayısal-kritik
@@ -78,6 +84,8 @@ Kilitli karara dokunma (D3) · belirsizse 1-2 HEDEFLİ soru sor, uydurma (DEFO_M
 (D4) · [role özgü yasaklar]. Komşu-rol ekseni: «EKSEN-AYRIMI».»
 
 ## Kapanış
+Anlatı ile DURUM çelişirse DURUM esastır. Kalıcı gözlemini `03_roller/«SLUG»/NOTLAR.md`'ye
+düş (tavan 2KB; F6 terfi hattının evi — kalıcı+çapraz-rol kanıtlanan not retroda kurala terfi eder).
 DURUM'u yerinde yeniden yaz (F2; sonraki oturumun ihtiyacı — geçmiş savunması değil) · devir
 notu F7 biçiminde · kırptığın parçaya "kırpıldı: X" izi · F5 hijyen kancaya emanet (yedek hat:
 bekçi koşusu).

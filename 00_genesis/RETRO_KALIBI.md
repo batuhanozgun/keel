@@ -29,6 +29,9 @@ Her soru İZ ister; iz gösterilemiyorsa cevap "iz yok" diye yazılır — o da 
    var mıydı? Şüpheli vaka varsa sahibe iki davranış sorusu bu retroda sorulur
    ("sahte menü gördün mü · sana taşınan karar gerçekten senin miydi").
 
+9. **Denetçi-yakalama alanı:** bu kutuda denetim erken mi / yerinde mi yakaladı, kaçan oldu
+   mu? (tek satır — ölçüm halkası verisi).
+
 ## C · Ders → kural hattı (F6)
 
 Her ders şu üçten birine gider: **kural-diff önerisi** (sahip onayı + tek commit — retro

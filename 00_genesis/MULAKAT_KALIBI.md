@@ -35,5 +35,7 @@ kaybedersin." (Ders: deneyimsiz sahip tohum-kararların ağırlığını sorudan
   somut iş örneği · neye yazar/neyi okur · negatif gerekçe ("bu rol yoksa şu iş sahipsiz") ·
   komşu-rolle eksen ayrımı. Tablosuz kadro mührü isteği geçersizdir. (Ders: oyun kurulumunda
   kadro mührü tanıtımsız istendi — sahip ne onayladığını bilmeden onayladı.)
+- **Zincir anlatımı:** kadro tanıtımında örnek BİR işin rollerden uçtan-uca geçişi tek
+  paragraf anlatılır (sahip ekibi hareket hâlinde görür).
 - **Prob anonsu:** kasıtlı koruma-probu (bilerek KIRMIZI göstermek) sahibe ÖNCEDEN anons
   edilir: "birazdan göreceğin kırmızı satır burada başarıdır."

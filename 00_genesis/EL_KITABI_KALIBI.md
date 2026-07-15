@@ -25,11 +25,13 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   değil sahibin değeriyle/vizyonuyla çözülür, (3) rol/yapı kendi çözemez. Araştırılabilir olan
   araştırılır. Test tutmuyorsa rol çözer ve kararı **Ç-NN** olarak kayda düşer; sahip özette
   görür, veto her zaman açık. Denetim iki yönlü bakar: "neden taşımadın" VE "sahibi neden
-  yordun". *Ders: "iki yol varsa taşı" biçimi karar-yüklemeyi (DEFO_MODELI #9) kurallaştırdı.*
+  yordun". Geri-alınamaz ya da dışa-dönük iş (push, paylaşım, silme) test ne derse desin ÖNCE
+  sorar. *Ders: "iki yol varsa taşı" biçimi karar-yüklemeyi (DEFO_MODELI #9) kurallaştırdı.*
 - **D2 · Sahip-dili + çıktı-yüzeyi.** Sahibe dönük her yüzey jargonsuzdur; teknik terim tek
   cümlede açıklanır. Kapanış özetinde karar bloğu SONDA ve nettir; ID'ler açıklamalı, muhatap
   belirtilir; son satır zorunlu: **"SANA KALAN: <tek cümle karar/soru + kimden>"** — yoksa
-  özet eksiktir. Sahibin anlayamadığı mühür isteği GEÇERSİZDİR. *Ders: soru sonda ve tek
+  özet eksiktir. Gerçek çatal (D1) değilse sahibe "seçenek" diye SUNULMAZ — düz olgu bildirilir.
+  Sahibin anlayamadığı mühür isteği GEÇERSİZDİR. *Ders: soru sonda ve tek
   değilse sahip onu kaçırır — belgelenmiş.*
 - **D3 · Kilitli-karar.** `02_kanon/kilitli/` gövdeleri DÜZENLENMEZ ([SERT]). Hatalı kilitli
   karar = L3: eskisi düzeltilmez, YENİ karar yazılır + mühürlenir, "aşar: K-NN" işaretçisiyle bağlanır.
@@ -53,7 +55,8 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
 - **D7 · Mühür paketi.** Kapanış mührü isteği ancak şu üçü + SANA KALAN ile GEÇERLİDİR:
   (1) açılıştaki "göreceklerin" bloğuyla eşleşen **demo tarifi**, (2) **ışıklar + taze damga**
   durumu (jargonsuz), (3) bağımsız doğrulayıcının **hüküm satırı** (İDDİA→KANIT→HÜKÜM).
-  Eksik paket = geçersiz istek; paket sahibe çıkmadan `dogrulayici` alt-ajanından geçer.
+  Eksik paket = geçersiz istek; paket sahibe çıkmadan `dogrulayici` alt-ajanından geçer
+  (filtre bilinçli DAR: yalnız mühür/kapanış yüzeyi — günlük sohbet taranmaz, akış kilitlenmez).
   Ters-alarm: sahibe TEKNİK soru soran paket hatalıdır. Sahip teknik kanıt DEĞERLENDİRMEZ;
   paketin tam olmasına bakar. *Ders: sistemin doğruluğu sahibin dikkatine yaslanamaz.*
 - **D8 · Ayna-delta.** Sahibe "ne anladığını teyit" sözün tekrarı olamaz: kendi kelimelerin +
@@ -77,7 +80,7 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   ERTELENENLER 4KB · EL_KITABI 14KB (doğum ölçümüyle kalibre, 2026-07-15). Sarı = uyarı (iş
   durmaz); kırmızı (1,5×) = yalnız kutu KAPANIŞINI kilitler. Sayılar İLK RETRODA ölçümle
   yeniden kalibre edilir (retro zorunlu maddesi). **İçerik-sınıfı:** süreç-günlüğü · 1 satırı
-  aşan açık-kalem anlatısı · kural-atıf açılımı/kopyası → görev dosyasında SARI (tavandan
+  aşan açık-kalem anlatısı · kural-atıf açılımı/kopyası (sözleşme dosyaları dahil) → SARI (tavandan
   bağımsız). **Tanecik:** 3+ sorulu görüş işi soru-başına bölünür. **İş-boyutu:** bir kapı =
   tek oturuş + tek cümlelik kabul testi + tek çıktı + net devir (hata adım sayısıyla katlanır
   — kendi ölçümümüz). *Ders: tavansız dosya bir
@@ -113,20 +116,23 @@ yoksa silme-testi koşulmamış sayılır). (Neden: DEFO_MODELI #3 + iz ilkesi.)
 1. **Kur** — koordinatör kutu iskeletini açar; PO kabul ölçütlerini İŞTEN ÖNCE yazar. Her
    ölçüt iki sınır taşır: alt (ne olacak, tek başına evet/hayır) ve **üst** ("şunu da
    eklersen kapsam aşımı = hata"). Tavan: tek faz · tek gözle-görülür demo cümlesi · ≤5 kapı ·
-   tek domain rolü — sığmıyorsa böl. KUTU'da zorunlu **"bu kutu bitince gözünle göreceklerin"**
+   tek domain rolü — sığmıyorsa böl. Çözülmemiş bağımlılıklı kapı AÇILMAZ (öne alınır ya da
+   ERTELENENLER'e sahip+uyanma koşuluyla). KUTU'da zorunlu **"bu kutu bitince gözünle göreceklerin"**
    bloğu: 3 somut, sahip-dilinde, gözlemlenebilir iddia.
 2. **Görüş turu** [KADRAN:TAM] — roller kutu üstünden risk/varsayım taraması yapar; artefakt
    yoksa PAS meşrudur, PAS da yazılı görüştür.
 3. **Açılış mührü** — göreceklerin bloğu üstünden **«SAHİP» açılış mührü**; mühür alınır
    alınmaz commit atılır (**taban ref** — bekçinin ölçüt-diff'i buna göre çalışır).
-4. **Üretim** — kapılar işlenir; Kanıt hücresi doğar (açıkken `test:`/`demo:` tipi; vault-yolu
+4. **Üretim** — kod içeren kapı önce BAŞARISIZ testle başlar (RED→GREEN — şablonun kendi
+   geliştirme disiplini; miras). Kapılar işlenir; Kanıt hücresi doğar (açıkken `test:`/`demo:` tipi; vault-yolu
    ancak dosya fiilen doğunca yazılır). **Ölçüt dokunulmazlığı:** işi yapan rol ölçüt satırına
    DOKUNAMAZ; bekçi ölçütleri taban ref'e diff'ler, değişiklik = SARI + sahibe not (mühürlü
    değişiklik meşru istisna). *Ders: ajan kendi başarı kriterini değiştirebildiğinde oyunlama
    katlanarak artar — ölçülmüş.*
 5. **Bağımsız doğrulama** — denetçi kapıları fiilen kontrol eder (D4); dosya-gerçeği
    `dogrulayici` alt-ajanıyla.
-6. **Demo + kapanış mührü** — sahibe D7 MÜHÜR PAKETİ sunulur (demo fiilen gösterilir +
+6. **Demo + kapanış mührü** — tüketilmemiş L2/L3 bayrağı varken kutu KAPANMAZ. Sahibe D7
+   MÜHÜR PAKETİ sunulur (demo fiilen gösterilir +
    ~10 dakikalık numaralı spot-kontrol tarifi; kasıtlı koruma-probu varsa önceden anons:
    "kırmızı satır burada başarıdır"). **«SAHİP» kapanış mührü** ile kutu kapanır.
 7. **Retro** [küçük kadranda yalnız RETRO_KALIBI Bölüm A; TAM'da tamamı] —
