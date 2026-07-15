@@ -60,6 +60,19 @@ test('geri-uyum: 4 sütunlu eski tablo kanit=null ile okunur (eski vault kırıl
   assert.equal(s.kutu.gates[0].durum, 'açık');
 });
 
+test('B4 (soğuk-denetim): hücredeki `a|b` satır-içi kodu sütunları KAYDIRMAZ (markdown.mjs ile ortak bölücü)', async () => {
+  const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-pipe-'));
+  await fs.mkdir(path.join(kok, '01_kutular', 'KT-011-kod'), { recursive: true });
+  await fs.writeFile(path.join(kok, '01_kutular', 'KT-011-kod', 'KUTU.md'),
+    '# KT-011 — Kod\n\n## Kapılar\n| Kapı | İş | Sahip | Durum | Kanıt |\n|---|---|---|---|---|\n| G-01 | kod `a|b` üret | uygulayici | açık | test: x |\n');
+  const s = await buildState(kok);
+  const g = s.kutu.gates[0];
+  assert.equal(g.is, 'kod `a|b` üret', 'iş hücresi bütün kalmalı');
+  assert.equal(g.sahip, 'uygulayici');
+  assert.equal(g.durum, 'açık');
+  assert.equal(g.kanit, 'test: x');
+});
+
 test('— hücresi işaretçisiz sayılır: kanit=null (bekçiyle aynı dil; UI "kanıt: —" basmaz)', async () => {
   const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-tire-'));
   await fs.mkdir(path.join(kok, '01_kutular', 'KT-010-tire'), { recursive: true });

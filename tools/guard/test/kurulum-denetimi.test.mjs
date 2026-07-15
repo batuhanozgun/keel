@@ -26,7 +26,7 @@ Bu belge ekibin çalışma anayasasıdır. Ağırlık kadranı: **TAM RİTÜEL**
 ## Kadro + kapsam
 `;
 
-function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', slug = 'denetci', acikAlan = false } = {}) {
+function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
   mkdirSync(join(kok, '02_kanon'), { recursive: true });
   mkdirSync(join(kok, '00_genesis'), { recursive: true });
@@ -40,8 +40,22 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
     writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), bekci);
     chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
   }
-  writeFileSync(join(kok, '.claude', 'skills', 'rol-' + slug.replace(/[^a-z0-9-]/g, ''), 'SKILL.md'), skillIlk + '\ndescription: t\n---\ntören\n');
+  writeFileSync(
+    join(kok, '.claude', 'skills', 'rol-' + slug.replace(/[^a-z0-9-]/g, ''), 'SKILL.md'),
+    skillIlk + '\ndescription: t\n' + (skillKilit ? 'disable-model-invocation: true\n' : '') + '---\ntören\n'
+  );
+  // İşletim yüzeyi (soğuk-denetim C1): rol sözleşmesi + başlangıç DURUM'u + pano + ilk kutu.
   if (acikAlan) writeFileSync(join(kok, '03_roller', slug, 'ROL.md'), '# «ROL-ADI» doldurulmamış\n');
+  else if (rolmd) writeFileSync(join(kok, '03_roller', slug, 'ROL.md'), '# ROL — Denetçi\nSınırlar: dolu.\n');
+  if (durum) writeFileSync(join(kok, '03_roller', slug, 'DURUM.md'), '# DURUM — Denetçi\nHenüz oturum açılmadı\n');
+  if (pano) {
+    mkdirSync(join(kok, '00_pano'), { recursive: true });
+    writeFileSync(join(kok, '00_pano', 'PANO.md'), '# Pano\n- **Aktif kutu:** KT-001\n');
+  }
+  if (kutu) {
+    mkdirSync(join(kok, '01_kutular', 'KT-001-cekirdek'), { recursive: true });
+    writeFileSync(join(kok, '01_kutular', 'KT-001-cekirdek', 'KUTU.md'), '# KT-001 — Çekirdek\n## Kapılar\n');
+  }
   return kok;
 }
 
@@ -171,4 +185,43 @@ test('hiç rol yoksa → KIRMIZI (G4.5 rollerden sonra koşar)', () => {
   const r = kos(kok);
   assert.equal(r.status, 2);
   assert.match(r.stdout, /hiç rol yok/);
+});
+
+// --- Soğuk-denetim yamaları (2026-07-16): C1 işletim yüzeyi · C3 beceri kilidi · C4 çapalı başlık ---
+
+test('C1: 00_pano/PANO.md yoksa → KIRMIZI (pano bağlanmadan çekilme serbest denemez)', () => {
+  const r = kos(kurulum({ pano: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /00_pano\/PANO\.md yok/);
+});
+
+test('C1: hiç kutu yoksa → KIRMIZI (ilk kutu G4\'te kurulmuş olmalı)', () => {
+  const r = kos(kurulum({ kutu: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /hiç kutu yok/);
+});
+
+test('C1: rol sözleşmesi (ROL.md) yoksa → KIRMIZI', () => {
+  const r = kos(kurulum({ rolmd: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /rol sözleşmesi eksik: 03_roller\/denetci\/ROL\.md/);
+});
+
+test('C1: rol başlangıç DURUM.md yoksa → KIRMIZI (tatbikat-v2\'de sahada görülen eksik)', () => {
+  const r = kos(kurulum({ durum: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /rol durum dosyası eksik: 03_roller\/denetci\/DURUM\.md/);
+});
+
+test('C3: beceri insan-tetikleme kilidi (disable-model-invocation) yoksa → KIRMIZI', () => {
+  const r = kos(kurulum({ skillKilit: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /insan-tetikleme kilidi eksik/);
+});
+
+test('C4: zorunlu başlık yalnız paragraf İÇİNDE geçiyorsa başlık sayılmaz → KIRMIZI (çapalı arama)', () => {
+  const ek = EK_TAM.replace('## Üslup hükmü\n', 'metinde ## Üslup hükmü sözü geçiyor ama başlık değil\n');
+  const r = kos(kurulum({ ek }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /zorunlu başlık eksik: ## Üslup hükmü/);
 });

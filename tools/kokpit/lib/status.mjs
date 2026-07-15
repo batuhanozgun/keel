@@ -7,6 +7,7 @@
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { splitRow } from './markdown.mjs';
 
 const MID = '·';   // ·  alan ayıracı (boşluklu)
 const DASH = '—';  // —  em-dash
@@ -128,13 +129,14 @@ function parseGates(kutu, warnings) {
     if (inKapilar && /^###\s/.test(line)) { aktif = false; continue; }        // "Kapanan aşama" vb. pasif
     if (!inKapilar || !aktif) continue;
     if (!/^\|\s*G-\d+\b/.test(line)) continue;
-    const cells = line.split('|').map((c) => c.trim());
-    // [ '', 'G-07', 'iş...', 'analiz', 'açık — sevkte', '' ]
-    const id = cells[1];
-    const is = cells[2] || '';
-    const sahip = (cells[3] || '').split(/[\s/]/)[0]; // ilk rol
-    const durum = (cells[4] || '').split(DASH)[0].trim();
-    const kanitHam = (cells[5] || '').trim();
+    // splitRow (markdown.mjs ile ORTAK): `a|b` gibi satır-içi kod hücreyi bölmez (soğuk-denetim B4).
+    const cells = splitRow(line);
+    // [ 'G-07', 'iş...', 'analiz', 'açık — sevkte', 'kanıt' ]
+    const id = cells[0];
+    const is = cells[1] || '';
+    const sahip = (cells[2] || '').split(/[\s/]/)[0]; // ilk rol
+    const durum = (cells[3] || '').split(DASH)[0].trim();
+    const kanitHam = (cells[4] || '').trim();
     const kanit = kanitHam && kanitHam !== DASH ? kanitHam : null; // 5. sütun (Kanıt); boş/'—'/4-sütun → null (bekçiyle aynı dil: '—' = işaretçisiz)
     gates.push({ id, is, sahip, durum, kanit });
   }
@@ -151,8 +153,8 @@ function parseErtelenenler(text, warnings) {
       if (/^\|\s*Kalem\b/.test(line)) { headerSeen = true; continue; }
       if (/^[|\s:—-]+$/.test(line)) continue; // ayraç satırı
       if (!headerSeen) continue;
-      const cells = line.split('|').map((c) => c.trim());
-      rows.push({ kalem: cells[1] || '', sahip: cells[2] || '', kosul: cells[3] || '', kaynak: cells[4] || '' });
+      const cells = splitRow(line); // markdown.mjs ile ortak bölücü (satır-içi kod korunur)
+      rows.push({ kalem: cells[0] || '', sahip: cells[1] || '', kosul: cells[2] || '', kaynak: cells[3] || '' });
     } else if (headerSeen && rows.length) {
       break; // tablo bitti (kural paragrafı)
     }
@@ -201,6 +203,13 @@ async function computeFreshness(root, saglik, warnings) {
   if (Number.isNaN(stampTime.getTime())) {
     out.stale = true;
     out.staleReason = 'damga çözümlenemedi';
+    return out;
+  }
+  // Gelecekteki damga tazelik VE drift radarını birden maskeler (soğuk-denetim B2):
+  // saat/dilim hatası ya da bozuk bekçi çıktısı — güvenilmez say, bayat işaretle.
+  if (ageMs < -60 * 1000) {
+    out.stale = true;
+    out.staleReason = 'sağlık damgası GELECEKTE görünüyor (saat/dilim hatası?) — tazelik güvenilmez';
     return out;
   }
   if (ageMs > 24 * 3600 * 1000) {
@@ -304,7 +313,10 @@ export async function buildState(root, config = {}) {
 
   const stale = fresh.stale;
   const worst = worstLight(lights);
-  const sistemGenel = stale ? 'KIRMIZI' : worst || 'VERI-YOK';
+  // Hiç ÖLÇÜLMÜŞ değer yokken (hepsi VERİ-YOK/serbest) taban-iyimserlik YEŞİL göstermesin —
+  // dürüst gri (soğuk-denetim B1). Tek ölçülmüş değer varsa davranış eskisiyle aynı.
+  const olculmus = !!(lights && lights.some((l) => (WORST[l.deger] || 0) > 0));
+  const sistemGenel = stale ? 'KIRMIZI' : (olculmus ? worst : 'VERI-YOK');
 
   // SIRADAKİ bayatlığı (#6): sevk edilen rol koordinatörden yeni hareket ettiyse bayat.
   const koordinatorRol = config.koordinatorRol || 'koordinator';
@@ -347,6 +359,8 @@ export async function buildState(root, config = {}) {
       baslik: config.baslik || null,
       altBaslik: config.altBaslik || null,
       sahip: config.sahip || null,
+      koordinatorRol,
+      rolToreni: config.rolToreni === true, // true = /rol-<slug> töreni metni (KEEL); yok/false = klasörde-aç metni (eski kurgular — geri-uyum)
       isikIpuclari: config.isikIpuclari || null,
       renkler: config.renkler || null,
     },
@@ -356,7 +370,8 @@ export async function buildState(root, config = {}) {
 
 function siradakiRol(s) {
   if (!s) return null;
-  const m = s.match(/^([A-Za-zÇĞİÖŞÜçğıöşü]+)/);
+  // Rakam da slug'ın parçasıdır (GENESIS slug kuralı ^[a-z0-9]+$; ör. "po2" — soğuk-denetim A3).
+  const m = s.match(/^([A-Za-z0-9ÇĞİÖŞÜçğıöşü]+)/);
   return m ? m[1] : null;
 }
 
@@ -380,7 +395,18 @@ async function findActiveBox(root, warnings) {
     warnings.push('01_kutular okunamadı');
     return null;
   }
-  const active = entries.find((e) => e.isDirectory() && /^KT-\d+/.test(e.name));
+  // Tek-aktif-kutu varsayımı: birden fazla açık kutu görürsek deterministik (ada göre sıralı)
+  // İLKİNİ gösterir ve uyarı basarız — sessiz dosya-sistemi-sırası seçimi yok (soğuk-denetim B5).
+  const adaylar = entries
+    .filter((e) => e.isDirectory() && /^KT-\d+/.test(e.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (adaylar.length > 1) {
+    warnings.push(
+      'birden fazla açık kutu var (' + adaylar.map((e) => e.name.match(/^(KT-\d+)/)[1]).join(', ') +
+      ') — tek-aktif-kutu varsayımı bozuk; ayrıntı paneli ada göre ilkini gösteriyor'
+    );
+  }
+  const active = adaylar[0];
   if (!active) return null;
   const rel = '01_kutular/' + active.name + '/KUTU.md';
   const text = await readIf(path.join(root, rel));

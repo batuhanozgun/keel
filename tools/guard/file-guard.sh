@@ -1,6 +1,6 @@
 #!/bin/bash
 # file-guard — araç-kancası (PreToolUse): korunan yollara + (rol kafesi) yazamaz-rol oturumlarında her yola YAZMA araçlarını (Edit/MultiEdit/Write/NotebookEdit) mekanik keser.
-# Koruma YAZMAYA karşıdır — okuma/komut araçlarına karışılmaz (Faz-1 demo dersi); TEK BELGELİ İSTİSNA: rol damgasına (.aktif-rol) dokunan Bash komutu sahibe SORULUR (damganın git-izi yok, bekçi göremez — plan kararı 2).
+# Koruma YAZMAYA karşıdır — okuma/komut araçlarına karışılmaz (Faz-1 demo dersi); İKİ BELGELİ İSTİSNA (dikişler): (1) rol damgasına (.aktif-rol) dokunan Bash komutu sahibe SORULUR (damganın git-izi yok, bekçi göremez — plan kararı 2); (2) kurulum işaretine (.kurulum-tamam) dokunan Bash komutu, işaret MEVCUTKEN sahibe SORULUR (işaret silinirse koruma kurulum-moduna düşer — soğuk-denetim bulgusu E2, 2026-07-16; işaret yokken sorulmaz ki GENESIS doğumu sürtünmesiz kalsın; ayrıca işaret git-İZLİdir, silinme/kirlilik bekçi porcelain hattında da yakalanır).
 # Matcher GENİŞ (*), daraltma bu script'in içinde (anayasa m.5).
 # Girdi: stdin'de Claude Code araç JSON'u. Çıkış sözleşmesi:
 #   exit 2                = ENGEL ([SERT]; stderr'daki gerekçe ajana döner)
@@ -21,7 +21,8 @@ INPUT="$(cat)"
 # (Kesin araç-adı kontrolü aşağıda node içinde yapılır; burası yalnız gereksiz node koşusunu keser.)
 case "$INPUT" in
   *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*) : ;;
-  *'.aktif-rol'*) : ;; # rol damgasına dokunan çağrı — kesin karar aşağıda node'da
+  *'.aktif-rol'*) : ;;     # rol damgasına dokunan çağrı — kesin karar aşağıda node'da
+  *'.kurulum-tamam'*) : ;; # kurulum işaretine dokunan çağrı — kesin karar aşağıda node'da
   *) exit 0 ;;
 esac
 
@@ -70,7 +71,11 @@ const ti = j.tool_input || {};
 // dokunan Bash komutu sahibe SORULUR (damga git-izsiz, bekci goremez). Baska hicbir
 // komut-araci mudahalesi yok; okuma serbest.
 if ((j.tool_name || "") === "Bash") {
-  if (String(ti.command || "").includes(".aktif-rol")) { console.log("SOR-DAMGA\ttools/guard/.aktif-rol"); process.exit(0); }
+  const komut = String(ti.command || "");
+  if (komut.includes(".aktif-rol")) { console.log("SOR-DAMGA\ttools/guard/.aktif-rol"); process.exit(0); }
+  // Isaret-dikisi (soguk-denetim E2): kurulum isareti MEVCUTKEN ona dokunan Bash sahibe
+  // SORULUR (silinirse koruma kurulum-moduna duser). Isaret yokken serbest — GENESIS dogumu.
+  if (komut.includes(".kurulum-tamam") && existsSync(resolve(ROOT, ".kurulum-tamam"))) { console.log("SOR-ISARET\t.kurulum-tamam"); process.exit(0); }
   console.log("GEC"); process.exit(0);
 }
 
@@ -163,6 +168,11 @@ case "$DURUM" in
     ;;
   SOR-DAMGA)
     GEREKCE="Bu kabuk komutu rol-töreni damgasına (tools/guard/.aktif-rol) dokunuyor. Damga oturum-durumudur; meşru yolu /rol-<slug> töreni ve yeni oturumdur. Elle müdahale sahip kararı ister." \
+      "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
+    exit 0
+    ;;
+  SOR-ISARET)
+    GEREKCE="Bu kabuk komutu kurulum işaretine (.kurulum-tamam) dokunuyor. İşaret koruma rejiminin anahtarıdır: yokken kilitli alanlar kurulum-moduna düşer. Silme/değiştirme sahip kararı ister." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;

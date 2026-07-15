@@ -12,6 +12,10 @@ const ROLAC = join(BURASI, '..', 'rol-ac.sh');
 function kurulum() {
   const kok = mkdtempSync(join(tmpdir(), 'rolac-test-'));
   mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
+  // Tören yalnız KAYITLI rollere damga basar (soğuk-denetim E3) — test kadrosu:
+  for (const r of ['denetci', 'uygulayici', 'koordinator']) {
+    mkdirSync(join(kok, '03_roller', r), { recursive: true });
+  }
   return kok;
 }
 const damga = (kok) => join(kok, 'tools', 'guard', '.aktif-rol');
@@ -93,4 +97,23 @@ test('bozuk damga varken tören → exit 1 (belirsiz durumda üstüne yazılmaz;
   const r = kos(kok, ['denetci', 'yazamaz']);
   assert.equal(r.status, 1);
   assert.match(r.stderr, /bozuk/);
+});
+
+// --- Soğuk-denetim yamaları (2026-07-16): E3 kayıtlı-rol şartı · A3 slug hizası ---
+
+test('E3: kayıtsız rol (03_roller/ altında yok) → exit 1, damga doğmaz (uydurma ada damga yok)', () => {
+  const kok = kurulum();
+  const r = kos(kok, ['ghost', 'tam']);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /rol tanımsız/);
+  assert.equal(existsSync(damga(kok)), false);
+});
+
+test('A3: tireli/alt-çizgili slug artık reddedilir (GENESIS G3.3c tek-token kuralıyla hizalı)', () => {
+  const kok = kurulum();
+  mkdirSync(join(kok, '03_roller', 'denetci-alt'), { recursive: true });
+  const r = kos(kok, ['denetci-alt', 'tam']);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /slug/);
+  assert.equal(existsSync(damga(kok)), false);
 });

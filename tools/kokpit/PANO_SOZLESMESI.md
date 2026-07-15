@@ -36,6 +36,9 @@ içerik serbest.** GENESIS her projede bu iskeleti aynen üretir.
 - Kutu faz sayısı (tek/çok).
 - Proje başlığı · sahip adı · renkler · vault yolu → `tools/kokpit/kokpit.config.json`.
 - Koordinatör rolünün slug'ı → `kokpit.config.json` `koordinatorRol` (varsayılan `koordinator`).
+- Rol açılış TARİFİ → `kokpit.config.json` `rolToreni`: `true` = "proje kökünde `/rol-<slug>` yaz →
+  'ROL AÇIK' → `devam`" metni (KEEL projeleri — tören rol kafesini kurar); alan yok/`false` =
+  "rol klasöründe oturum aç" metni (eski kurgular — geri-uyum, varsayılan).
 
 ## "Sıradaki" bayatlığı (kokpit ipucu)
 

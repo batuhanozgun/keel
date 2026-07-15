@@ -322,6 +322,29 @@ test('damga-dikişi okumayı kilitlemez: Read .aktif-rol → serbest, çıktıs�
   assert.equal(r.stdout.trim(), '');
 });
 
+// --- Soğuk-denetim yaması (2026-07-16, E2): işaret-dikişi ---
+
+test('işaret-dikişi: .kurulum-tamam MEVCUTKEN ona dokunan Bash → sahibe sor (koruma-rejimi anahtarı)', () => {
+  const kok = kurulum();
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'rm -f .kurulum-tamam' } });
+  assert.equal(r.status, 0);
+  const j = JSON.parse(r.stdout);
+  assert.equal(j.hookSpecificOutput.permissionDecision, 'ask');
+  assert.match(j.hookSpecificOutput.permissionDecisionReason, /kurulum işareti/);
+});
+
+test('işaret-dikişi kurulumda susar: işaret YOKKEN ona dokunan Bash serbest (GENESIS doğumu sürtünmesiz)', () => {
+  const kok = kurulum({ kurulumTamam: false });
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'printf "kuruldu" > .kurulum-tamam' } });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('işaret araç hattında [SERT]: kurulumdan sonra .kurulum-tamam\'a Write → exit 2', () => {
+  const kok = kurulum();
+  assert.equal(kos(kok, write(kok, '.kurulum-tamam')).status, 2);
+});
+
 test('kurulum istisnası (faz-2): .kurulum-tamam YOKKEN .claude/skills/ yazılabilir (GENESIS beceri kurar)', () => {
   const kok = kurulum({ kurulumTamam: false });
   const r = kos(kok, write(kok, '.claude/skills/rol-denetci/SKILL.md'));

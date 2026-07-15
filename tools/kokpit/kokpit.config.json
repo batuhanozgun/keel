@@ -3,6 +3,7 @@
   "altBaslik": "panosu",
   "sahip": "",
   "koordinatorRol": "koordinator",
+  "rolToreni": true,
   "vaultYolu": "../..",
   "port": 4173,
   "isikIpuclari": {

@@ -5,7 +5,7 @@ Bu proje bir **yapay zeka ekibiyle** yürüyor. Sen kararları verirsin; ekip i�
 ## Günlük döngü
 
 1. **Kokpiti aç** (bu ekran) → sistemin genel durumunu tek bakışta gör.
-2. **"Sıradaki adım"** kutusuna bak → sıra kimdeyse o rolün klasöründe oturum aç, `devam` yaz.
+2. **"Sıradaki adım"** kutusuna bak → sıra kimdeyse oradaki açılış tarifini izle. (Rol oturumunu **sen** açarsın; ekip kendi kendine başlamaz. Projenin gerçek kılavuzu kökteki `NASIL_KULLANILIR.md`'dir — bu dosya kokpit testlerinin biçim örneğidir.)
 3. Rol işini bitirince sıra **koordinatöre** döner; koordinatör bir sonrakini sevk eder.
 
 ## Roller (kısaca)

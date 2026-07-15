@@ -153,19 +153,29 @@ function renderPano() {
   var sevkte = (k && k.fazA && k.fazA.sevkte) ? 'faz A · sevkte' : '';
 
   // Şimdi sıra (mercan odak) — #6: SIRADAKİ rolü zaten hareket ettiyse "koordinatör sevki bekleniyor"
+  // Rol açılış TARİFİ config'e bağlı (soğuk-denetim A2): rolToreni=true → /rol-<slug> töreni
+  // (KEEL; tören rol kafesini kurar — klasörde-aç tarifi orada YANLIŞ olurdu); yok/false →
+  // klasörde-aç metni (eski kurgular, ör. Loopinance — geri-uyum).
+  var koordRol = (state.config && state.config.koordinatorRol) || 'koordinator';
+  var acTarifi = function (slug) {
+    if (state.config && state.config.rolToreni) {
+      return 'proje kökünde oturum aç, <code>/rol-' + esc(slug) + '</code> yaz; tören <b>"ROL AÇIK"</b> deyince <code>devam</code> yaz';
+    }
+    return '<code>03_roller/' + esc(slug) + '/</code> klasöründe oturum aç, <code>devam</code> yaz';
+  };
   var nb;
   if (y.siradakiStale && y.sonHareketRol) {
     nb = '<div class="now-in stale"><div class="now-eyebrow">sıradaki adım · koordinatörde</div>' +
       '<div class="now-role"><span class="now-verb">son hareket:</span> ' + esc(y.sonHareketRol) + '<span class="dot">.</span></div>' +
       '<div class="now-desc">Bu rol işini bitirdi; sıra koordinatöre döndü. Panodaki "sıradaki" satırı koordinatör bir sonraki sevki yazana kadar eski görünebilir.</div>' +
-      '<div class="now-how">→ <code>03_roller/koordinator/</code> klasöründe oturum aç, <code>devam</code> yaz (bir sonrakini koordinatör sevk eder).</div>' +
+      '<div class="now-how">→ ' + acTarifi(koordRol) + ' (bir sonrakini koordinatör sevk eder).</div>' +
       '</div>';
   } else if (y.siradakiOturum) {
     var rol = y.siradakiRol || '';
     nb = '<div class="now-in"><div class="now-eyebrow">sıradaki adım · sıra sende</div>' +
       '<div class="now-role"><span class="now-verb">aç:</span> ' + esc(rol) + '<span class="dot">.</span></div>' +
       '<div class="now-desc">' + jsInline(y.siradakiOturum) + '</div>' +
-      (rol ? '<div class="now-how">→ <code>03_roller/' + esc(rol) + '/</code> klasöründe oturum aç, <code>devam</code> yaz.</div>' : '') +
+      (rol ? '<div class="now-how">→ ' + acTarifi(rol) + '.</div>' : '') +
       '<div class="now-clar">Bu senin sıran: <b>' + esc(rol) + '</b> rolünün oturumunu <b>sen</b> açacaksın; ' + esc(rol) + ' kendi başına başlamaz.</div>' +
       '</div>';
   } else {

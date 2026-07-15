@@ -25,7 +25,7 @@ Felsefesi tek cümlede: **bilerek az anla, çalışan bir sistem bırak.** Başt
 ## Gerekenler
 
 1. **Claude Code** — KEEL'i asıl *çalıştıran* budur. Bu depodaki dosyalar tek başına birer *tariftir*; onları hayata geçiren zekâ Claude Code'dur. → [docs.claude.com/claude-code](https://docs.claude.com/claude-code)
-2. **Node.js** — yalnızca **kokpit** (izleme panosu) için gerekir; proje kurulumu için gerekmez. → [nodejs.org](https://nodejs.org)
+2. **Node.js** — **kuruluma başlamadan önce kur.** Hem kokpit (izleme panosu) hem de **koruma kancası** ister: Claude Code'un her dosya-yazışını süzen bekçi yardımcısı kararını Node ile verir; Node yoksa güvenli tarafta kalır ve **yazmayı engeller** (kurulum ilk adımda durur). → [nodejs.org](https://nodejs.org)
 
 > KEEL Türkçe bir sistemdir. Dosyalardaki Türkçe metin — Türkçe harfler dâhil (ı, ş, ğ, ç, ö, ü) — sistemin doğru çalışması için önemlidir; ASCII'ye çevirme.
 
@@ -74,7 +74,7 @@ Kurulumdan sonra kökte **`NASIL_KULLANILIR.md`** adlı bir sahip kılavuzu olu�
 
 ## Kokpit — tek ekrandan izleme
 
-`tools/kokpit`, sistemin sağlığını — ışıklar · sıradaki adım · kutu kapıları · roller — tek ekranda gösteren **salt-okunur** yerel bir panodur. Hiçbir şeye dokunmaz, yalnızca okur. Harici bağımlılık yok (`npm install` gerekmez).
+`tools/kokpit`, sistemin sağlığını — ışıklar · sıradaki adım · kutu kapıları · roller — tek ekranda gösteren **salt-okunur** yerel bir panodur. Hiçbir şeye dokunmaz, yalnızca okur. Harici paket yok (`npm install` gerekmez); yalnız yazı tipleri internetten yüklenir — internet yoksa kokpit sistem yazı tipiyle çalışmaya devam eder.
 
 Açmak için iki yol:
 

@@ -15,13 +15,19 @@ iki karar girdisi kullanır:
 
 Rol kafesi mekaniği: damgayı yalnız `rol-ac.sh` yazar (tetik: insanın `/rol-<slug>`
 töreni; argüman-doğrulamalı ve damga-değiştirmez — damga ancak boşken doğar, rol/profil
-değişimi reddedilir). Her YENİ oturumun başında SessionStart kancası (startup+clear)
-damgayı siler; `--resume` damgayı korur. Damga `.gitignore`'dadır (oturum-durumu).
+değişimi reddedilir; slug tek-token a-z0-9 ve rol `03_roller/` altında KAYITLI olmalı —
+uydurma ada damga basılmaz, soğuk-denetim E3 yaması 2026-07-16). Her YENİ oturumun
+başında SessionStart kancası (startup+clear) damgayı siler; `--resume` damgayı korur.
+Damga `.gitignore`'dadır (oturum-durumu).
 
-Komut araçlarına karışılmaz (Faz-1 dersi); TEK BELGELİ İSTİSNA: `.aktif-rol`a dokunan
-Bash komutu sahibe SORULUR — damganın git-izi olmadığından bekçi ona kördür, bu dikiş
-o deliği insan-sorusuna çevirir (metin-eşleşmeli olduğundan kusursuz değildir; bilinen
-sınırdır).
+Komut araçlarına karışılmaz (Faz-1 dersi); İKİ BELGELİ İSTİSNA (dikişler):
+(1) damga-dikişi — `.aktif-rol`a dokunan Bash komutu sahibe SORULUR (damganın git-izi
+yok, bekçi ona kör; bu dikiş o deliği insan-sorusuna çevirir); (2) işaret-dikişi —
+`.kurulum-tamam`a dokunan Bash komutu, işaret MEVCUTKEN sahibe SORULUR (işaret silinirse
+koruma kurulum-moduna düşer — soğuk-denetim E2 yaması 2026-07-16; işaret YOKKEN dikiş
+susar ki GENESIS'in işareti doğurması sürtünmesiz kalsın; işaret git-İZLİ olduğundan
+silinme ayrıca bekçinin porcelain hattında da görünür). İki dikiş de metin-eşleşmelidir,
+kusursuz değildir; bilinen sınırdır.
 
 Kapanış kancası (`kapanis.sh`, SessionEnd): oturum kapanırken bekçiyi koşar
 (`tools/bekci/bekci.sh` varsa — konvansiyon-yol) ve `00_pano/oturum-gunlugu.jsonl`e

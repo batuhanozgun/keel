@@ -21,10 +21,15 @@ EK="$KOK/02_kanon/EL_KITABI.md"
 if [ ! -f "$EK" ]; then
   kirmizi "02_kanon/EL_KITABI.md yok"
 else
+  #   Başlıklar SATIR BAŞINDA aranır (çapalı) — yorum/paragraf içinde geçen söz başlık sayılmaz
+  #   (soğuk-denetim bulgusu C4, 2026-07-16). "Değer aksiyomu" başlık değil ibare: gevşek aranır.
   for baslik in "## D-kuralları" "## F-kuralları" "## Üslup hükmü" "## Kutu döngüsü" \
                 "## Mühür ritüeli" "## Domain-rol disiplin iskeleti" "## Kanon-fakir dünya" \
                 "## Kişisel-veri süzgeci" "## Kadro + kapsam" "Değer aksiyomu"; do
-    if grep -qF "$baslik" "$EK"; then :; else kirmizi "EL_KITABI zorunlu başlık eksik: $baslik"; fi
+    case "$baslik" in
+      '## '*) if grep -q "^$baslik" "$EK"; then :; else kirmizi "EL_KITABI zorunlu başlık eksik: $baslik"; fi ;;
+      *)      if grep -qF "$baslik" "$EK"; then :; else kirmizi "EL_KITABI zorunlu başlık eksik: $baslik"; fi ;;
+    esac
   done
   for kural in "Mühür paketi" "İş-icat yasağı" "Kural-evrim kilidi" "SANA KALAN"; do
     if grep -qF "$kural" "$EK"; then :; else kirmizi "EL_KITABI zorunlu kural eksik: $kural"; fi
@@ -102,11 +107,14 @@ else
 fi
 
 # 6 · Rol becerileri: SKILL.md ilk satırı '---' (yaşanmış kırılma: frontmatter yenirse beceri sessiz ölür)
+#     + insan-tetikleme kilidi (disable-model-invocation) her beceride ZORUNLU — kilitsiz beceri
+#     "rolü yalnız insan açar" garantisini deler (soğuk-denetim bulgusu C3, 2026-07-16).
 for s in "$KOK"/.claude/skills/*/SKILL.md; do
   ILK=$(head -n1 "$s")
   if [ "$ILK" = "---" ]; then :; else kirmizi "SKILL ilk satırı '---' değil: $s"; fi
+  if grep -qF 'disable-model-invocation: true' "$s"; then :; else kirmizi "SKILL insan-tetikleme kilidi eksik (disable-model-invocation: true): $s"; fi
 done
-gecti "SKILL frontmatter taraması"
+gecti "SKILL frontmatter + kilit taraması"
 
 # 7 · Rol slug'ları tek-token ASCII + rol↔beceri eşliği (yokluk körlüğü yok: sıfır rol = KIRMIZI)
 ROL_SAYISI=0
@@ -118,6 +126,9 @@ for r in "$KOK"/03_roller/*/; do
       ROL_SAYISI=$((ROL_SAYISI + 1))
       if printf '%s' "$AD" | grep -Eq '^[a-z0-9]+$'; then :; else kirmizi "rol slug'ı tek-token ASCII değil: $AD"; fi
       if [ -f "$KOK/.claude/skills/rol-$AD/SKILL.md" ]; then :; else kirmizi "rol becerisi eksik: .claude/skills/rol-$AD/SKILL.md (tören kurulmamış)"; fi
+      # Rol evinin iki zorunlu dosyası (soğuk-denetim bulgusu C1; tatbikat-v2'de DURUM'suz roller sahada görüldü):
+      if [ -f "$r/ROL.md" ]; then :; else kirmizi "rol sözleşmesi eksik: 03_roller/$AD/ROL.md (G2 sözleşme doldurma)"; fi
+      if [ -f "$r/DURUM.md" ]; then :; else kirmizi "rol durum dosyası eksik: 03_roller/$AD/DURUM.md (G3.4 başlangıç DURUM'u — kokpit rol kartı ve devir buna bakar)"; fi
       ;;
   esac
 done
@@ -125,6 +136,22 @@ if [ "$ROL_SAYISI" -eq 0 ]; then
   kirmizi "hiç rol yok (03_roller boş ya da eksik) — G4.5 rollerden SONRA koşar, sıfır rol aktarım eksiğidir"
 else
   gecti "slug + rol↔beceri taraması ($ROL_SAYISI rol)"
+fi
+
+# 8 · İşletim yüzeyi: pano bağlanmış + ilk kutu kurulmuş (G4.5, G3.4 ve G4'ten SONRA koşar —
+#     soğuk-denetim bulgusu C1: bu yüzeyler yokken "çekilme serbest" denemez. SAGLIK.md bilerek
+#     ARANMAZ: onu bekçi yazar ve G5.3d son koşusundan önce meşru olarak olmayabilir.)
+if [ -f "$KOK/00_pano/PANO.md" ]; then
+  gecti "00_pano/PANO.md yerinde"
+else
+  kirmizi "00_pano/PANO.md yok (pano bağlanmamış — G3.4)"
+fi
+KUTU_SAYISI=0
+for k in "$KOK"/01_kutular/KT-*/KUTU.md; do KUTU_SAYISI=$((KUTU_SAYISI + 1)); done
+if [ "$KUTU_SAYISI" -eq 0 ]; then
+  kirmizi "hiç kutu yok (01_kutular/KT-*/KUTU.md) — ilk kutu G4'te kurulmuş olmalı"
+else
+  gecti "kutu taraması ($KUTU_SAYISI kutu)"
 fi
 
 if [ "$SORUN" -eq 0 ]; then
