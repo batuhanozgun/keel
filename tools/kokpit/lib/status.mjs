@@ -207,7 +207,10 @@ async function computeFreshness(root, saglik, warnings) {
   }
   // Gelecekteki damga tazelik VE drift radarını birden maskeler (soğuk-denetim B2):
   // saat/dilim hatası ya da bozuk bekçi çıktısı — güvenilmez say, bayat işaretle.
-  if (ageMs < -60 * 1000) {
+  // Tolerans 5 dk: damga dakikaya yuvarlı + yerel-saat ayrıştırmalı olduğundan küçük saat
+  // kayması/DST kenarı yanlış-KIRMIZI üretmesin (hasım turu bulgusu 2026-07-16); gerçek
+  // gelecek-damgalar saatler/günler ötede olur, bu eşik onları yine yakalar. Yön fail-safe.
+  if (ageMs < -300 * 1000) {
     out.stale = true;
     out.staleReason = 'sağlık damgası GELECEKTE görünüyor (saat/dilim hatası?) — tazelik güvenilmez';
     return out;
@@ -297,6 +300,12 @@ export async function buildState(root, config = {}) {
 
   // Işıklar: PANO + SAGLIK birleşimi; çelişki varsa kötümser (fail-safe)
   const lights = mergeLights(mek.lights, sag.lights, warnings);
+  // İzleme aracında BİLİNMEYEN ≠ VERİSİZ: sözlük-dışı bir ışık değeri (bekçi tipo/kodlama
+  // hatası ya da ASCII YESIL) sessizce "ölçülmemiş" sayılıp gri görünür — hasım turu bulgusu
+  // (2026-07-16). En azından uyarı yüzeyine çıkar ki fark edilsin.
+  if (lights) for (const l of lights) {
+    if (l.deger !== 'VERİ-YOK' && !(l.deger in WORST)) warnings.push('tanınmayan ışık seviyesi: ' + l.ad + '=' + l.deger + ' (ölçülmemiş sayıldı — YEŞİL/SARI/KIRMIZI/VERİ-YOK bekleniyor)');
+  }
 
   // Görev kapıları: KUTU'dan iş+sahip, PANO mekanikten kanonik durum
   const gates = kutuInfo ? parseGates(kutuInfo.text, warnings) : [];
@@ -360,7 +369,10 @@ export async function buildState(root, config = {}) {
       altBaslik: config.altBaslik || null,
       sahip: config.sahip || null,
       koordinatorRol,
-      rolToreni: config.rolToreni === true, // true = /rol-<slug> töreni metni (KEEL); yok/false = klasörde-aç metni (eski kurgular — geri-uyum)
+      // true = /rol-<slug> töreni metni (KEEL); yok/false = klasörde-aç metni (eski kurgular — geri-uyum).
+      // Boolean true VE string "true" kabul: elle düzenlenen config'te tırnaklı yazım sessizce
+      // töreni kapatmasın (hasım turu bulgusu 2026-07-16); "false"/0/boş yine kapalı.
+      rolToreni: config.rolToreni === true || config.rolToreni === 'true',
       isikIpuclari: config.isikIpuclari || null,
       renkler: config.renkler || null,
     },
@@ -370,8 +382,10 @@ export async function buildState(root, config = {}) {
 
 function siradakiRol(s) {
   if (!s) return null;
-  // Rakam da slug'ın parçasıdır (GENESIS slug kuralı ^[a-z0-9]+$; ör. "po2" — soğuk-denetim A3).
-  const m = s.match(/^([A-Za-z0-9ÇĞİÖŞÜçğıöşü]+)/);
+  // Slug HARFLE başlar, içinde rakam olabilir (ör. "po2" okunur — soğuk-denetim A3).
+  // İlk-karakter-harf şartı, "SIRADAKİ OTURUM: 3 gün sonra…" gibi bozuk satırın "3"ü rol
+  // sanmasını önler (hasım turu bulgusu 2026-07-16); rakamla başlayan slug konvansiyonu yok.
+  const m = s.match(/^([A-Za-zÇĞİÖŞÜçğıöşü][A-Za-z0-9ÇĞİÖŞÜçğıöşü]*)/);
   return m ? m[1] : null;
 }
 
@@ -399,7 +413,7 @@ async function findActiveBox(root, warnings) {
   // İLKİNİ gösterir ve uyarı basarız — sessiz dosya-sistemi-sırası seçimi yok (soğuk-denetim B5).
   const adaylar = entries
     .filter((e) => e.isDirectory() && /^KT-\d+/.test(e.name))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })); // KT-2 < KT-10 (sayısal — hasım turu 2026-07-16)
   if (adaylar.length > 1) {
     warnings.push(
       'birden fazla açık kutu var (' + adaylar.map((e) => e.name.match(/^(KT-\d+)/)[1]).join(', ') +
@@ -443,7 +457,7 @@ async function listBoxes(root) {
       }
     }
   } catch {}
-  boxes.sort((a, b) => a.id.localeCompare(b.id));
+  boxes.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })); // KT-2 < KT-10
   return boxes;
 }
 

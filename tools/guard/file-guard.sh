@@ -21,8 +21,8 @@ INPUT="$(cat)"
 # (Kesin araç-adı kontrolü aşağıda node içinde yapılır; burası yalnız gereksiz node koşusunu keser.)
 case "$INPUT" in
   *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*) : ;;
-  *'.aktif-rol'*) : ;;     # rol damgasına dokunan çağrı — kesin karar aşağıda node'da
-  *'.kurulum-tamam'*) : ;; # kurulum işaretine dokunan çağrı — kesin karar aşağıda node'da
+  *'.aktif-rol'*) : ;;  # rol damgasına dokunan çağrı — kesin karar aşağıda node'da
+  *'.kurulum'*) : ;;    # kurulum işaretine dokunan çağrı (.kurulum-tamam + .kurulum-* glob) — karar node'da
   *) exit 0 ;;
 esac
 
@@ -73,9 +73,14 @@ const ti = j.tool_input || {};
 if ((j.tool_name || "") === "Bash") {
   const komut = String(ti.command || "");
   if (komut.includes(".aktif-rol")) { console.log("SOR-DAMGA\ttools/guard/.aktif-rol"); process.exit(0); }
-  // Isaret-dikisi (soguk-denetim E2): kurulum isareti MEVCUTKEN ona dokunan Bash sahibe
-  // SORULUR (silinirse koruma kurulum-moduna duser). Isaret yokken serbest — GENESIS dogumu.
-  if (komut.includes(".kurulum-tamam") && existsSync(resolve(ROOT, ".kurulum-tamam"))) { console.log("SOR-ISARET\t.kurulum-tamam"); process.exit(0); }
+  // Isaret-dikisi (soguk-denetim E2 + hasim turu 2026-07-16): kurulum isareti MEVCUTKEN ona
+  // ".kurulum" iceren bir Bash komutu dokunuyorsa sahibe SORULUR (silinirse koruma kurulum-
+  // moduna duser). ".kurulum" alt-dizesi hem ".kurulum-tamam" hem ".kurulum-*" glob desenini
+  // yakalar; degisken/yeniden-adlandirma/suffix-glob (find -name yildiz-tamam) metin-esiyle
+  // yakalanamaz (damga-dikisiyle ayni bilinen sinir) — asil yedek: isaret git-IZLI ve
+  // korunan-yollar [SERT] oldugundan silinme bekcinin porcelain hattinda KIRMIZI basar.
+  // Isaret yokken serbest (GENESIS dogumu sürtünmesiz).
+  if (komut.includes(".kurulum") && existsSync(resolve(ROOT, ".kurulum-tamam"))) { console.log("SOR-ISARET\t.kurulum-tamam"); process.exit(0); }
   console.log("GEC"); process.exit(0);
 }
 

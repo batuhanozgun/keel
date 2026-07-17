@@ -99,6 +99,44 @@ test('A2: rolToreni + koordinatorRol config\'ten geçer; alan yoksa rolToreni=fa
   assert.equal(eski.config.koordinatorRol, 'koordinator');
 });
 
+// --- Hasım turu yamaları (2026-07-16): rakam-başı slug · saat toleransı · string config ·
+// --- sayısal kutu sırası · tanınmayan ışık uyarısı ---
+
+test('hasım: SIRADAKİ rakamla başlıyorsa slug sayılmaz (null — "3" değil)', async () => {
+  const kok = await tempVault({ siradaki: '3 gün sonra po devri' });
+  const s = await buildState(kok);
+  assert.equal(s.yargi.siradakiRol, null);
+});
+
+test('hasım: küçük saat kayması (2 dk gelecek damga) bayat DEĞİL (5 dk tolerans, yanlış-KIRMIZI yok)', async () => {
+  const yakin = new Date(Date.now() + 2 * 60 * 1000);
+  const kok = await tempVault({ damga: stamp(yakin) });
+  const s = await buildState(kok);
+  assert.equal(s.saglik.stale, false);
+});
+
+test('hasım: rolToreni string "true" de töreni açar (config ayak-kapanı kapandı)', async () => {
+  const s = await buildState(TEKFAZ, { rolToreni: 'true' });
+  assert.equal(s.config.rolToreni, true);
+});
+
+test('hasım: çoklu kutu SAYISAL sıralı — KT-2 < KT-10 (ayrıntı KT-2\'yi gösterir)', async () => {
+  const kok = await tempVault({});
+  for (const ad of ['KT-10-on', 'KT-2-iki']) {
+    await fs.mkdir(path.join(kok, '01_kutular', ad), { recursive: true });
+    await fs.writeFile(path.join(kok, '01_kutular', ad, 'KUTU.md'), '# ' + ad + '\n## Kapılar\n');
+  }
+  const s = await buildState(kok);
+  assert.equal(s.kutu.id, 'KT-2');
+});
+
+test('hasım: tanınmayan ışık seviyesi UYARI basar + genel VERI-YOK (bilinmeyen ≠ verisiz)', async () => {
+  const kok = await tempVault({ saglikIsiklar: 'AKIŞ=BOZUK' });
+  const s = await buildState(kok);
+  assert.ok(s.warnings.some((w) => w.includes('tanınmayan ışık seviyesi')), JSON.stringify(s.warnings));
+  assert.equal(s.saglik.sistemGenel, 'VERI-YOK');
+});
+
 test('gerçek vault regresyonu: 0 uyarı + şekil (KOKPIT_VAULT verilirse)', async (t) => {
   if (!(await exists(REAL))) { t.skip('gerçek vault yok'); return; }
   const s = await buildState(REAL, { koordinatorRol: 'koordinator' });

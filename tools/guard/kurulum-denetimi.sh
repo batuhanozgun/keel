@@ -23,6 +23,8 @@ if [ ! -f "$EK" ]; then
 else
   #   Başlıklar SATIR BAŞINDA aranır (çapalı) — yorum/paragraf içinde geçen söz başlık sayılmaz
   #   (soğuk-denetim bulgusu C4, 2026-07-16). "Değer aksiyomu" başlık değil ibare: gevşek aranır.
+  #   NOT (hasım turu): desen BRE'dir; buradaki başlıklar h2 + girintisiz + metakaraktersiz
+  #   ('+' BRE'de literal). Yeni başlık eklerken .*[ gibi metakarakter KOYMA (yanlış-eşleşme).
   for baslik in "## D-kuralları" "## F-kuralları" "## Üslup hükmü" "## Kutu döngüsü" \
                 "## Mühür ritüeli" "## Domain-rol disiplin iskeleti" "## Kanon-fakir dünya" \
                 "## Kişisel-veri süzgeci" "## Kadro + kapsam" "Değer aksiyomu"; do
@@ -112,7 +114,9 @@ fi
 for s in "$KOK"/.claude/skills/*/SKILL.md; do
   ILK=$(head -n1 "$s")
   if [ "$ILK" = "---" ]; then :; else kirmizi "SKILL ilk satırı '---' değil: $s"; fi
-  if grep -qF 'disable-model-invocation: true' "$s"; then :; else kirmizi "SKILL insan-tetikleme kilidi eksik (disable-model-invocation: true): $s"; fi
+  # Kilit SATIR BAŞINDA aranır (çapalı): gövde metninde ya da yorumda geçen aynı dize
+  # kilidi karşılamaz — kilitsiz beceri "rolü yalnız insan açar"ı deler (hasım turu 2026-07-16).
+  if grep -q '^disable-model-invocation:[[:space:]]*true[[:space:]]*$' "$s"; then :; else kirmizi "SKILL insan-tetikleme kilidi eksik/yanlış yerde (satır başında 'disable-model-invocation: true' yok): $s"; fi
 done
 gecti "SKILL frontmatter + kilit taraması"
 
@@ -128,7 +132,14 @@ for r in "$KOK"/03_roller/*/; do
       if [ -f "$KOK/.claude/skills/rol-$AD/SKILL.md" ]; then :; else kirmizi "rol becerisi eksik: .claude/skills/rol-$AD/SKILL.md (tören kurulmamış)"; fi
       # Rol evinin iki zorunlu dosyası (soğuk-denetim bulgusu C1; tatbikat-v2'de DURUM'suz roller sahada görüldü):
       if [ -f "$r/ROL.md" ]; then :; else kirmizi "rol sözleşmesi eksik: 03_roller/$AD/ROL.md (G2 sözleşme doldurma)"; fi
-      if [ -f "$r/DURUM.md" ]; then :; else kirmizi "rol durum dosyası eksik: 03_roller/$AD/DURUM.md (G3.4 başlangıç DURUM'u — kokpit rol kartı ve devir buna bakar)"; fi
+      # DURUM.md: yalnız VARLIK değil, BİÇİM de — boş/bozuk DURUM sessiz tarif-buharlaşmasıdır
+      # (hasım turu 2026-07-16: G4.5 varlığı görüp biçim driftini kaçırıyordu). İlk başlık
+      # '# DURUM — <Ad>' olmalı (kokpit parseDurum + fixture biçimi bunu ister).
+      if [ -f "$r/DURUM.md" ]; then
+        if grep -q '^# DURUM' "$r/DURUM.md"; then :; else kirmizi "rol durum dosyası biçimsiz: 03_roller/$AD/DURUM.md (ilk başlık '# DURUM — <Ad>' değil — kokpit parser'ı okuyamaz)"; fi
+      else
+        kirmizi "rol durum dosyası eksik: 03_roller/$AD/DURUM.md (G3.4 başlangıç DURUM'u — kokpit rol kartı ve devir buna bakar)"
+      fi
       ;;
   esac
 done
@@ -147,6 +158,9 @@ else
   kirmizi "00_pano/PANO.md yok (pano bağlanmamış — G3.4)"
 fi
 KUTU_SAYISI=0
+# CANLI kutu sayılır (arşiv değil): G4.5 tek-seferlik çekilme kapısıdır, G4 hemen öncesinde
+# KT-001'i taze kurar — bu noktada daima ≥1 canlı kutu olur. (Olgun projede yalnız _arsiv
+# kalmışsa bu denetim tekrar koşulmaz; hasım turu 2026-07-16 notu.)
 for k in "$KOK"/01_kutular/KT-*/KUTU.md; do KUTU_SAYISI=$((KUTU_SAYISI + 1)); done
 if [ "$KUTU_SAYISI" -eq 0 ]; then
   kirmizi "hiç kutu yok (01_kutular/KT-*/KUTU.md) — ilk kutu G4'te kurulmuş olmalı"

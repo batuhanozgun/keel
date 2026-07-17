@@ -219,6 +219,25 @@ test('C3: beceri insan-tetikleme kilidi (disable-model-invocation) yoksa → KIR
   assert.match(r.stdout, /insan-tetikleme kilidi eksik/);
 });
 
+test('C3 hasım: kilit yalnız GÖVDEDE geçiyorsa (frontmatter\'da yok) kilit sayılmaz → KIRMIZI (çapalı arama)', () => {
+  const kok = kurulum({ skillKilit: false });
+  writeFileSync(
+    join(kok, '.claude', 'skills', 'rol-denetci', 'SKILL.md'),
+    '---\ndescription: t\n---\nNot: disable-model-invocation: true olarak ayarlanmalı (ama değil).\n'
+  );
+  const r = kos(kok);
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /insan-tetikleme kilidi/);
+});
+
+test('C1 hasım: DURUM.md var ama biçimsiz (# DURUM başlığı yok) → KIRMIZI (yalnız varlık yetmez)', () => {
+  const kok = kurulum();
+  writeFileSync(join(kok, '03_roller', 'denetci', 'DURUM.md'), 'başlıksız içerik\n');
+  const r = kos(kok);
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /durum dosyası biçimsiz/);
+});
+
 test('C4: zorunlu başlık yalnız paragraf İÇİNDE geçiyorsa başlık sayılmaz → KIRMIZI (çapalı arama)', () => {
   const ek = EK_TAM.replace('## Üslup hükmü\n', 'metinde ## Üslup hükmü sözü geçiyor ama başlık değil\n');
   const r = kos(kurulum({ ek }));

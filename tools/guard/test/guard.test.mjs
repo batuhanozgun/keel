@@ -345,6 +345,15 @@ test('işaret araç hattında [SERT]: kurulumdan sonra .kurulum-tamam\'a Write �
   assert.equal(kos(kok, write(kok, '.kurulum-tamam')).status, 2);
 });
 
+test('işaret-dikişi GLOB (hasım turu): işaret varken "rm -f .kurulum-*" → sahibe sor (literal olmayan da yakalanır)', () => {
+  const kok = kurulum();
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'rm -f .kurulum-*' } });
+  assert.equal(r.status, 0);
+  const j = JSON.parse(r.stdout);
+  assert.equal(j.hookSpecificOutput.permissionDecision, 'ask');
+  assert.match(j.hookSpecificOutput.permissionDecisionReason, /kurulum işareti/);
+});
+
 test('kurulum istisnası (faz-2): .kurulum-tamam YOKKEN .claude/skills/ yazılabilir (GENESIS beceri kurar)', () => {
   const kok = kurulum({ kurulumTamam: false });
   const r = kos(kok, write(kok, '.claude/skills/rol-denetci/SKILL.md'));
