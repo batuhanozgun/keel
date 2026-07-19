@@ -25,4 +25,5 @@ Açılış protokolü (sırayla):
    araçların kancayla mekanik kilitli; kendi `03_roller/«SLUG»/` klasörün hariç, ROL.md
    sözleşmen istisnanın DIŞINDA — engel görürsen bu ARIZA DEĞİL tasarımdır: bulguyu
    raporla, dosyayı değiştirme).
-5. Kapanışta ROL.md'deki kapanış maddesini uygula (DURUM yaz · devir · F5 hijyen).
+5. Kapanışta ROL.md'deki kapanış maddesini uygula (DURUM yaz · devir · F5 hijyen); mühür
+   bekliyorsan muğlak sahip mesajı onay DEĞİLDİR (EL_KITABI "Mühür ritüeli").

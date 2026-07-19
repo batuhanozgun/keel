@@ -20,6 +20,7 @@ Bu belge ekibin çalışma anayasasıdır. Ağırlık kadranı: **TAM RİTÜEL**
 ## Üslup hükmü
 ## Kutu döngüsü
 ## Mühür ritüeli
+Muğlak mesaj onay sayılmaz; yorumla onay üretme yasak.
 ## Domain-rol disiplin iskeleti
 ## Kanon-fakir dünya
 ## Kişisel-veri süzgeci
@@ -77,6 +78,12 @@ test('zorunlu kural eksik (Mühür paketi yok) → KIRMIZI', () => {
   const r = kos(kurulum({ ek: EK_TAM.replace('Mühür paketi. SANA KALAN satırı zorunlu.', 'SANA KALAN satırı zorunlu.') }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /zorunlu kural eksik: Mühür paketi/);
+});
+
+test('zorunlu kural eksik (yorumla onay üretme yok — MA-01) → KIRMIZI', () => {
+  const r = kos(kurulum({ ek: EK_TAM.replace('Muğlak mesaj onay sayılmaz; yorumla onay üretme yasak.\n', '') }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /zorunlu kural eksik: yorumla onay üretme/);
 });
 
 test('doldurulmamış «alan» → KIRMIZI', () => {

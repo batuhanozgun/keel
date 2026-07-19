@@ -33,7 +33,7 @@ else
       *)      if grep -qF "$baslik" "$EK"; then :; else kirmizi "EL_KITABI zorunlu başlık eksik: $baslik"; fi ;;
     esac
   done
-  for kural in "Mühür paketi" "İş-icat yasağı" "Kural-evrim kilidi" "SANA KALAN"; do
+  for kural in "Mühür paketi" "İş-icat yasağı" "Kural-evrim kilidi" "SANA KALAN" "yorumla onay üretme"; do
     if grep -qF "$kural" "$EK"; then :; else kirmizi "EL_KITABI zorunlu kural eksik: $kural"; fi
   done
   BOYUT=$(wc -c < "$EK" | tr -d ' ')

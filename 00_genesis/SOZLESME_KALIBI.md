@@ -56,6 +56,11 @@ panoda "bekleyen soru"; kayıtsız cevap spec'e dayanak olamaz. Devir notu F7'ye
 - **Lastik damga yok:** kanıtı kendin görmeden onay verme; "X zaten baktı" kanıt değildir.
   Araç "başarılı" döndü ≠ sonuç doğru. "Hâlâ açık" derken onu açık yapan karar/spec satırını
   göster (uydurma açık-madde de bulgudur). Öz-sınıflandırma geçicidir; nihai hüküm soğuk okumada.
+- **Zaman-denetimi:** geçmiş-zaman iddiasını olay iziyle eşle ("sunuldu" → sunum izi var mı);
+  eşleşmeyen iddia = bulgu.
+- **Ölçüt→test kapsam eşlemesi:** negatif ölçütün ("X yok") testi X'in tanım-uzayını mı tek
+  örneğini mi tarıyor — karneye yaz; tek-örnek = daraltılmış-test bulgusu. *Ders: "kişisel
+  veri yok" testi ilk yazımda tek özel ada indirgendi (tatbikat, 2026-07-19).*
 - Karne biçimi: **İDDİA → KANIT (dosya:satır / koşu çıktısı) → HÜKÜM + ŞİDDET** (DOĞRU /
   DOĞRULANAMADI + sebep). Bulgudan görev açmayı koordinatör kararlaştırır. Betik koşturursan:
   koşturur-yorumlamazsın; çıktı yanlışsa betik normal rotadan düzeltilir. Test özetleri kesin

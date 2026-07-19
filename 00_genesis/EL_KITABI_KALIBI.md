@@ -43,8 +43,11 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
     Çalıştırma isteyen doğrulama (test/uygulama koşmak) denetçi ROL-oturumunun işidir.
   - **D4b · Kanıt-yeterlilik ölçüsü.** TEK işaretçi yeterdir; işaretçi "ne koşuldu, ne
     görüldü"yü kendisi taşır. Fazlası denetimde artı puan DEĞİLDİR. Kanıt-anlatısı ve
-    süreç-nesri commit gövdesine yazılır, görev dosyasına değil. *Ders: ölçüsüz kanıt
-    zorunluluğu atıf-zırhı üretti; dosyalar tavana yapıştı.*
+    süreç-nesri commit gövdesine yazılır, görev dosyasına değil. Borulu komutta exit-kodu son
+    halkanındır — kanıt-komutu borusuz koşulur ya da kesin özet-satırla okunur. *Ders: ölçüsüz
+    kanıt zorunluluğu atıf-zırhı üretti; dosyalar tavana yapıştı.*
+  - **D4c · Zaman kuralı.** "Sunuldu/geçti/koştu" ancak olay olduktan SONRA yazılır; plan
+    gelecek kipinde kalır. *Ders: tatbikatta 2 kayıt olmamış sunumu olmuş yazdı (2026-07-19).*
 - **D5 · Veto-daveti.** Veto-pencereli karar üreten rol, sahip-özetine açık DAVET yazar:
   *"Bu senin kararın. Şu an X; istersen Y yapabilirsin. İtiraz etmezsen böyle akar."*
   Davet cümlesi sahip-yüzeyine çıkmazsa karar geçersizdir (lastik-damga önlenir).
@@ -65,7 +68,9 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
 - **D9 · İş-icat yasağı.** İş yalnız iki kaynaktan doğar: aktif kutunun kapıları ya da sahibin
   koyduğu amaç. Kutu bitince sistem DURUR: pano BEKLEME gösterir, sahibe "sıradaki dilim?"
   sorulur. Boşta kalan rol iş icat etmez; sözleşmesindeki standby modülüyle TEK satır bekleme
-  raporu verir (DEFO_MODELI #5, #10).
+  raporu verir (DEFO_MODELI #5, #10). Kendi yazılı ertelemen ("sonraki oturumun işi") sessizce
+  çiğnenmez: öne çekiş beyanlı gerekçe + risk işareti ister. *Ders: tatbikatta 3 koşu beyansız
+  öne çekti; beyanla çeken tek koşunun davranışı kural oldu (2026-07-19).*
 
 ## F-kuralları (dosya)
 
@@ -84,7 +89,9 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   bağımsız). **Tanecik:** 3+ sorulu görüş işi soru-başına bölünür. **İş-boyutu:** bir kapı =
   tek oturuş + tek cümlelik kabul testi + tek çıktı + net devir (hata adım sayısıyla katlanır
   — kendi ölçümümüz). *Ders: tavansız dosya bir
-  günde 5,6× büyüdü; tavanlılar sınırın 10 baytına yaslandı — tavan içerik-sınıfsız yetmez.*
+  günde 5,6× büyüdü; tavanlılar sınırın 10 baytına yaslandı — tavan içerik-sınıfsız yetmez.
+  Tatbikat: frenli kol 3/3 ≥%80 doluluk + tavana uzaklık aktif ölçüldü — tavan hedefe
+  dönüşüyor (2026-07-19).*
 - **F4 · Spec/golden tazeliği.** Golden'ı aşan davranış değişikliği golden güncellemesi ister
   ([SORULUR]). Açık soru donmuş belgeye yazılırken "TARİHÎ — canlısı ERTELENENLER'de" damgası +
   işaretçi konur; donmuş kopya tek-doğru sayılmaz.
@@ -146,7 +153,11 @@ yoksa silme-testi koşulmamış sayılır). (Neden: DEFO_MODELI #3 + iz ilkesi.)
 
 ## Mühür ritüeli
 
-Mühür = sahibin («SAHİP») açık onayı; sohbette verilir, dosyaya tarihle damgalanır. Mühür
+Mühür = sahibin («SAHİP») açık onayı; sohbette verilir, dosyaya tarihle damgalanır.
+**Muğlak-mesaj kuralı:** geri-alması-zor adımda (kutu kapanışı · kilitli karar · ölçüt
+istisnası · golden) "devam/tamam" gibi kısa-genel mesaj onay SAYILMAZ; mühür açık anahtar
+kelime ister, **yorumla onay üretme** yasaktır — tek soruyla netleştir. *Ders: tatbikatta
+"devam" 3/6 mühür sayıldı, 3/6 durdu — yazı-tura (2026-07-19).* Mühür
 isteyen anlar: kutu açılış/kapanışı (kapanış = D7 paketiyle) · kilitli karar + L3 aşması ·
 veto-pencereli kararlar (D5) · rol/kadro/araç-profili değişikliği · korunan-yollar değişikliği ·
 golden güncellemesi · EL_KITABI değişikliği (F6). Mühürsüz eşik = süreç ihlali → KIRMIZI rapor.
