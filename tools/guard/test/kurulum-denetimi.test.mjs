@@ -130,7 +130,7 @@ test('tireli rol slug → KIRMIZI; _arsiv muaf', () => {
 });
 
 test('EL_KITABI kendi tavanını aşarsa → KIRMIZI', () => {
-  const r = kos(kurulum({ ek: EK_TAM + 'x'.repeat(15000) }));
+  const r = kos(kurulum({ ek: EK_TAM + 'x'.repeat(17000) }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /kendi tavanını aşıyor/);
 });

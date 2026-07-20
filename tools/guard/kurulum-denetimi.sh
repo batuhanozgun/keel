@@ -37,8 +37,8 @@ else
     if grep -qF "$kural" "$EK"; then :; else kirmizi "EL_KITABI zorunlu kural eksik: $kural"; fi
   done
   BOYUT=$(wc -c < "$EK" | tr -d ' ')
-  if [ "$BOYUT" -gt 14336 ]; then
-    kirmizi "EL_KITABI kendi tavanını aşıyor: ${BOYUT}B > 14336B (F3)"
+  if [ "$BOYUT" -gt 16384 ]; then
+    kirmizi "EL_KITABI kendi tavanını aşıyor: ${BOYUT}B > 16384B (F3)"
   else
     gecti "EL_KITABI başlıklar + kurallar + tavan (${BOYUT}B)"
   fi

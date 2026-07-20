@@ -10,6 +10,8 @@
      Başlıklar HİÇBİR kadranda silinmez (kurulum-denetimi başlıkları mekanik arar).
      Kritik kuralların yanındaki "Ders:" satırları kuralın doğuş hikâyesidir — SİLİNMEZ:
      çıplak kural sonraki oturumda "bürokratik artık" sanılıp aşındırılır (ölçülmüş gerçek).
+     Şablon-eki freni: kurulu-sim testi (tools/guard/test/kurulu-sim.test.mjs) marj ≥500B
+     ister; altına inecek ek, tavan sorusu sahibe gitmeden GİREMEZ (2026-07-21).
      Kuralların "neden"i: 00_genesis/DEFO_MODELI.md (bu belge ona ID ile atıf yapar). -->
 # EL KİTABI — işletim disiplini
 
@@ -43,8 +45,9 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
     Çalıştırma isteyen doğrulama (test/uygulama koşmak) denetçi ROL-oturumunun işidir.
   - **D4b · Kanıt-yeterlilik ölçüsü.** TEK işaretçi yeterdir; işaretçi "ne koşuldu, ne
     görüldü"yü kendisi taşır. Fazlası denetimde artı puan DEĞİLDİR. Kanıt-anlatısı ve
-    süreç-nesri commit gövdesine yazılır, görev dosyasına değil. Borulu komutta exit-kodu son
-    halkanındır — kanıt-komutu borusuz koşulur ya da kesin özet-satırla okunur. *Ders: ölçüsüz
+    süreç-nesri commit gövdesine yazılır, görev dosyasına değil. Borulu komutta exit-kodu
+    (pipefail'siz kabukta) son halkanındır — kanıt-komutu borusuz koşulur ya da kesin
+    özet-satırla okunur. *Ders: ölçüsüz
     kanıt zorunluluğu atıf-zırhı üretti; dosyalar tavana yapıştı.*
   - **D4c · Zaman kuralı.** "Sunuldu/geçti/koştu" ancak olay olduktan SONRA yazılır; plan
     gelecek kipinde kalır. *Ders: tatbikatta 2 kayıt olmamış sunumu olmuş yazdı (2026-07-19).*
@@ -69,7 +72,8 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   koyduğu amaç. Kutu bitince sistem DURUR: pano BEKLEME gösterir, sahibe "sıradaki dilim?"
   sorulur. Boşta kalan rol iş icat etmez; sözleşmesindeki standby modülüyle TEK satır bekleme
   raporu verir (DEFO_MODELI #5, #10). Kendi yazılı ertelemen ("sonraki oturumun işi") sessizce
-  çiğnenmez: öne çekiş beyanlı gerekçe + risk işareti ister. *Ders: tatbikatta 3 koşu beyansız
+  çiğnenmez: öne çekiş beyanlı gerekçe + risk işareti ister. ERTELENENLER bu ekin dışındadır:
+  dönüşü yalnız sahip+uyanma koşuluyla (Kutu döngüsü 8). *Ders: tatbikatta 3 koşu beyansız
   öne çekti; beyanla çeken tek koşunun davranışı kural oldu (2026-07-19).*
 
 ## F-kuralları (dosya)
@@ -82,7 +86,8 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
 - **F3 · Şema + tavanlar.** Dosyalar bilinen yerlerde: `00_pano/` · `01_kutular/` (+`_arsiv/`) ·
   `02_kanon/` · `03_roller/<slug>/` · ürün kodu «ÜRÜN-YOLU» · `tools/`. Şema-dışı = SARI.
   **Tavanlar (sarı eşik):** PANO 2KB · DURUM 2KB · görev/kapı dosyası 6KB · KUTU 10KB ·
-  ERTELENENLER 4KB · EL_KITABI 14KB (doğum ölçümüyle kalibre, 2026-07-15). Sarı = uyarı (iş
+  ERTELENENLER 4KB · EL_KITABI 16KB (kurulu-sim'le yeniden kalibre 2026-07-21; doğum
+  kapısında KIRMIZI — bilinçli fail-closed). Sarı = uyarı (iş
   durmaz); kırmızı (1,5×) = yalnız kutu KAPANIŞINI kilitler. Sayılar İLK RETRODA ölçümle
   yeniden kalibre edilir (retro zorunlu maddesi). **İçerik-sınıfı:** süreç-günlüğü · 1 satırı
   aşan açık-kalem anlatısı · kural-atıf açılımı/kopyası (sözleşme dosyaları dahil) → SARI (tavandan
@@ -154,8 +159,8 @@ yoksa silme-testi koşulmamış sayılır). (Neden: DEFO_MODELI #3 + iz ilkesi.)
 ## Mühür ritüeli
 
 Mühür = sahibin («SAHİP») açık onayı; sohbette verilir, dosyaya tarihle damgalanır.
-**Muğlak-mesaj kuralı:** geri-alması-zor adımda (kutu kapanışı · kilitli karar · ölçüt
-istisnası · golden) "devam/tamam" gibi kısa-genel mesaj onay SAYILMAZ; mühür açık anahtar
+**Muğlak-mesaj kuralı:** mühür beklenen her anda (aşağıdaki anların tümü dahil)
+"devam/tamam" gibi kısa-genel mesaj onay SAYILMAZ; mühür açık anahtar
 kelime ister, **yorumla onay üretme** yasaktır — tek soruyla netleştir. *Ders: tatbikatta
 "devam" 3/6 mühür sayıldı, 3/6 durdu — yazı-tura (2026-07-19).* Mühür
 isteyen anlar: kutu açılış/kapanışı (kapanış = D7 paketiyle) · kilitli karar + L3 aşması ·
