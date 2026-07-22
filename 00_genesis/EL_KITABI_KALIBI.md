@@ -51,6 +51,12 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
     kanıt zorunluluğu atıf-zırhı üretti; dosyalar tavana yapıştı.*
   - **D4c · Zaman kuralı.** "Sunuldu/geçti/koştu" ancak olay olduktan SONRA yazılır; plan
     gelecek kipinde kalır. *Ders: tatbikatta 2 kayıt olmamış sunumu olmuş yazdı (2026-07-19).*
+  - **D4d · Kanıt-komutu zarfı.** Kanıt üreten komut, K-01'in ilan ettiği ÇIPLAK test/derleme
+    komutlarından biridir; çıktıyı değiştiren ek taşıyamaz (bayrak oynama, boru-filtre,
+    `tail`/`grep` süzmesi, `|| true`). Kanıt kaydının yanına komut AYNEN yazılır; komutsuz
+    kanıt kanıt değildir — doğrulayıcı hükmü DOĞRULANAMADI olur. *Ders: doğrulama-komutu
+    hilesi boşluğunu dış inceleme işaret etti (CodexQB B1, 2026-07-21); MA-05 yalnız
+    boru-exit alt-vakasını kapatmıştı.*
 - **D5 · Veto-daveti.** Veto-pencereli karar üreten rol, sahip-özetine açık DAVET yazar:
   *"Bu senin kararın. Şu an X; istersen Y yapabilirsin. İtiraz etmezsen böyle akar."*
   Davet cümlesi sahip-yüzeyine çıkmazsa karar geçersizdir (lastik-damga önlenir).
