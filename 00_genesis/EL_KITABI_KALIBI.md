@@ -148,7 +148,8 @@ yoksa silme-testi koşulmamış sayılır). (Neden: DEFO_MODELI #3 + iz ilkesi.)
    değişiklik meşru istisna). *Ders: ajan kendi başarı kriterini değiştirebildiğinde oyunlama
    katlanarak artar — ölçülmüş.*
 5. **Bağımsız doğrulama** — denetçi kapıları fiilen kontrol eder (D4); dosya-gerçeği
-   `dogrulayici` alt-ajanıyla.
+   `dogrulayici` alt-ajanıyla. [KADRAN:TAM] Büyük yama paketinde kapanış mühründen önce
+   hasım turu önerilir: `/hasim-inceleme` (uzun, yakıt-yoğun koşu — küçük işte gerekmez).
 6. **Demo + kapanış mührü** — tüketilmemiş L2/L3 bayrağı varken kutu KAPANMAZ. Sahibe D7
    MÜHÜR PAKETİ sunulur (demo fiilen gösterilir +
    ~10 dakikalık numaralı spot-kontrol tarifi; kasıtlı koruma-probu varsa önceden anons:
