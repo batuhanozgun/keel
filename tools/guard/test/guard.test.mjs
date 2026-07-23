@@ -365,3 +365,21 @@ test('kurulum bitince .claude/skills/ SERT geri (beceri = kafes tanımı, ajan d
   const kok = kurulum();
   assert.equal(kos(kok, write(kok, '.claude/skills/rol-denetci/SKILL.md')).status, 2);
 });
+
+// --- Çapa-dikişi (V2 Öbek-1 düzeltmesi, 2026-07-23 — hasım bulgusu wf_e35b1e11) ---
+
+test('çapa-dikişi: .taban-ref içeren Bash komutu kurulum bitmişken → sahibe sor', () => {
+  const kok = kurulum();
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git rev-parse HEAD > 02_kanon/kilitli/.taban-ref' } });
+  assert.equal(r.status, 0);
+  const j = JSON.parse(r.stdout);
+  assert.equal(j.hookSpecificOutput.permissionDecision, 'ask');
+  assert.match(j.hookSpecificOutput.permissionDecisionReason, /taban-ref/);
+});
+
+test('çapa-dikişi: kurulum sürerken .taban-ref komutu sorulmaz (G4.3 doğumu sürtünmesiz)', () => {
+  const kok = kurulum({ kurulumTamam: false });
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git rev-parse HEAD > 02_kanon/kilitli/.taban-ref' } });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});

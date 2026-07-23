@@ -1,6 +1,6 @@
 #!/bin/bash
 # file-guard — araç-kancası (PreToolUse): korunan yollara + (rol kafesi) yazamaz-rol oturumlarında her yola YAZMA araçlarını (Edit/MultiEdit/Write/NotebookEdit) mekanik keser.
-# Koruma YAZMAYA karşıdır — okuma/komut araçlarına karışılmaz (Faz-1 demo dersi); İKİ BELGELİ İSTİSNA (dikişler): (1) rol damgasına (.aktif-rol) dokunan Bash komutu sahibe SORULUR (damganın git-izi yok, bekçi göremez — plan kararı 2); (2) kurulum işaretine (.kurulum-tamam) dokunan Bash komutu, işaret MEVCUTKEN sahibe SORULUR (işaret silinirse koruma kurulum-moduna düşer — soğuk-denetim bulgusu E2, 2026-07-16; işaret yokken sorulmaz ki GENESIS doğumu sürtünmesiz kalsın; ayrıca işaret git-İZLİdir, silinme/kirlilik bekçi porcelain hattında da yakalanır).
+# Koruma YAZMAYA karşıdır — okuma/komut araçlarına karışılmaz (Faz-1 demo dersi); ÜÇ BELGELİ İSTİSNA (dikişler): (1) rol damgasına (.aktif-rol) dokunan Bash komutu sahibe SORULUR (damganın git-izi yok, bekçi göremez — plan kararı 2); (2) kurulum işaretine (.kurulum-tamam) dokunan Bash komutu, işaret MEVCUTKEN sahibe SORULUR (işaret silinirse koruma kurulum-moduna düşer — soğuk-denetim bulgusu E2, 2026-07-16; işaret yokken sorulmaz ki GENESIS doğumu sürtünmesiz kalsın; ayrıca işaret git-İZLİdir, silinme/kirlilik bekçi porcelain hattında da yakalanır); (3) kilitli-tarih çapasına (.taban-ref) dokunan Bash komutu, kurulum BİTMİŞKEN sahibe SORULUR (çapayı ilerletmek kilitli-ihlal sinyalini söndürür — "ilerletme sahip-onaylı" güvencesinin mekanik kapısı; V2 Öbek-1 düzeltmesi, hasım bulgusu wf_e35b1e11, 2026-07-23).
 # Matcher GENİŞ (*), daraltma bu script'in içinde (anayasa m.5).
 # Girdi: stdin'de Claude Code araç JSON'u. Çıkış sözleşmesi:
 #   exit 2                = ENGEL ([SERT]; stderr'daki gerekçe ajana döner)
@@ -23,6 +23,7 @@ case "$INPUT" in
   *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*) : ;;
   *'.aktif-rol'*) : ;;  # rol damgasına dokunan çağrı — kesin karar aşağıda node'da
   *'.kurulum'*) : ;;    # kurulum işaretine dokunan çağrı (.kurulum-tamam + .kurulum-* glob) — karar node'da
+  *'.taban-ref'*) : ;;  # kilitli-tarih çapasına dokunan çağrı — karar node'da
   *) exit 0 ;;
 esac
 
@@ -73,6 +74,12 @@ const ti = j.tool_input || {};
 if ((j.tool_name || "") === "Bash") {
   const komut = String(ti.command || "");
   if (komut.includes(".aktif-rol")) { console.log("SOR-DAMGA\ttools/guard/.aktif-rol"); process.exit(0); }
+  // Capa-dikisi (V2 Obek-1 duzeltmesi 2026-07-23, hasim bulgusu wf_e35b1e11): kilitli-tarih
+  // capasina (.taban-ref) dokunan Bash komutu kurulum BITMISKEN sahibe SORULUR — capayi
+  // ilerletmek kilitli-ihlal sinyalini sondurur; "ilerletme sahip-onayli" guvencesinin mekanik
+  // kapisi budur. Kurulum surerken sorulmaz (G4.3 dogumu surtunmesiz). Metin-es sinir
+  // damga-dikisiyle aynidir (bilinen sinir).
+  if (komut.includes(".taban-ref") && existsSync(resolve(ROOT, ".kurulum-tamam"))) { console.log("SOR-TABAN\t02_kanon/kilitli/.taban-ref"); process.exit(0); }
   // Isaret-dikisi (soguk-denetim E2 + hasim turu 2026-07-16): kurulum isareti MEVCUTKEN ona
   // ".kurulum" iceren bir Bash komutu dokunuyorsa sahibe SORULUR (silinirse koruma kurulum-
   // moduna duser). ".kurulum" alt-dizesi hem ".kurulum-tamam" hem ".kurulum-*" glob desenini
@@ -178,6 +185,11 @@ case "$DURUM" in
     ;;
   SOR-ISARET)
     GEREKCE="Bu kabuk komutu kurulum işaretine (.kurulum-tamam) dokunuyor. İşaret koruma rejiminin anahtarıdır: yokken kilitli alanlar kurulum-moduna düşer. Silme/değiştirme sahip kararı ister." \
+      "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
+    exit 0
+    ;;
+  SOR-TABAN)
+    GEREKCE="Bu kabuk komutu kilitli-tarih çapasına (02_kanon/kilitli/.taban-ref) dokunuyor. Çapayı ilerletmek, kilitli-karar ihlal sinyalini söndürür — sahip kararı ister (bekçi koruma-hattı iii)." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;
