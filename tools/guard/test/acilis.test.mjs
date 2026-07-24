@@ -79,3 +79,69 @@ test('SALT-OKUR: kanca kuyruğu bayt-bayt değiştirmez', () => {
   kos(kok);
   assert.equal(readFileSync(join(kok, '00_pano', 'SENDE_BEKLEYEN.md'), 'utf8'), icerik);
 });
+
+// --- Dış göz brifingi hatırlatması (D-20 parça 2) -----------------------------------
+// YUMUŞAK hatırlatma: eşik 7 gün, tek satır, ısrar yok. Kapanış kilidi AYRIDIR (bekçide,
+// git tarihine bakar) — bu satır onun yerine geçmez.
+
+function brifingKur(kok, icerik) {
+  mkdirSync(join(kok, '03_roller', 'disgoz'), { recursive: true });
+  if (icerik != null) writeFileSync(join(kok, '03_roller', 'disgoz', 'BRIFING.md'), icerik);
+}
+const brifing = (tarih) => `<!-- yazar: disgoz -->\n# DIŞ GÖZ — brifing\n\nTarih: ${tarih}\n\n## 1 · Ne yapılıyor\n`;
+
+test('dış göz koltuğu yoksa brifing satırı HİÇ doğmaz (koltuksuz projeye dırdır yok)', () => {
+  const r = kos(kurulum());
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('taze brifing (bugün): satır BASILMAZ — eşik 7 gün', () => {
+  const kok = kurulum();
+  brifingKur(kok, brifing(bugun));
+  assert.equal(kos(kok).stdout.trim(), '');
+});
+
+test('6 günlük brifing: hâlâ sessiz (eşik sınırı: 7)', () => {
+  const kok = kurulum();
+  brifingKur(kok, brifing(gunOnce(6)));
+  assert.equal(kos(kok).stdout.trim(), '');
+});
+
+test('9 günlük brifing: tek bilgi satırı, sayı doğru, uyarı sözcüğü YOK', () => {
+  const kok = kurulum();
+  brifingKur(kok, brifing(gunOnce(9)));
+  const r = kos(kok);
+  assert.match(r.stdout, /Son dış göz brifingi 9 gündür tazelenmedi — "durumu anlat" diyebilirsin\./);
+  assert.ok(!/KIRMIZI|SARI|UYARI/.test(r.stdout), 'yaş uyarı değil bilgidir');
+  assert.equal(r.stdout.trim().split('\n').length, 1);
+});
+
+test('koltuk var ama brifing dosyası yok → "brifingi yok" satırı', () => {
+  const kok = kurulum();
+  brifingKur(kok, null);
+  assert.match(kos(kok).stdout, /Dış göz brifingi yok — "durumu anlat" diyebilirsin\./);
+});
+
+test('brifing var ama tarihsiz → "tarihsiz" satırı (sessiz geçilmez)', () => {
+  const kok = kurulum();
+  brifingKur(kok, '# DIŞ GÖZ — brifing\n\n## 1 · Ne yapılıyor\n');
+  assert.match(kos(kok).stdout, /Dış göz brifingi tarihsiz/);
+});
+
+test('iki göz birlikte: kuyruk satırı + brifing satırı (sırayla, ikisi de tek satır)', () => {
+  const kok = kurulum(BASLIK + `- [ ] ${gunOnce(3)} · po · "soru" · kaynak: oturum a1\n`);
+  brifingKur(kok, brifing(gunOnce(20)));
+  const satirlar = kos(kok).stdout.trim().split('\n');
+  assert.equal(satirlar.length, 2);
+  assert.match(satirlar[0], /Sende bekleyen 1 madde/);
+  assert.match(satirlar[1], /Son dış göz brifingi 20 gündür/);
+});
+
+test('SALT-OKUR: kanca brifingi bayt-bayt değiştirmez', () => {
+  const kok = kurulum();
+  const icerik = brifing(gunOnce(30));
+  brifingKur(kok, icerik);
+  kos(kok);
+  assert.equal(readFileSync(join(kok, '03_roller', 'disgoz', 'BRIFING.md'), 'utf8'), icerik);
+});

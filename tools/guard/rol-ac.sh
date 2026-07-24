@@ -5,8 +5,13 @@
 # ajan bunu Bash ile çağırsa bile mevcut kafesi gevşetemez. Slug kuralı GENESIS G3.3c ile
 # AYNIDIR (tek-token a-z0-9) ve rol 03_roller/ altında KAYITLI olmalıdır — uydurma ada damga yok.
 # Kullanım: rol-ac.sh <slug> <yazamaz|tam>   (rolün evi türetilir: 03_roller/<slug>/)
-# Yazdığı: tools/guard/.aktif-rol — tek satır: "<slug>\t<mod>\t03_roller/<slug>/"
-# Okuyan: file-guard.sh (rol kafesi) · Temizleyen: SessionStart kancası (startup+clear).
+# Yazdığı: tools/guard/.aktif-rol — 1. satır: "<slug>\t<mod>\t03_roller/<slug>/"
+#   yazamaz profilde 2. SATIR (porcelain dikişi): "porcelain\t<özet>" — kafes Edit/Write'ı
+#   keser ama KABUK yazımını kesmez; bu satır oturum başındaki kirlilik özetidir, kapanış
+#   kancası tekrar alıp karşılaştırır (fark → günlüğe + bekçiye SARI). Damganın kendisi
+#   file-guard'ın damga-dikişiyle korunur (ona dokunan Bash komutu sahibe sorulur).
+# Okuyan: file-guard.sh (yalnız 1. satır) · kapanis.sh (1. + 2. satır) ·
+#   Temizleyen: SessionStart kancası (startup+clear).
 set -euo pipefail
 export LC_ALL=C.UTF-8
 
@@ -22,6 +27,13 @@ case "$SLUG" in ""|*[!a-z0-9]*) hata "slug boş ya da tek-token ASCII değil (iz
 
 EV="03_roller/$SLUG/"
 ISTENEN="$(printf '%s\t%s\t%s' "$SLUG" "$MOD" "$EV")"
+
+# Porcelain dikişi ortak kitaplığı (tek ev — açılış ve kapanış AYNI kodu kullanır).
+# Betiğin YANINDAN okunur (kitaplık aracın parçasıdır, projenin verisi değil).
+# Kitaplık yoksa dikiş SESSİZCE devre dışı kalır (tören ölmez — fail-open); ölümü bekçinin
+# koruma-hattı KIRMIZI basar (çift hat, kanca-ölümü emsali).
+LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/porcelain.sh"
+if [ -r "$LIB" ]; then . "$LIB"; else porcelain_ozet() { printf 'yok'; }; fi
 
 acik_bas() {
   if [ "$MOD" = "yazamaz" ]; then
@@ -43,4 +55,7 @@ if [ -f "$DAMGA" ]; then
 fi
 
 printf '%s\n' "$ISTENEN" > "$DAMGA"
+if [ "$MOD" = "yazamaz" ]; then
+  printf 'porcelain\t%s\n' "$(porcelain_ozet "$KOK" "$SLUG")" >> "$DAMGA"
+fi
 acik_bas

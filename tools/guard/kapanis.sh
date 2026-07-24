@@ -1,16 +1,21 @@
 #!/bin/bash
 # kapanis — oturum-kapanış kancası (SessionEnd): olay-gömülü hijyen + oturum-günlüğü (RSK-2 sayacı).
 # K3 dersi mekaniğe iner: olay-gömülü hijyen HEP koşar, tetiklemeye bağlı hijyen hiç koşmadı.
-# Yaptığı (sırayla): (0) SENDE BEKLEYEN süzmesi (V2 Öbek-2): transcript'in SON asistan mesajından
+# Yaptığı (sırayla): (-1) PORCELAIN DİKİŞİ (dış göz paketi, D-20 parça 2): yazamaz koltuk
+#   açılışta damganın 2. satırına kirlilik özeti bırakır; burada AYNI kitaplıkla (porcelain.sh)
+#   yeniden alınır ve karşılaştırılır — es/fark/yok. Kancanın KENDİ yazımlarından ÖNCE koşar.
+#   Sonuç bekçiye KAPANIS_PORCELAIN ile geçer (yalnız dikiş varken) ve günlüğe düşer;
+#   (0) SENDE BEKLEYEN süzmesi (V2 Öbek-2): transcript'in SON asistan mesajından
 #   D2 kapanış bloğunun makine-okur satırını arar — "YOK" ise dokunmaz, "N madde" ise maddeleri
 #   00_pano/SENDE_BEKLEYEN.md kuyruğuna EKLER (tekilleştirmeli; EL_KITABI F1 istisna 2 — mekanik
 #   yazar bu kancadır, kapanış işareti rolündür, SİLME YASAK). Blok durumu bekçiye KAPANIS_BLOK
 #   değişkeniyle geçer (yalnız rol damgası varken — rolsüz oturumda sahibe dırdır edilmez);
 #   (1) bekçi koşusu (tools/bekci/bekci.sh varsa — konvansiyon-yol, GENESIS G3.2;
 #   PANO/SAGLIK damgası tazelenir; kuyruk ondan ÖNCE yazılır ki PANO sayacı taze olsun);
-#   (2) 00_pano/oturum-gunlugu.jsonl'e TEK satır oturum-meta (şema surum:2 — Öbek-2'de
-#   `blok` + `bekleyen_eklendi` alanları eklendi; surum:1 satırları eski oturumlardır)
-#   (tarih · oturum · neden · rol · blok · süre · token · damga-yaşı — transcript'ten OKUNABİLDİĞİ KADAR:
+#   (2) 00_pano/oturum-gunlugu.jsonl'e TEK satır oturum-meta (şema surum:3 — Öbek-2'de
+#   `blok` + `bekleyen_eklendi`, dış göz paketinde `porcelain` eklendi; surum:1/2 satırları
+#   eski oturumlardır)
+#   (tarih · oturum · neden · rol · blok · porcelain · süre · token · damga-yaşı — transcript'ten OKUNABİLDİĞİ KADAR:
 #   biçim Claude Code'un iç formatıdır, sürümle değişebilir [doc-teyitli]; okunamayan alan null,
 #   satır HEP düşer). Damga-yaşı = SAGLIK "son koşu:" damgasının dakika yaşı (SALT-OKUMA; politika
 #   kancada yok, bayatlığın sahip-yüzeyi kokpittir).
@@ -33,6 +38,24 @@ ROL=""
 if [ -f "$KOK/tools/guard/.aktif-rol" ]; then
   ROL="$(head -n1 "$KOK/tools/guard/.aktif-rol" 2>/dev/null | cut -f1 || true)"
   case "$ROL" in ""|*[!a-z0-9_-]*) ROL="";; esac
+fi
+
+# Porcelain dikişi karşılaştırması — kancanın KENDİ yazımlarından (kuyruk, bekçi, günlük) ÖNCE
+# alınır, yoksa kancanın izi "fark" sanılır. Açılış özeti damganın 2. satırındadır (yalnız
+# yazamaz profilde doğar); yoksa "yok" kalır ve bekçiye sinyal GEÇMEZ (denetlenmez).
+PORCELAIN="yok"
+if [ -n "$ROL" ]; then
+  ACILIS_OZET="$(awk -F'\t' 'NR==2 && $1=="porcelain" { print $2 }' "$KOK/tools/guard/.aktif-rol" 2>/dev/null || true)"
+  case "$ACILIS_OZET" in
+    ''|*[!0-9]*) : ;;  # dikiş yok / "yok" / bozuk → karşılaştırma yapılmaz
+    *)
+      LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/porcelain.sh"   # kitaplık betiğin yanında
+      if [ -r "$LIB" ]; then
+        . "$LIB"
+        if [ "$(porcelain_ozet "$KOK" "$ROL")" = "$ACILIS_OZET" ]; then PORCELAIN="es"; else PORCELAIN="fark"; fi
+      fi
+      ;;
+  esac
 fi
 
 # node keşfi (file-guard ile aynı: GUI oturumunda PATH dardır — Faz-1 bulgusu)
@@ -140,7 +163,9 @@ fi
 BEKCI="yok"
 if [ -f "$KOK/tools/bekci/bekci.sh" ]; then
   RC=0
-  if [ -n "$ROL" ]; then
+  if [ -n "$ROL" ] && [ "$PORCELAIN" != "yok" ]; then
+    KAPANIS_BLOK="$BLOK" KAPANIS_PORCELAIN="$PORCELAIN" bash "$KOK/tools/bekci/bekci.sh" >/dev/null 2>&1 || RC=$?
+  elif [ -n "$ROL" ]; then
     KAPANIS_BLOK="$BLOK" bash "$KOK/tools/bekci/bekci.sh" >/dev/null 2>&1 || RC=$?
   else
     bash "$KOK/tools/bekci/bekci.sh" >/dev/null 2>&1 || RC=$?
@@ -151,13 +176,14 @@ fi
 SATIR=""
 if [ -n "$NODE_BIN" ]; then
   SATIR="$(printf '%s' "$GIRDI" | KAPANIS_KOK="$KOK" KAPANIS_ROL="$ROL" KAPANIS_BEKCI="$BEKCI" \
-    KAPANIS_BLOK="$BLOK" KAPANIS_EKLENDI="$EKLENDI" "$NODE_BIN" --input-type=module -e '
+    KAPANIS_BLOK="$BLOK" KAPANIS_EKLENDI="$EKLENDI" KAPANIS_PORCELAIN="$PORCELAIN" \
+    "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync } from "node:fs";
 let g = {};
 try { g = JSON.parse(readFileSync(0, "utf8")); } catch {}
 const rolHam = process.env.KAPANIS_ROL || "";
 const out = {
-  surum: 2,
+  surum: 3,
   ts: new Date().toISOString(),
   oturum: g.session_id || null,
   neden: g.reason || null,
@@ -165,6 +191,7 @@ const out = {
   bekci: process.env.KAPANIS_BEKCI || "yok",
   blok: process.env.KAPANIS_BLOK || null,
   bekleyen_eklendi: Number(process.env.KAPANIS_EKLENDI) || 0,
+  porcelain: process.env.KAPANIS_PORCELAIN || "yok",
   damga_yasi_dk: null,
   sure_dk: null, girdi_token: null, cikti_token: null, cache_okuma: null, cache_yazma: null,
   not: null,
@@ -218,7 +245,7 @@ if [ -z "$SATIR" ]; then
   # node yok ya da çözümleyici öldü — DARALTILMIŞ satır yine düşer (iz hiç kaybolmaz)
   TS="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   ROLJ="null"; [ -n "$ROL" ] && ROLJ="\"$ROL\""
-  SATIR="{\"surum\":2,\"ts\":\"$TS\",\"oturum\":null,\"neden\":null,\"rol\":$ROLJ,\"bekci\":\"$BEKCI\",\"blok\":\"$BLOK\",\"bekleyen_eklendi\":$EKLENDI,\"damga_yasi_dk\":null,\"sure_dk\":null,\"girdi_token\":null,\"cikti_token\":null,\"cache_okuma\":null,\"cache_yazma\":null,\"not\":\"node yok ya da cozumleyici oldu — daraltilmis meta\"}"
+  SATIR="{\"surum\":3,\"ts\":\"$TS\",\"oturum\":null,\"neden\":null,\"rol\":$ROLJ,\"bekci\":\"$BEKCI\",\"blok\":\"$BLOK\",\"bekleyen_eklendi\":$EKLENDI,\"porcelain\":\"$PORCELAIN\",\"damga_yasi_dk\":null,\"sure_dk\":null,\"girdi_token\":null,\"cikti_token\":null,\"cache_okuma\":null,\"cache_yazma\":null,\"not\":\"node yok ya da cozumleyici oldu — daraltilmis meta\"}"
 fi
 printf '%s\n' "$SATIR" >> "$GUNLUK" 2>/dev/null || printf 'kapanis: gunluk yazilamadi (%s)\n' "$GUNLUK" >&2
 exit 0

@@ -13,7 +13,7 @@ const EK_TAM = `# EL KİTABI — işletim disiplini
 Bu belge ekibin çalışma anayasasıdır. Ağırlık kadranı: **TAM RİTÜEL**.
 **Değer aksiyomu:** İşi bitiren en küçük çıktı en iyisidir.
 ## D-kuralları
-- D7 · Mühür paketi. SENDE BEKLEYEN satırı zorunlu.
+- D7 · Mühür paketi. SENDE BEKLEYEN satırı zorunlu; dördüncüsü dış göz brifingi işaretçisidir.
 - D9 · İş-icat yasağı.
 ## F-kuralları
 - F6 · Kural-evrim kilidi.
@@ -27,12 +27,25 @@ Muğlak mesaj onay sayılmaz; yorumla onay üretme yasak.
 ## Kadro + kapsam
 `;
 
-function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true } = {}) {
+// Zorunlu koltuk (G2.1.5): dış göz her kadranda kurulur — fixture onu da doğurur, yoksa
+// "tam kurulum" senaryosu gerçeği yansıtmaz.
+function disGozKur(kok, { koltuk = true, brifing = true, skill = '---\ndescription: t\ndisable-model-invocation: true\n---\ntören\n' } = {}) {
+  if (!koltuk) return;
+  mkdirSync(join(kok, '03_roller', 'disgoz'), { recursive: true });
+  writeFileSync(join(kok, '03_roller', 'disgoz', 'ROL.md'), '# ROL — Dış göz\nSınırlar: iş yapmam.\n');
+  writeFileSync(join(kok, '03_roller', 'disgoz', 'DURUM.md'), '# DURUM — Dış göz\nHenüz oturum açılmadı\n');
+  if (brifing) writeFileSync(join(kok, '03_roller', 'disgoz', 'BRIFING.md'), '# DIŞ GÖZ — brifing\nTarih: 2026-07-25\n');
+  mkdirSync(join(kok, '.claude', 'skills', 'rol-disgoz'), { recursive: true });
+  writeFileSync(join(kok, '.claude', 'skills', 'rol-disgoz', 'SKILL.md'), skill);
+}
+
+function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, disgoz = {} } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
   mkdirSync(join(kok, '02_kanon'), { recursive: true });
   mkdirSync(join(kok, '00_genesis'), { recursive: true });
   mkdirSync(join(kok, '03_roller', slug), { recursive: true });
   mkdirSync(join(kok, '.claude', 'skills', 'rol-' + slug.replace(/[^a-z0-9-]/g, '')), { recursive: true });
+  disGozKur(kok, disgoz);
   if (ek != null) writeFileSync(join(kok, '02_kanon', 'EL_KITABI.md'), ek);
   if (defo) writeFileSync(join(kok, '00_genesis', 'DEFO_MODELI.md'), '# DEFO\n## On defo — itki\n');
   if (retro) writeFileSync(join(kok, '00_genesis', 'RETRO_KALIBI.md'), '# RETRO\n1. **Tavan kalibrasyonu:** soru.\n');
@@ -75,7 +88,7 @@ test('EL_KITABI eksik başlık (Üslup hükmü silinmiş) → KIRMIZI exit 2', (
 });
 
 test('zorunlu kural eksik (Mühür paketi yok) → KIRMIZI', () => {
-  const r = kos(kurulum({ ek: EK_TAM.replace('Mühür paketi. SENDE BEKLEYEN satırı zorunlu.', 'SENDE BEKLEYEN satırı zorunlu.') }));
+  const r = kos(kurulum({ ek: EK_TAM.replace('Mühür paketi. SENDE', 'SENDE') }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /zorunlu kural eksik: Mühür paketi/);
 });
@@ -250,4 +263,30 @@ test('C4: zorunlu başlık yalnız paragraf İÇİNDE geçiyorsa başlık sayıl
   const r = kos(kurulum({ ek }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /zorunlu başlık eksik: ## Üslup hükmü/);
+});
+
+// --- Dış göz zorunlu koltuğu (D-20 parça 2): "zorunlu" sözünün mekanik karşılığı ---
+
+test('dış göz koltuğu hiç yoksa → KIRMIZI (her kadranda zorunlu — G2.1.5)', () => {
+  const r = kos(kurulum({ disgoz: { koltuk: false } }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /zorunlu koltuk eksik: 03_roller\/disgoz\//);
+});
+
+test('koltuk var ama BRIFING.md iskeleti yoksa → KIRMIZI (bekçinin kapanış kilidi çapasız kalır)', () => {
+  const r = kos(kurulum({ disgoz: { brifing: false } }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /brifing iskeleti eksik/);
+});
+
+test('D7 dördüncü parçası EL_KITABI\'ndan silinirse → KIRMIZI (kural aşındırılamaz)', () => {
+  const r = kos(kurulum({ ek: EK_TAM.replace('; dördüncüsü dış göz brifingi işaretçisidir', '') }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /zorunlu kural eksik: dış göz brifingi/);
+});
+
+test('dış göz becerisi kilitsizse → KIRMIZI (koltuk da genel kilide tabidir)', () => {
+  const r = kos(kurulum({ disgoz: { skill: '---\ndescription: t\n---\ntören\n' } }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /insan-tetikleme kilidi.*rol-disgoz/s);
 });

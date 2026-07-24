@@ -95,7 +95,7 @@ test('tam akış: satır düşer — oturum/neden stdin\'den, rol damgadan, bek�
   const satirlar = readFileSync(gunluk(kok), 'utf8').trim().split('\n');
   assert.equal(satirlar.length, 1);
   const j = JSON.parse(satirlar[0]);
-  assert.equal(j.surum, 2); // Öbek-2: blok + bekleyen_eklendi alanları eklendi
+  assert.equal(j.surum, 3); // Öbek-2: blok + bekleyen_eklendi · dış göz paketi: porcelain
   assert.equal(j.oturum, 'test-oturum-1');
   assert.equal(j.neden, 'other');
   assert.equal(j.rol, 'denetci');
@@ -304,6 +304,98 @@ test('transcript yok: blok="bilinmiyor" (yanlış SARI üretilmez — fail-open)
   kos(kok, stdinJson(kok));
   const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
   assert.equal(j.blok, 'bilinmiyor');
+});
+
+// ─── Porcelain dikişi (dış göz paketi, D-20 parça 2) ─────────────────────────
+// Açılış özeti damganın 2. satırındadır (rol-ac.sh yazar). Kapanışta AYNI kitaplıkla
+// yeniden alınır; sonuç günlüğe düşer ve bekçiye KAPANIS_PORCELAIN ile geçer.
+
+function gitKok(opts = {}) {
+  const kok = kurulum(opts);
+  const g = (...a) => spawnSync('git', a, { cwd: kok, encoding: 'utf8' });
+  g('init', '-q');
+  g('config', 'user.email', 'tatbikat@ornek');
+  g('config', 'user.name', 'Tatbikat');
+  writeFileSync(join(kok, 'is-dosyasi.txt'), 'ilk\n');
+  g('add', '-A');
+  g('commit', '-qm', 'ilk');
+  return kok;
+}
+const ozetAl = (kok, slug) =>
+  spawnSync('bash', ['-c', `. "${join(BURASI, '..', 'porcelain.sh')}"; porcelain_ozet "${kok}" ${slug}`], { encoding: 'utf8' })
+    .stdout.trim();
+const damgaYaz = (kok, slug, ozet) =>
+  writeFileSync(join(kok, 'tools', 'guard', '.aktif-rol'), `${slug}\tyazamaz\t03_roller/${slug}/\nporcelain\t${ozet}\n`);
+
+test('porcelain: dikiş yoksa (tam profil damgası) günlükte "yok" — karşılaştırma yapılmaz', () => {
+  const kok = gitKok({ damga: 'koordinator\ttam\t03_roller/koordinator/\n' });
+  kos(kok, stdinJson(kok));
+  assert.equal(JSON.parse(readFileSync(gunluk(kok), 'utf8').trim()).porcelain, 'yok');
+});
+
+test('porcelain: kafes dışı yazım yoksa "es"', () => {
+  const kok = gitKok();
+  damgaYaz(kok, 'disgoz', ozetAl(kok, 'disgoz'));
+  kos(kok, stdinJson(kok));
+  assert.equal(JSON.parse(readFileSync(gunluk(kok), 'utf8').trim()).porcelain, 'es');
+});
+
+test('porcelain: iş dosyasına kabukla yazım → "fark" (dikişin asıl işi)', () => {
+  const kok = gitKok();
+  damgaYaz(kok, 'disgoz', ozetAl(kok, 'disgoz'));
+  writeFileSync(join(kok, 'is-dosyasi.txt'), 'yazamaz koltuk kabukla değiştirdi\n');
+  kos(kok, stdinJson(kok));
+  assert.equal(JSON.parse(readFileSync(gunluk(kok), 'utf8').trim()).porcelain, 'fark');
+});
+
+test('porcelain: KANCANIN KENDİ yazımları "fark" ÜRETMEZ (kuyruk + bekçi + günlük) — yanlış-SARI freni', () => {
+  // Bekçi PANO/SAGLIK yazar, kanca kuyruğa madde ekler ve jsonl'e satır düşer;
+  // özet kancanın kendi yazımlarından ÖNCE alınmazsa bu koşu "fark" basardı.
+  const bekciIcerik = [
+    '#!/bin/bash',
+    'D="$(cd "$(dirname "$0")/../.." && pwd)"',
+    'mkdir -p "$D/00_pano"',
+    'printf "# PANO\\nson koşu: %s\\n" "$(date)" > "$D/00_pano/PANO.md"',
+    'printf "# SAĞLIK\\nson koşu: %s\\n" "$(date)" > "$D/00_pano/SAGLIK.md"',
+    'exit 0',
+  ].join('\n');
+  const kok = gitKok({ bekciIcerik });
+  const t = transkriptMesaj(kok, BLOK_IKI); // fixture artığı: gerçekte transcript depo DIŞINDA yaşar
+  damgaYaz(kok, 'disgoz', ozetAl(kok, 'disgoz'));
+  kos(kok, stdinJson(kok, { transcript_path: t }));
+  const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
+  assert.equal(j.bekleyen_eklendi, 2, 'kuyruk fiilen yazılmış olmalı');
+  assert.equal(j.porcelain, 'es', 'kancanın kendi izi dikişi tetiklememeli');
+});
+
+test('porcelain: kendi evine yazan yazamaz koltuk "es" kalır (kafesin izin verdiği alan)', () => {
+  const kok = gitKok();
+  mkdirSync(join(kok, '03_roller', 'disgoz'), { recursive: true });
+  damgaYaz(kok, 'disgoz', ozetAl(kok, 'disgoz'));
+  writeFileSync(join(kok, '03_roller', 'disgoz', 'BRIFING.md'), '# DIŞ GÖZ — brifing\nTarih: 2026-07-25\n');
+  kos(kok, stdinJson(kok));
+  assert.equal(JSON.parse(readFileSync(gunluk(kok), 'utf8').trim()).porcelain, 'es');
+});
+
+test('porcelain: bekçiye KAPANIS_PORCELAIN yalnız dikiş VARKEN geçer', () => {
+  const izYaz = '#!/bin/bash\nprintf "%s" "${KAPANIS_PORCELAIN:-DEGISKEN-YOK}" > "$(dirname "$0")/porc.izi"\nexit 0\n';
+  const dikisli = gitKok({ bekciIcerik: izYaz });
+  damgaYaz(dikisli, 'disgoz', ozetAl(dikisli, 'disgoz'));
+  writeFileSync(join(dikisli, 'is-dosyasi.txt'), 'değişti\n');
+  kos(dikisli, stdinJson(dikisli));
+  assert.equal(readFileSync(join(dikisli, 'tools', 'bekci', 'porc.izi'), 'utf8'), 'fark');
+
+  const dikissiz = gitKok({ damga: 'koordinator\ttam\t03_roller/koordinator/\n', bekciIcerik: izYaz });
+  kos(dikissiz, stdinJson(dikissiz));
+  assert.equal(readFileSync(join(dikissiz, 'tools', 'bekci', 'porc.izi'), 'utf8'), 'DEGISKEN-YOK');
+});
+
+test('porcelain: bozuk 2. satır karşılaştırmayı tetiklemez ("yok"), kanca ölmez', () => {
+  const kok = gitKok();
+  writeFileSync(join(kok, 'tools', 'guard', '.aktif-rol'), 'disgoz\tyazamaz\t03_roller/disgoz/\nporcelain\tbozuk-içerik\n');
+  const r = kos(kok, stdinJson(kok));
+  assert.equal(r.status, 0);
+  assert.equal(JSON.parse(readFileSync(gunluk(kok), 'utf8').trim()).porcelain, 'yok');
 });
 
 test('uzun madde 200 karakterde kırpılır (kuyruk içerik-sınıfı: tek satır)', () => {

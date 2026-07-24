@@ -50,9 +50,8 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
     Çalıştırma isteyen doğrulama (test/uygulama koşmak) denetçi ROL-oturumunun işidir.
   - **D4b · Kanıt-yeterlilik ölçüsü.** TEK işaretçi yeterdir; işaretçi "ne koşuldu, ne
     görüldü"yü kendisi taşır. Fazlası denetimde artı puan DEĞİLDİR. Kanıt-anlatısı ve
-    süreç-nesri commit gövdesine yazılır, görev dosyasına değil. Borulu komutta exit-kodu
-    (pipefail'siz kabukta) son halkanındır — kanıt-komutu borusuz koşulur ya da kesin
-    özet-satırla okunur. **Sınır-beyanı:** gerektiğinde kanıt yanına "bu şunu KANITLAMAZ"
+    süreç-nesri commit gövdesine yazılır, görev dosyasına değil.
+    **Sınır-beyanı:** gerektiğinde kanıt yanına "bu şunu KANITLAMAZ"
     cümlesi (mühürde zorunlu). *Ders: ölçüsüz
     kanıt zorunluluğu atıf-zırhı üretti; dosyalar tavana yapıştı.*
   - **D4c · Zaman kuralı.** "Sunuldu/geçti/koştu" ancak olay olduktan SONRA yazılır; plan
@@ -70,9 +69,10 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   `disable-model-invocation` kilitli). Rol değişimi = YENİ oturum. **Yazamaz**-profilde
   dosya-yazma araçları kancayla kilitli (kendi `03_roller/<slug>/` hariç; ROL.md istisna DIŞI).
   Bilinen sınır: kabuk-yazımı kafes dışı — git-izliyi bekçi, rol damgasını damga-dikişi korur.
-- **D7 · Mühür paketi.** Kapanış mührü isteği ancak şu üçü + D2 bloğu ile GEÇERLİDİR:
+- **D7 · Mühür paketi.** Kapanış mührü isteği ancak şu dördü + D2 bloğu ile GEÇERLİDİR:
   (1) açılıştaki "göreceklerin" bloğuyla eşleşen **demo tarifi**, (2) **ışıklar + taze damga**
-  durumu (jargonsuz), (3) bağımsız doğrulayıcının **hüküm satırı** (İDDİA→KANIT→HÜKÜM).
+  durumu (jargonsuz), (3) bağımsız doğrulayıcının **hüküm satırı** (İDDİA→KANIT→HÜKÜM),
+  (4) **dış göz brifingi** işaretçisi (hüküm değil malzeme; tazeliği bekçi kilitler).
   Eksik paket = geçersiz istek; paket sahibe çıkmadan `dogrulayici` alt-ajanından geçer
   (filtre bilinçli DAR: yalnız mühür/kapanış yüzeyi — günlük sohbet taranmaz, akış kilitlenmez).
   Ters-alarm: sahibe TEKNİK soru soran paket hatalıdır. Sahip teknik kanıt DEĞERLENDİRMEZ;
@@ -158,7 +158,7 @@ yoksa silme-testi koşulmamış sayılır). (Neden: DEFO_MODELI #3 + iz ilkesi.)
    katlanarak artar — ölçülmüş.*
 5. **Bağımsız doğrulama** — denetçi kapıları fiilen kontrol eder (D4); dosya-gerçeği
    `dogrulayici` alt-ajanıyla. [KADRAN:TAM] Büyük yama paketinde kapanış mühründen önce
-   hasım turu önerilir: `/hasim-inceleme` (uzun, yakıt-yoğun koşu — küçük işte gerekmez).
+   hasım turu önerilir: `/hasim-inceleme` (yakıt-yoğun; küçük işte gerekmez).
 6. **Demo + kapanış mührü** — tüketilmemiş L2/L3 bayrağı varken kutu KAPANMAZ. Sahibe D7
    MÜHÜR PAKETİ sunulur (demo fiilen gösterilir +
    ~10 dakikalık numaralı spot-kontrol tarifi; kasıtlı koruma-probu varsa önceden anons:

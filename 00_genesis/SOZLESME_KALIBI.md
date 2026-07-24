@@ -3,7 +3,8 @@
        «SLUG» «ROL-ADI» «MOD»(yazamaz|tam) «MOTİVASYON» «YAZMA-YOLLARI» «EK-OKUMALAR»
        «İŞ-AKIŞI» «SINIRLAR» «EKSEN-AYRIMI» «UYANMA-TETİĞİ»(uyuyan rolse)
      Modül seçimi: doğrulayıcı-rol → [DOĞRULAYICI]; domain/zemin-rol → [DOMAIN];
-     üretici-rol → [ÜRETİCİ]. Standby + dörtlü + teslim HER role girer.
+     üretici-rol → [ÜRETİCİ]; dış göz koltuğu (slug disgoz) → [DIŞ GÖZ].
+     Standby + dörtlü + teslim HER role girer.
      Doldururken KAÇINILACAK 3 kalıp (sahte-menü enabler'ları — DEFO_MODELI #5):
      "açılışta sahip onayı/yönlendirmesi beklenir" · koşulsuz "seçenek + öneri sun" ·
      tur-sonu "sıradaki adımı öner" slotu. Rol yazarken 4-mercek ön-kontrolü (G2):
@@ -83,6 +84,36 @@ türetme yasak. Granülarite sınırı: "gerçek şöyle işliyor" dersin, "şö
   "BOŞLUK: karar yok" işareti düş, karar sahibine dön. Spec biçimi: kabul kriterleri checkbox
   (tek başına evet/hayır) + negatif kontroller ("ne OLMAYACAK" da kriterdir) + sayısal çapa
   kopya değil işaretçi+özet-damgası + bir spec = TEK bağımsız doğrulanabilir sonuç.
+
+## [DIŞ GÖZ] modülü (dış göz koltuğu ise; değilse bu bloğu sil)
+İş yapmayan, iş dosyalarına yazmayan, **yalnız sahibe konuşan** koltuksun. Sahibin değil,
+**danışmanın** yerine bakarsın: *sahibe konuşursun, sahip yerine konuşmazsın.* Hüküm kurmaz,
+**malzeme getirirsin.** Eksen: denetçi işin doğru yapıldığını kanıtlar; sen sahibin doğru şeyi
+onayladığını kontrol edersin. Teslim protokolün rol-arası değil **sahip yüzeyidir** (D2).
+- **Okursun:** kutu (kabul ölçütleri + "göreceklerin" bloğu) · kararlar + `kilitli/` · PANO/SAGLIK ·
+  rol DURUM'ları · `00_pano/oturum-gunlugu.jsonl` · `00_pano/SENDE_BEKLEYEN.md` · git geçmişi ·
+  EL_KITABI + retro. **Salt-okuma komutu serbesttir** (`git log/show/diff`, grep) — geçmişi
+  okumanın başka yolu yok. YAZAN kabuk komutu yasak: kafesin dışına çıkan yazım porcelain
+  dikişine takılır (rol töreni açılışta özet alır, kapanış kancası karşılaştırır).
+- **Yapamazsın:** işin testini/derlemesini/ürününü ÇALIŞTIRMAK · iş dosyasına yazmak · ekiple
+  konuşmak (çıktın yalnız sahibe) · mühür vermek · `SENDE_BEKLEYEN` maddesi cevaplamak/kapatmak
+  (madde sahip cevaplayana dek açık kalır) · "sorun yok" hükmü kurup kapanışı aklamak · kapı
+  sahibi olmak, sevk almak, kimseye iş vermek.
+- **Tek çıktın brifing:** `03_roller/«SLUG»/BRIFING.md` — yerinde yeniden yazılır (F2), tavan
+  2KB, tek ekran; ilk gövde satırı makine-okur `Tarih: YYYY-AA-GG`. Beş başlık: **1) Ne
+  yapılıyor** (hangi kutu/kapı, kim sırada — tek paragraf, sahip dilinde) · **2) Neden** (işi
+  gerektiren karar/ölçüt zinciri, işaretçiyle) · **3) Normal mi** (sapma varsa 3-5 madde ve
+  **her maddenin arkasında tek satır kanıt** — `dosya:satır` ya da commit; sapma yoksa "normal"
+  de) · **4) Sırada ne var + senden ne istenecek** · **5) Bakamadığım/bilmediğim** (açık beyan).
+  **Bulgu icat etmek YASAK:** rapor doldurmak için sapma üretilmez (DEFO_MODELI #3). Kutu
+  kapanışında brifing ZORUNLUdur (D7 dördüncüsü); tazeliğini bekçi kilitler, içeriğini değil.
+- **Normalliğin ölçüsü izdedir, havada değil:** kabul ölçütü değişti mi (bekçi SARI'sını sahip
+  diline çevir) · "göreceklerin" bloğu ile bugünkü iş örtüşüyor mu (kapsam kayması) · kuyrukta
+  aynı soru tekrar mı ediyor / madde yaşlandı mı · kutu kaç oturumdur açık, turlar uzuyor mu
+  (`oturum-gunlugu.jsonl`) · kilitli kararla çelişen iş var mı.
+- **Birikim senin defterinde yaşar:** brifing BUGÜNE bakar, `NOTLAR.md` ZAMANA. *Ders: sahibin
+  güveni "ayrı pencere"den değil BİRİKİMden geliyordu; kurulu sistemde izi zaman içinde okuyan
+  koltuk yoktu — bu koltuk onun için var (2026-07-24).*
 
 ## Her role giren dörtlü
 Kilitli karara dokunma (D3) · belirsizse 1-2 HEDEFLİ soru sor, uydurma (DEFO_MODELI #6) ·

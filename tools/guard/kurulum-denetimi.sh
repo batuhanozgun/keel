@@ -33,7 +33,7 @@ else
       *)      if grep -qF "$baslik" "$EK"; then :; else kirmizi "EL_KITABI zorunlu başlık eksik: $baslik"; fi ;;
     esac
   done
-  for kural in "Mühür paketi" "İş-icat yasağı" "Kural-evrim kilidi" "SENDE BEKLEYEN" "yorumla onay üretme"; do
+  for kural in "Mühür paketi" "İş-icat yasağı" "Kural-evrim kilidi" "SENDE BEKLEYEN" "yorumla onay üretme" "dış göz brifingi"; do
     if grep -qF "$kural" "$EK"; then :; else kirmizi "EL_KITABI zorunlu kural eksik: $kural"; fi
   done
   BOYUT=$(wc -c < "$EK" | tr -d ' ')
@@ -147,6 +147,19 @@ if [ "$ROL_SAYISI" -eq 0 ]; then
   kirmizi "hiç rol yok (03_roller boş ya da eksik) — G4.5 rollerden SONRA koşar, sıfır rol aktarım eksiğidir"
 else
   gecti "slug + rol↔beceri taraması ($ROL_SAYISI rol)"
+fi
+
+# 7b · Dış göz koltuğu ZORUNLUDUR (her kadranda — G2.1.5; D-20 parça 2). Türetilmez, sabittir:
+#      "zorunlu" sözünün mekanik karşılığı budur; koltuk atlanırsa çekilme kilitlenir.
+#      (ROL.md/DURUM.md/beceri denetimi yukarıdaki genel döngüde zaten koşar.)
+if [ -d "$KOK/03_roller/disgoz" ]; then
+  if [ -f "$KOK/03_roller/disgoz/BRIFING.md" ]; then
+    gecti "dış göz koltuğu + brifing iskeleti yerinde"
+  else
+    kirmizi "dış göz brifing iskeleti eksik: 03_roller/disgoz/BRIFING.md (G3.4 — bekçinin kapanış kilidi ve açılış hatırlatması buna bakar)"
+  fi
+else
+  kirmizi "zorunlu koltuk eksik: 03_roller/disgoz/ (dış göz her kadranda kurulur — G2.1.5)"
 fi
 
 # 8 · İşletim yüzeyi: pano bağlanmış + ilk kutu kurulmuş (G4.5, G3.4 ve G4'ten SONRA koşar —
