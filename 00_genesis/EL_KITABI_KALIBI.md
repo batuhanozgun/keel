@@ -100,7 +100,7 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
 - **F3 · Şema + tavanlar.** Dosyalar bilinen yerlerde: `00_pano/` · `01_kutular/` (+`_arsiv/`) ·
   `02_kanon/` · `03_roller/<slug>/` · ürün kodu «ÜRÜN-YOLU» · `tools/`. Şema-dışı = SARI.
   **Tavanlar (sarı eşik):** PANO 2KB · DURUM 2KB · görev/kapı dosyası 6KB · KUTU 10KB ·
-  ERTELENENLER 4KB · SENDE_BEKLEYEN 2KB (madde başına TEK satır) ·
+  ERTELENENLER 4KB · SENDE_BEKLEYEN 2KB (madde başına TEK satır) · BRIFING 2KB · NOTLAR 2KB ·
   EL_KITABI 16KB (doğum kapısında KIRMIZI — bilinçli fail-closed). Sarı = uyarı (iş
   durmaz); kırmızı (1,5×) = yalnız kutu KAPANIŞINI kilitler. Sayılar İLK RETRODA ölçümle
   yeniden kalibre edilir (retro zorunlu maddesi). **İçerik-sınıfı:** süreç-günlüğü · 1 satırı

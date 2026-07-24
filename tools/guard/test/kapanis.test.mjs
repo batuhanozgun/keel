@@ -390,6 +390,20 @@ test('porcelain: bekçiye KAPANIS_PORCELAIN yalnız dikiş VARKEN geçer', () =>
   assert.equal(readFileSync(join(dikissiz, 'tools', 'bekci', 'porc.izi'), 'utf8'), 'DEGISKEN-YOK');
 });
 
+test('porcelain: AYNI damgayla ikinci kapanış (--resume) sahte "fark" basmaz — tatbikat bulgusu T6b', () => {
+  // Kancanın kendi append-only günlüğü dışlanmazsa ilk kapanışın izi ikinci kapanışta
+  // "fark" sanılırdı (2026-07-25 tatbikatında sahada görüldü).
+  const kok = gitKok();
+  spawnSync('git', ['add', '-A'], { cwd: kok });          // günlük dosyası izlensin diye
+  spawnSync('git', ['commit', '-qm', 'temiz'], { cwd: kok });
+  damgaYaz(kok, 'disgoz', ozetAl(kok, 'disgoz'));
+  kos(kok, stdinJson(kok));
+  kos(kok, stdinJson(kok, { session_id: 'ikinci' }));
+  const satirlar = readFileSync(gunluk(kok), 'utf8').trim().split('\n').map((s) => JSON.parse(s));
+  assert.equal(satirlar[0].porcelain, 'es');
+  assert.equal(satirlar[1].porcelain, 'es', 'ikinci kapanış da temiz olmalı');
+});
+
 test('porcelain: bozuk 2. satır karşılaştırmayı tetiklemez ("yok"), kanca ölmez', () => {
   const kok = gitKok();
   writeFileSync(join(kok, 'tools', 'guard', '.aktif-rol'), 'disgoz\tyazamaz\t03_roller/disgoz/\nporcelain\tbozuk-içerik\n');
