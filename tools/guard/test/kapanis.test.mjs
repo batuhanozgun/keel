@@ -9,19 +9,48 @@ import { fileURLToPath } from 'node:url';
 const BURASI = dirname(fileURLToPath(import.meta.url));
 const KAPANIS = join(BURASI, '..', 'kapanis.sh');
 
-function kurulum({ pano = true, damga = null, bekci = null } = {}) {
+function kurulum({ pano = true, damga = null, bekci = null, bekciIcerik = null } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kapanis-test-'));
   mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
   if (pano) mkdirSync(join(kok, '00_pano'), { recursive: true });
   if (damga) writeFileSync(join(kok, 'tools', 'guard', '.aktif-rol'), damga);
-  if (bekci != null) {
+  if (bekci != null || bekciIcerik != null) {
     mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
     writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'),
-      '#!/bin/bash\ntouch "$(dirname "$0")/kostu.izi"\nexit ' + bekci + '\n');
+      bekciIcerik != null
+        ? bekciIcerik
+        : '#!/bin/bash\ntouch "$(dirname "$0")/kostu.izi"\nexit ' + bekci + '\n');
     chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
   }
   return kok;
 }
+
+// --- V2 Öbek-2 (sahip yüzeyi) yardımcıları ---
+const KUYRUK = (kok) => join(kok, '00_pano', 'SENDE_BEKLEYEN.md');
+
+// Son asistan mesajı = kapanış özeti; kanca çapayı ORADAN süzer.
+function transkriptMesaj(kok, metin, ad = 'kapanis.jsonl') {
+  const yol = join(kok, ad);
+  const satirlar = [
+    { type: 'user', timestamp: '2026-07-24T10:00:00.000Z' },
+    { type: 'assistant', timestamp: '2026-07-24T10:01:00.000Z', message: { id: 'a1', content: [{ type: 'text', text: 'ara mesaj — burada blok yok' }] } },
+    { type: 'assistant', timestamp: '2026-07-24T10:09:00.000Z', message: { id: 'a2', content: [{ type: 'text', text: metin }] } },
+  ];
+  writeFileSync(yol, satirlar.map((s) => JSON.stringify(s)).join('\n') + '\n');
+  return yol;
+}
+
+const BLOK_IKI = [
+  '**BİTEN:** kanca yazıldı.',
+  '**SENDE BEKLEYEN:** 2 madde',
+  '1. Tavan sorusu: EL_KITABI 16KB kalsın mı? · muhatap: sahip',
+  '2. Push kararı: gönderelim mi?',
+  '**SIRADAKİ:** tatbikat koşusu.',
+  '3. bu satır SIRADAKİ sonrası — maddeye GİRMEMELİ',
+].join('\n');
+
+const acikMaddeler = (kok) =>
+  readFileSync(KUYRUK(kok), 'utf8').split('\n').filter((s) => s.startsWith('- [ ]'));
 
 const gunluk = (kok) => join(kok, '00_pano', 'oturum-gunlugu.jsonl');
 
@@ -66,7 +95,7 @@ test('tam akış: satır düşer — oturum/neden stdin\'den, rol damgadan, bek�
   const satirlar = readFileSync(gunluk(kok), 'utf8').trim().split('\n');
   assert.equal(satirlar.length, 1);
   const j = JSON.parse(satirlar[0]);
-  assert.equal(j.surum, 1);
+  assert.equal(j.surum, 2); // Öbek-2: blok + bekleyen_eklendi alanları eklendi
   assert.equal(j.oturum, 'test-oturum-1');
   assert.equal(j.neden, 'other');
   assert.equal(j.rol, 'denetci');
@@ -178,4 +207,111 @@ test('damga yaşı: bekçisiz eski damga → büyük yaş (bayatlık olay anınd
   kos(kok, stdinJson(kok));
   const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
   assert.ok(j.damga_yasi_dk > 1000, 'aylar önceki damga büyük yaş vermeli');
+});
+
+// ─── V2 Öbek-2 · SENDE BEKLEYEN süzmesi + kalıcı kuyruk ───────────────────────
+
+test('N madde: kuyruk doğar, maddeler düşer, SIRADAKİ sonrası satır GİRMEZ', () => {
+  const kok = kurulum({ damga: 'koordinator\ttam\t03_roller/koordinator/\n' });
+  const t = transkriptMesaj(kok, BLOK_IKI);
+  const r = kos(kok, stdinJson(kok, { transcript_path: t }));
+  assert.equal(r.status, 0);
+  const acik = acikMaddeler(kok);
+  assert.equal(acik.length, 2, 'iki madde düşmeli — üçüncü satır blok dışıdır');
+  assert.match(acik[0], /^- \[ \] \d{4}-\d{2}-\d{2} · koordinator · "Tavan sorusu/);
+  assert.match(acik[0], /kaynak: oturum test-otu$/, 'kaynak = oturum kimliğinin ilk 8 hanesi');
+  assert.ok(!readFileSync(KUYRUK(kok), 'utf8').includes('maddeye GİRMEMELİ'), 'SIRADAKİ sonrası satır kuyruğa girmemeli');
+  const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
+  assert.equal(j.blok, 'var');
+  assert.equal(j.bekleyen_eklendi, 2);
+});
+
+test('tekilleştirme: aynı oturum + aynı madde ikinci kapanışta TEKRAR eklenmez', () => {
+  const kok = kurulum({ damga: 'koordinator\ttam\t03_roller/koordinator/\n' });
+  const t = transkriptMesaj(kok, BLOK_IKI);
+  kos(kok, stdinJson(kok, { transcript_path: t }));
+  const ilk = readFileSync(KUYRUK(kok), 'utf8');
+  kos(kok, stdinJson(kok, { transcript_path: t }));
+  const sonra = readFileSync(KUYRUK(kok), 'utf8');
+  assert.equal(sonra, ilk, 'kuyruk bayt-bayt aynı kalmalı');
+  const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim().split('\n').pop());
+  assert.equal(j.bekleyen_eklendi, 0);
+});
+
+test('YOK: kuyruğa DOKUNULMAZ (dosya bile doğmaz), blok=var', () => {
+  const kok = kurulum({ damga: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  const t = transkriptMesaj(kok, '**BİTEN:** x\n**SENDE BEKLEYEN:** YOK\n**SIRADAKİ:** y');
+  kos(kok, stdinJson(kok, { transcript_path: t }));
+  assert.equal(existsSync(KUYRUK(kok)), false, 'YOK kapanışı kuyruk dosyası doğurmaz');
+  const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
+  assert.equal(j.blok, 'var');
+  assert.equal(j.bekleyen_eklendi, 0);
+});
+
+test('blok satırı hiç yok → blok="yok" (bekçinin SARI sinyali buradan doğar)', () => {
+  const kok = kurulum({ damga: 'koordinator\ttam\t03_roller/koordinator/\n' });
+  const t = transkriptMesaj(kok, 'İşi bitirdim, kapanış bloğu yazmadım.');
+  kos(kok, stdinJson(kok, { transcript_path: t }));
+  const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
+  assert.equal(j.blok, 'yok');
+  assert.equal(existsSync(KUYRUK(kok)), false);
+});
+
+test('satır var ama madde yok → blok="bicimsiz" (sahte doluluk yakalanır)', () => {
+  const kok = kurulum({ damga: 'koordinator\ttam\t03_roller/koordinator/\n' });
+  const t = transkriptMesaj(kok, '**SENDE BEKLEYEN:** birkaç şey var\n(numaralı madde yazmadım)');
+  kos(kok, stdinJson(kok, { transcript_path: t }));
+  const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
+  assert.equal(j.blok, 'bicimsiz');
+  assert.equal(existsSync(KUYRUK(kok)), false);
+});
+
+test('mevcut kuyruk: başlık ve eski satırlar bayt-bayt korunur, yeni madde SONA eklenir', () => {
+  const kok = kurulum({ damga: 'uygulayici\ttam\t03_roller/uygulayici/\n' });
+  const eski = '<!-- yazar: kapanış kancası -->\n# SENDE BEKLEYEN — sahipte bekleyen maddeler\n\n- [x] 2026-07-01 · po · "eski soru" · kaynak: oturum eskioturum · cevap: "evet" · 2026-07-02\n';
+  writeFileSync(KUYRUK(kok), eski);
+  const t = transkriptMesaj(kok, '**SENDE BEKLEYEN:** 1 madde\n1. Yeni soru: bunu yapalım mı?');
+  kos(kok, stdinJson(kok, { transcript_path: t }));
+  const sonra = readFileSync(KUYRUK(kok), 'utf8');
+  assert.ok(sonra.startsWith(eski), 'eski içerik bayt-bayt korunmalı (silme yasak)');
+  assert.match(sonra, /- \[ \] \d{4}-\d{2}-\d{2} · uygulayici · "Yeni soru: bunu yapalım mı\?"/);
+});
+
+test('bekçiye KAPANIS_BLOK yalnız ROL damgası varken geçer (rolsüz oturumda denetlenmez)', () => {
+  const izYaz = '#!/bin/bash\nprintf "%s" "${KAPANIS_BLOK:-DEGISKEN-YOK}" > "$(dirname "$0")/blok.izi"\nexit 0\n';
+  const t1 = (kok) => transkriptMesaj(kok, 'blok yazmadım');
+
+  const rolluKok = kurulum({ damga: 'koordinator\ttam\t03_roller/koordinator/\n', bekciIcerik: izYaz });
+  kos(rolluKok, stdinJson(rolluKok, { transcript_path: t1(rolluKok) }));
+  assert.equal(readFileSync(join(rolluKok, 'tools', 'bekci', 'blok.izi'), 'utf8'), 'yok');
+
+  const rolsuzKok = kurulum({ bekciIcerik: izYaz });
+  kos(rolsuzKok, stdinJson(rolsuzKok, { transcript_path: t1(rolsuzKok) }));
+  assert.equal(readFileSync(join(rolsuzKok, 'tools', 'bekci', 'blok.izi'), 'utf8'), 'DEGISKEN-YOK');
+});
+
+test('kuyruk bekçiden ÖNCE yazılır (PANO sayacı taze olsun — sıra kanıtı)', () => {
+  const sayanBekci = '#!/bin/bash\nD="$(cd "$(dirname "$0")/../.." && pwd)"\ngrep -c "^- \\[ \\]" "$D/00_pano/SENDE_BEKLEYEN.md" > "$(dirname "$0")/sayi.izi" 2>/dev/null || printf 0 > "$(dirname "$0")/sayi.izi"\nexit 0\n';
+  const kok = kurulum({ damga: 'koordinator\ttam\t03_roller/koordinator/\n', bekciIcerik: sayanBekci });
+  const t = transkriptMesaj(kok, BLOK_IKI);
+  kos(kok, stdinJson(kok, { transcript_path: t }));
+  assert.equal(readFileSync(join(kok, 'tools', 'bekci', 'sayi.izi'), 'utf8').trim(), '2',
+    'bekçi kendi koşusunda bu oturumun maddelerini görmeli');
+});
+
+test('transcript yok: blok="bilinmiyor" (yanlış SARI üretilmez — fail-open)', () => {
+  const kok = kurulum({ damga: 'koordinator\ttam\t03_roller/koordinator/\n' });
+  kos(kok, stdinJson(kok));
+  const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
+  assert.equal(j.blok, 'bilinmiyor');
+});
+
+test('uzun madde 200 karakterde kırpılır (kuyruk içerik-sınıfı: tek satır)', () => {
+  const kok = kurulum({ damga: 'po\ttam\t03_roller/po/\n' });
+  const uzun = 'x'.repeat(400);
+  const t = transkriptMesaj(kok, '**SENDE BEKLEYEN:** 1 madde\n1. ' + uzun);
+  kos(kok, stdinJson(kok, { transcript_path: t }));
+  const satir = acikMaddeler(kok)[0];
+  assert.ok(satir.length < 300, 'satır kırpılmalı: ' + satir.length);
+  assert.ok(satir.includes('…'), 'kırpma izi (…) görünmeli');
 });

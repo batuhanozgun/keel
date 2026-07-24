@@ -20,23 +20,37 @@ uydurma ada damga basılmaz, soğuk-denetim E3 yaması 2026-07-16). Her YENİ ot
 başında SessionStart kancası (startup+clear) damgayı siler; `--resume` damgayı korur.
 Damga `.gitignore`'dadır (oturum-durumu).
 
-Komut araçlarına karışılmaz (Faz-1 dersi); İKİ BELGELİ İSTİSNA (dikişler):
+Komut araçlarına karışılmaz (Faz-1 dersi); ÜÇ BELGELİ İSTİSNA (dikişler):
 (1) damga-dikişi — `.aktif-rol`a dokunan Bash komutu sahibe SORULUR (damganın git-izi
 yok, bekçi ona kör; bu dikiş o deliği insan-sorusuna çevirir); (2) işaret-dikişi —
 `.kurulum-tamam`a dokunan Bash komutu, işaret MEVCUTKEN sahibe SORULUR (işaret silinirse
 koruma kurulum-moduna düşer — soğuk-denetim E2 yaması 2026-07-16; işaret YOKKEN dikiş
 susar ki GENESIS'in işareti doğurması sürtünmesiz kalsın; işaret git-İZLİ olduğundan
-silinme ayrıca bekçinin porcelain hattında da görünür). İki dikiş de metin-eşleşmelidir,
-kusursuz değildir; bilinen sınırdır.
+silinme ayrıca bekçinin porcelain hattında da görünür); (3) çapa-dikişi —
+`02_kanon/kilitli/.taban-ref`e dokunan Bash komutu, kurulum BİTMİŞKEN sahibe SORULUR
+(çapayı ilerletmek kilitli-tarih sinyalini söndürür — V2 Öbek-1, 2026-07-23).
+Üç dikiş de metin-eşleşmelidir, kusursuz değildir; bilinen sınırdır.
 
-Kapanış kancası (`kapanis.sh`, SessionEnd): oturum kapanırken bekçiyi koşar
-(`tools/bekci/bekci.sh` varsa — konvansiyon-yol) ve `00_pano/oturum-gunlugu.jsonl`e
-tek satır oturum-meta düşürür (tarih · oturum · neden · rol · süre · token · damga-yaşı —
+Kapanış kancası (`kapanis.sh`, SessionEnd): oturum kapanırken sırayla (0) **SENDE BEKLEYEN
+süzmesi** — transcript'in son asistan mesajındaki D2 kapanış-bloğu çapasını (`SENDE BEKLEYEN:`)
+arar; "N madde" ise maddeleri `00_pano/SENDE_BEKLEYEN.md` kuyruğuna tekilleştirerek EKLER
+(kuyruğun mekanik yazarı budur — EL_KITABI F1 istisna 2; SİLME yok), blok durumunu bekçiye
+`KAPANIS_BLOK` ile geçirir (yalnız rol damgası varken); (1) bekçiyi koşar
+(`tools/bekci/bekci.sh` varsa — konvansiyon-yol; kuyruk ondan ÖNCE yazılır ki PANO sayacı
+taze olsun); (2) `00_pano/oturum-gunlugu.jsonl`e tek satır oturum-meta düşürür (şema
+`surum:2` — tarih · oturum · neden · rol · blok · bekleyen_eklendi · süre · token · damga-yaşı;
 transcript'ten okunabildiği kadar; biçim Claude Code'un iç formatıdır, okunamayan
 alan null düşer, satır HEP düşer). Günlüğün tek yazarı bu kancadır; append-only.
 FAIL-OPEN: SessionEnd zaten engelleyemez (doc-teyitli) — kapanış hijyeni oturumu
 rehin almaz; kancanın ölümünü bekçinin kablo-denetimi KIRMIZI basar. Vault değilse
 (00_pano yoksa) kanca susar. Rol damgasını yalnız OKUR; temizlik SessionStart'ta.
+node yoksa süzme atlanır (blok=bilinmiyor), meta satırı yine düşer.
+
+Açılış kancası (`acilis.sh`, SessionStart startup+clear): kuyrukta AÇIK madde varsa oturum
+başına TEK bilgi satırı basar (`Sende bekleyen N madde (en eskisi X gündür)`), yoksa susar.
+Salt-okurdur, hiçbir dosyaya yazmaz; fail-open (kuyruk yoksa/bozuksa sessiz exit 0).
+Yaş BİLGİdir — uyarı/eskalasyon YOKTUR (sahip kararı, 2026-07-24). `--resume` oturumlarında
+çalışmaz (rol-temizliğiyle aynı matcher kümesi; bilinçli).
 
 İş bölümü (çift hat):
 1. Ön hat = bu kanca (araç katmanı, anında).

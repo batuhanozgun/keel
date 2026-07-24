@@ -14,6 +14,6 @@ Adımlar (sırayla):
 3. **Koşu-öncesi durum kaydı:** `git status --porcelain` çıktısını aynen kaydet (karşılaştırma tabanı).
 4. **Workflow'u çağır:** Workflow aracına `{scriptPath: "<proje kökü>/.claude/workflows/hasim-inceleme.js", args: {targets: [...]}}` ver ve bitmesini bekle.
 5. **Salt-okunurluk kanıtı (zorunlu):** koşu bitince `git status --porcelain` TEKRAR al ve 3. adımla karşılaştır. FARK varsa DUR: hiçbir şeyi geri alma, örtme; sahibe aynen bildir. *Ders: "salt-okunur" sözü tek başına güvence değildir — Golden-09 olayı (2026-07-04).*
-6. **Sonucu sahip-diliyle özetle:** ayakta kalan bulgular (şiddet sırasıyla, tek'er cümle) · çürüyen bulgular (tek satır) · porcelain karşılaştırması sonucu. Bulgu yoksa "temiz" de — doldurmak için bulgu ÜRETME (şişme defosu). Ayakta bulgular koordinatör/denetçi akışına taşınır; kapanışta SANA KALAN satırı zorunlu (D2).
+6. **Sonucu sahip-diliyle özetle:** ayakta kalan bulgular (şiddet sırasıyla, tek'er cümle) · çürüyen bulgular (tek satır) · porcelain karşılaştırması sonucu. Bulgu yoksa "temiz" de — doldurmak için bulgu ÜRETME (şişme defosu). Ayakta bulgular koordinatör/denetçi akışına taşınır; kapanışta D2 bloğu zorunlu (BİTEN · SENDE BEKLEYEN · SIRADAKİ).
 
 Bilinen sınır (beyan): koşan inceleme ajanlarının salt-okunurluğu talimat katmanındadır (diff okumak için kabuk gerekir; araç-kilidi verilemez) — güvence 5. adımın mekanik karşılaştırmasıdır.

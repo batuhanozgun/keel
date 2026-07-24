@@ -13,7 +13,7 @@ const EK_TAM = `# EL KİTABI — işletim disiplini
 Bu belge ekibin çalışma anayasasıdır. Ağırlık kadranı: **TAM RİTÜEL**.
 **Değer aksiyomu:** İşi bitiren en küçük çıktı en iyisidir.
 ## D-kuralları
-- D7 · Mühür paketi. SANA KALAN satırı zorunlu.
+- D7 · Mühür paketi. SENDE BEKLEYEN satırı zorunlu.
 - D9 · İş-icat yasağı.
 ## F-kuralları
 - F6 · Kural-evrim kilidi.
@@ -75,7 +75,7 @@ test('EL_KITABI eksik başlık (Üslup hükmü silinmiş) → KIRMIZI exit 2', (
 });
 
 test('zorunlu kural eksik (Mühür paketi yok) → KIRMIZI', () => {
-  const r = kos(kurulum({ ek: EK_TAM.replace('Mühür paketi. SANA KALAN satırı zorunlu.', 'SANA KALAN satırı zorunlu.') }));
+  const r = kos(kurulum({ ek: EK_TAM.replace('Mühür paketi. SENDE BEKLEYEN satırı zorunlu.', 'SENDE BEKLEYEN satırı zorunlu.') }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /zorunlu kural eksik: Mühür paketi/);
 });

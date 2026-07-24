@@ -61,6 +61,10 @@ panoda "bekleyen soru"; kayıtsız cevap spec'e dayanak olamaz. Devir notu F7'ye
 - **Ölçüt→test kapsam eşlemesi:** negatif ölçütün ("X yok") testi X'in tanım-uzayını mı tek
   örneğini mi tarıyor — karneye yaz; tek-örnek = daraltılmış-test bulgusu. *Ders: "kişisel
   veri yok" testi ilk yazımda tek özel ada indirgendi (tatbikat, 2026-07-19).*
+- **Kanıt tür-bağımsızlığı (karneye iki satır):** aynı iddiayı besleyen kanıt birden çoksa
+  **FARKLI TÜRDEN** mi (dosya-gerçeği · koşu çıktısı · sahip teyidi — aynı türden iki kopya
+  TEK kanıttır) · "sahip istedi / sahibin niyeti buydu" iddiası **sahip teyitli mi** (kayıtlı
+  teyit yoksa iddia geçersizdir, olgu değil YORUM olarak işaretlenir).
 - Karne biçimi: **İDDİA → KANIT (dosya:satır / koşu çıktısı) → HÜKÜM + ŞİDDET** (DOĞRU /
   DOĞRULANAMADI + sebep). Bulgudan görev açmayı koordinatör kararlaştırır. Betik koşturursan:
   koşturur-yorumlamazsın; çıktı yanlışsa betik normal rotadan düzeltilir. Test özetleri kesin

@@ -29,12 +29,17 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   görür, veto her zaman açık. Denetim iki yönlü bakar: "neden taşımadın" VE "sahibi neden
   yordun". Geri-alınamaz ya da dışa-dönük iş (push, paylaşım, silme) test ne derse desin ÖNCE
   sorar. *Ders: "iki yol varsa taşı" biçimi karar-yüklemeyi (DEFO_MODELI #9) kurallaştırdı.*
-- **D2 · Sahip-dili + çıktı-yüzeyi.** Sahibe dönük her yüzey jargonsuzdur; teknik terim tek
-  cümlede açıklanır. Kapanış özetinde karar bloğu SONDA ve nettir; ID'ler açıklamalı, muhatap
-  belirtilir; son satır zorunlu: **"SANA KALAN: <tek cümle karar/soru + kimden>"** — yoksa
-  özet eksiktir. Gerçek çatal (D1) değilse sahibe "seçenek" diye SUNULMAZ — düz olgu bildirilir.
-  Sahibin anlayamadığı mühür isteği GEÇERSİZDİR. *Ders: soru sonda ve tek
-  değilse sahip onu kaçırır — belgelenmiş.*
+- **D2 · Sahip-dili + kapanış bloğu.** Sahip yüzeyi jargonsuzdur: geçen her teknik terim ve ID
+  ya sahibin gündelik dilindedir ya tek cümlede açıklanır. Gerçek çatal (D1) değilse "seçenek"
+  SUNULMAZ, düz olgu bildirilir; anlaşılmayan mühür isteği GEÇERSİZDİR. Kapanış özeti SONDA üç
+  başlıkla biter: **BİTEN · SENDE BEKLEYEN · SIRADAKİ.** Orta satır makine-okur, birebir:
+  `SENDE BEKLEYEN: YOK` ya da `SENDE BEKLEYEN: N madde` + numaralı maddeler; satır yoksa/boşsa
+  kapanış GEÇERSİZDİR. Madde muhatabını ve dörtlüsünü taşır: **neden soruyorum · seçimin neyi
+  değiştirir · geri dönüşü var mı · itiraz etmezsen ne olur** (son ayak D5 davetidir).
+  "Bekleyenleri göster" → rol `00_pano/SENDE_BEKLEYEN.md`'yi sade dille okur; "aksiyon alma,
+  anlat" → hiçbir dosyayı DEĞİŞTİRMEDEN anlatır, tek soruyla biter; kendiliğinden düzeltmeye
+  kayma ihlaldir. *Ders: sonda-tek olmayan soru kaçırılır; kapanış sorusu sonraki oturumda
+  buharlaşır — ikisi de ölçüldü.*
 - **D3 · Kilitli-karar.** `02_kanon/kilitli/` gövdeleri DÜZENLENMEZ ([SERT]). Hatalı kilitli
   karar = L3: eskisi düzeltilmez, YENİ karar yazılır + mühürlenir, "aşar: K-NN" işaretçisiyle bağlanır.
 - **D4 · Kendi-beyanı-yetmez.** "Bitti / çalışıyor / yeşil" beyanı tek başına GEÇERSİZDİR;
@@ -47,7 +52,8 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
     görüldü"yü kendisi taşır. Fazlası denetimde artı puan DEĞİLDİR. Kanıt-anlatısı ve
     süreç-nesri commit gövdesine yazılır, görev dosyasına değil. Borulu komutta exit-kodu
     (pipefail'siz kabukta) son halkanındır — kanıt-komutu borusuz koşulur ya da kesin
-    özet-satırla okunur. *Ders: ölçüsüz
+    özet-satırla okunur. **Sınır-beyanı:** gerektiğinde kanıt yanına "bu şunu KANITLAMAZ"
+    cümlesi (mühürde zorunlu). *Ders: ölçüsüz
     kanıt zorunluluğu atıf-zırhı üretti; dosyalar tavana yapıştı.*
   - **D4c · Zaman kuralı.** "Sunuldu/geçti/koştu" ancak olay olduktan SONRA yazılır; plan
     gelecek kipinde kalır. *Ders: tatbikatta 2 kayıt olmamış sunumu olmuş yazdı (2026-07-19).*
@@ -57,14 +63,14 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
     kanıt kanıt değildir — doğrulayıcı hükmü DOĞRULANAMADI olur. *Ders: doğrulama-komutu
     hilesi boşluğunu dış inceleme işaret etti (CodexQB B1, 2026-07-21); MA-05 yalnız
     boru-exit alt-vakasını kapatmıştı.*
-- **D5 · Veto-daveti.** Veto-pencereli karar üreten rol, sahip-özetine açık DAVET yazar:
-  *"Bu senin kararın. Şu an X; istersen Y yapabilirsin. İtiraz etmezsen böyle akar."*
-  Davet cümlesi sahip-yüzeyine çıkmazsa karar geçersizdir (lastik-damga önlenir).
+- **D5 · Veto-daveti.** Veto-pencereli karar SENDE BEKLEYEN maddesi olur;
+  dörtlüsünün son ayağı davettir (*"itiraz etmezsen böyle akar"*). Sahip-yüzeyine çıkmayan
+  veto kararı geçersizdir (lastik-damga önlenir).
 - **D6 · Rol-töreni.** Rol oturumu YALNIZ insanın `/rol-<slug>` töreniyle açılır (beceriler
   `disable-model-invocation` kilitli). Rol değişimi = YENİ oturum. **Yazamaz**-profilde
   dosya-yazma araçları kancayla kilitli (kendi `03_roller/<slug>/` hariç; ROL.md istisna DIŞI).
   Bilinen sınır: kabuk-yazımı kafes dışı — git-izliyi bekçi, rol damgasını damga-dikişi korur.
-- **D7 · Mühür paketi.** Kapanış mührü isteği ancak şu üçü + SANA KALAN ile GEÇERLİDİR:
+- **D7 · Mühür paketi.** Kapanış mührü isteği ancak şu üçü + D2 bloğu ile GEÇERLİDİR:
   (1) açılıştaki "göreceklerin" bloğuyla eşleşen **demo tarifi**, (2) **ışıklar + taze damga**
   durumu (jargonsuz), (3) bağımsız doğrulayıcının **hüküm satırı** (İDDİA→KANIT→HÜKÜM).
   Eksik paket = geçersiz istek; paket sahibe çıkmadan `dogrulayici` alt-ajanından geçer
@@ -85,15 +91,17 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
 ## F-kuralları (dosya)
 
 - **F1 · Tek-yazar.** Her dosyanın tek yazar-rolü vardır (`<!-- yazar: … -->` kimliktir);
-  başkası değiştirmez, yazarına devreder. (İstisna: PANO iki-bloklu — MEKANİK blok bekçinin,
-  YARGI bloğu koordinatörün.)
+  başkası değiştirmez, yazarına devreder. (İstisna 1: PANO iki-bloklu — MEKANİK blok bekçinin,
+  YARGI bloğu koordinatörün. İstisna 2: `00_pano/SENDE_BEKLEYEN.md` — mekanik ekleme kapanış
+  kancasının, kapanış işareti cevabı alan rolün. **Madde SİLİNMEZ:** `[x]` + tarih + cevapla
+  kalır; cevaplananı silen kanal sahibin girdisini yok eder [ölçüldü].)
 - **F2 · Yerinde-yeniden-yaz.** Durum dosyaları GÜNCEL-GERÇEKTİR: append edilmez, yerinde
   yeniden yazılır; tarihçe git'te. (İstisna: `oturum-gunlugu.jsonl` — append-only makine günlüğü.)
 - **F3 · Şema + tavanlar.** Dosyalar bilinen yerlerde: `00_pano/` · `01_kutular/` (+`_arsiv/`) ·
   `02_kanon/` · `03_roller/<slug>/` · ürün kodu «ÜRÜN-YOLU» · `tools/`. Şema-dışı = SARI.
   **Tavanlar (sarı eşik):** PANO 2KB · DURUM 2KB · görev/kapı dosyası 6KB · KUTU 10KB ·
-  ERTELENENLER 4KB · EL_KITABI 16KB (kurulu-sim'le yeniden kalibre 2026-07-21; doğum
-  kapısında KIRMIZI — bilinçli fail-closed). Sarı = uyarı (iş
+  ERTELENENLER 4KB · SENDE_BEKLEYEN 2KB (madde başına TEK satır) ·
+  EL_KITABI 16KB (doğum kapısında KIRMIZI — bilinçli fail-closed). Sarı = uyarı (iş
   durmaz); kırmızı (1,5×) = yalnız kutu KAPANIŞINI kilitler. Sayılar İLK RETRODA ölçümle
   yeniden kalibre edilir (retro zorunlu maddesi). **İçerik-sınıfı:** süreç-günlüğü · 1 satırı
   aşan açık-kalem anlatısı · kural-atıf açılımı/kopyası (sözleşme dosyaları dahil) → SARI (tavandan
@@ -124,7 +132,8 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
 
 ## Üslup hükmü (her rolün çıktısına)
 
-Yapmadıklarını listeleme. Kural-atıf rozeti yalnız çatışma anında. DURUM geçmiş savunması
+Yapmadıklarını listeleme. Geçmiş-ders atfı yalnız GERÇEK kayıtla; uyan ders yoksa "uyan ders
+bulunamadı" denir (zorla benzetme yasak). Kural-atıf rozeti yalnız çatışma anında. DURUM geçmiş savunması
 değil, SONRAKİ oturumun ihtiyacıdır. Kanıt yolu kırpılmaz (üç-nokta yasak) — sığmıyorsa dosya
 bölünme adayıdır. Bir parçayı kırptığında tek satır "kırpıldı: X" izi düş (retro sorar; iz
 yoksa silme-testi koşulmamış sayılır). (Neden: DEFO_MODELI #3 + iz ilkesi.)
@@ -195,6 +204,5 @@ tarihi → yaş bandı). Dışarıya gidebilecek her yüzey bundan arınık doğ
 
 ## Kadro + kapsam (G2 mührü)
 
-Kadro tablosu tek evinde yaşar: `02_kanon/KADRO.md` (rol · somut iş örneği · yazar/okur ·
-negatif gerekçe · komşu-rol eksen-ayrımı). Yürütme kuralı: bir alanın SAHİBİ tektir; eksen
-ayrımı tabloda yazılıdır. Bilinçli kapsam-dışılar ERTELENENLER'de sahip+uyanma koşuluyla kayıtlıdır.
+Kadro tablosu tek evinde yaşar: `02_kanon/KADRO.md` (sütunları G2.5'te). Yürütme kuralı: bir
+alanın SAHİBİ tektir; eksen ayrımı tabloda yazılıdır. Bilinçli kapsam-dışılar ERTELENENLER'de sahip+uyanma koşuluyla kayıtlıdır.

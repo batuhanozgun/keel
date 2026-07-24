@@ -1,9 +1,16 @@
 #!/bin/bash
 # kapanis — oturum-kapanış kancası (SessionEnd): olay-gömülü hijyen + oturum-günlüğü (RSK-2 sayacı).
 # K3 dersi mekaniğe iner: olay-gömülü hijyen HEP koşar, tetiklemeye bağlı hijyen hiç koşmadı.
-# Yaptığı (sırayla): (1) bekçi koşusu (tools/bekci/bekci.sh varsa — konvansiyon-yol, GENESIS G3.2;
-#   PANO/SAGLIK damgası tazelenir); (2) 00_pano/oturum-gunlugu.jsonl'e TEK satır oturum-meta
-#   (tarih · oturum · neden · rol · süre · token · damga-yaşı — transcript'ten OKUNABİLDİĞİ KADAR:
+# Yaptığı (sırayla): (0) SENDE BEKLEYEN süzmesi (V2 Öbek-2): transcript'in SON asistan mesajından
+#   D2 kapanış bloğunun makine-okur satırını arar — "YOK" ise dokunmaz, "N madde" ise maddeleri
+#   00_pano/SENDE_BEKLEYEN.md kuyruğuna EKLER (tekilleştirmeli; EL_KITABI F1 istisna 2 — mekanik
+#   yazar bu kancadır, kapanış işareti rolündür, SİLME YASAK). Blok durumu bekçiye KAPANIS_BLOK
+#   değişkeniyle geçer (yalnız rol damgası varken — rolsüz oturumda sahibe dırdır edilmez);
+#   (1) bekçi koşusu (tools/bekci/bekci.sh varsa — konvansiyon-yol, GENESIS G3.2;
+#   PANO/SAGLIK damgası tazelenir; kuyruk ondan ÖNCE yazılır ki PANO sayacı taze olsun);
+#   (2) 00_pano/oturum-gunlugu.jsonl'e TEK satır oturum-meta (şema surum:2 — Öbek-2'de
+#   `blok` + `bekleyen_eklendi` alanları eklendi; surum:1 satırları eski oturumlardır)
+#   (tarih · oturum · neden · rol · blok · süre · token · damga-yaşı — transcript'ten OKUNABİLDİĞİ KADAR:
 #   biçim Claude Code'un iç formatıdır, sürümle değişebilir [doc-teyitli]; okunamayan alan null,
 #   satır HEP düşer). Damga-yaşı = SAGLIK "son koşu:" damgasının dakika yaşı (SALT-OKUMA; politika
 #   kancada yok, bayatlığın sahip-yüzeyi kokpittir).
@@ -28,15 +35,6 @@ if [ -f "$KOK/tools/guard/.aktif-rol" ]; then
   case "$ROL" in ""|*[!a-z0-9_-]*) ROL="";; esac
 fi
 
-# Bekçi koşusu — sonucu günlük satırına işlensin diye ÖNCE koşar (günlük .md değil:
-# drift radarına ve mtime kuralına görünmez; PANO_SOZLESMESI sırası bozulmaz).
-BEKCI="yok"
-if [ -f "$KOK/tools/bekci/bekci.sh" ]; then
-  bash "$KOK/tools/bekci/bekci.sh" >/dev/null 2>&1
-  RC=$?
-  case "$RC" in 0) BEKCI="tamam";; 1) BEKCI="kirmizi";; *) BEKCI="hata";; esac
-fi
-
 # node keşfi (file-guard ile aynı: GUI oturumunda PATH dardır — Faz-1 bulgusu)
 NODE_BIN="$(command -v node 2>/dev/null || true)"
 if [ -z "$NODE_BIN" ]; then
@@ -45,20 +43,128 @@ if [ -z "$NODE_BIN" ]; then
   done
 fi
 
+# (0) SENDE BEKLEYEN süzmesi + kuyruk yazımı — bekçiden ÖNCE (PANO sayacı taze olsun).
+# Çapa: son asistan mesajındaki literal "SENDE BEKLEYEN:" satırı (markdown kalınına toleranslı).
+# node yoksa süzme atlanır (blok=bilinmiyor) — bilinçli fail-open, meta satırı yine düşer.
+BLOK="bilinmiyor"; EKLENDI=0
+if [ -n "$NODE_BIN" ]; then
+  SUZME="$(printf '%s' "$GIRDI" | KAPANIS_KOK="$KOK" KAPANIS_ROL="$ROL" "$NODE_BIN" --input-type=module -e '
+import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
+let g = {};
+try { g = JSON.parse(readFileSync(0, "utf8")); } catch {}
+const KOK = process.env.KAPANIS_KOK || ".";
+const rolHam = process.env.KAPANIS_ROL || "";
+const rol = /^[a-z0-9_-]+$/.test(rolHam) ? rolHam : "—";
+const oturum = String(g.session_id || "bilinmiyor").slice(0, 8);
+const BASLIK = [
+  "<!-- yazar: kapanış kancası (mekanik ekleme) + cevabı alan rol (kapanış işareti) — EL_KITABI F1 istisna 2.",
+  "     Biçim: \"- [ ] <tarih> · <rol> · tek cümle · kaynak: oturum <id>\"; cevaplanınca aynı satır",
+  "     \"- [x] … · cevap: … · <tarih>\" olur. MADDE SİLİNMEZ (tavan 2KB; taşmada en eski KAPALI izler kırpılır). -->",
+  "# SENDE BEKLEYEN — sahipte bekleyen maddeler",
+  "",
+  "",
+].join("\n");
+let blok = "bilinmiyor", eklendi = 0;
+try {
+  const tp = g.transcript_path;
+  if (tp && existsSync(tp)) {
+    let son = null;
+    for (const l of readFileSync(tp, "utf8").split("\n")) {
+      if (!l) continue;
+      let j; try { j = JSON.parse(l); } catch { continue; }
+      if (j.type !== "assistant" || !j.message) continue;
+      const c = j.message.content;
+      const metin = Array.isArray(c)
+        ? c.filter((p) => p && p.type === "text" && typeof p.text === "string").map((p) => p.text).join("\n").trim()
+        : (typeof c === "string" ? c.trim() : "");
+      if (metin) son = metin;
+    }
+    if (son !== null) {
+      const satirlar = son.split("\n");
+      let i = -1, bas = "";
+      for (let k = satirlar.length - 1; k >= 0; k--) {
+        const m = satirlar[k].match(/SENDE BEKLEYEN\*{0,2}\s*:\s*(.*)$/);
+        if (m) { i = k; bas = m[1].replace(/[*`]/g, "").trim(); break; }
+      }
+      if (i < 0 || !bas) {
+        blok = "yok";
+      } else if (/^YOK\b/i.test(bas)) {
+        blok = "var";
+      } else {
+        const maddeler = [];
+        for (let k = i + 1; k < satirlar.length; k++) {
+          const s = satirlar[k];
+          if (/^\s*#{1,6}\s/.test(s)) break;
+          if (/SIRADAKİ\*{0,2}\s*:/.test(s)) break;
+          const m = s.match(/^\s*(\d+)[.)]\s+(.+)$/);
+          if (m) maddeler.push(m[2]);
+        }
+        blok = maddeler.length ? "var" : "bicimsiz";
+        if (maddeler.length) {
+          const yol = KOK + "/00_pano/SENDE_BEKLEYEN.md";
+          if (!existsSync(yol)) writeFileSync(yol, BASLIK);
+          const mevcut = readFileSync(yol, "utf8");
+          const d = new Date();
+          const p2 = (n) => String(n).padStart(2, "0");
+          const bugun = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
+          const ekler = [];
+          for (const ham of maddeler) {
+            let t = ham.replace(/[`*]/g, "").replace(/\s+/g, " ").replace(/"/g, "’").trim();
+            if (t.length > 200) t = t.slice(0, 199) + "…";
+            if (!t) continue;
+            const imza = "· \"" + t + "\" · kaynak: oturum " + oturum;
+            if (mevcut.includes(imza)) continue;
+            if (ekler.some((e) => e.indexOf(imza) >= 0)) continue;
+            ekler.push("- [ ] " + bugun + " · " + rol + " " + imza);
+          }
+          if (ekler.length) { appendFileSync(yol, ekler.join("\n") + "\n"); eklendi = ekler.length; }
+        }
+      }
+    }
+  }
+} catch {}
+process.stdout.write(blok + "\t" + eklendi);
+' 2>/dev/null || true)"
+  case "$SUZME" in
+    var*|yok*|bicimsiz*|bilinmiyor*)
+      BLOK="${SUZME%%	*}"; EKLENDI="${SUZME##*	}"
+      case "$EKLENDI" in ''|*[!0-9]*) EKLENDI=0;; esac
+      ;;
+  esac
+fi
+
+# (1) Bekçi koşusu — sonucu günlük satırına işlensin diye meta yazımından ÖNCE koşar (günlük .md
+# değil: drift radarına ve mtime kuralına görünmez; PANO_SOZLESMESI sırası bozulmaz).
+# KAPANIS_BLOK yalnız rol damgası varken geçer: kapanış bloğu rol-oturumu disiplinidir,
+# rolsüz oturumda bekçi bunu denetlemez (sahibe dırdır yok).
+BEKCI="yok"
+if [ -f "$KOK/tools/bekci/bekci.sh" ]; then
+  RC=0
+  if [ -n "$ROL" ]; then
+    KAPANIS_BLOK="$BLOK" bash "$KOK/tools/bekci/bekci.sh" >/dev/null 2>&1 || RC=$?
+  else
+    bash "$KOK/tools/bekci/bekci.sh" >/dev/null 2>&1 || RC=$?
+  fi
+  case "$RC" in 0) BEKCI="tamam";; 1) BEKCI="kirmizi";; *) BEKCI="hata";; esac
+fi
+
 SATIR=""
 if [ -n "$NODE_BIN" ]; then
-  SATIR="$(printf '%s' "$GIRDI" | KAPANIS_KOK="$KOK" KAPANIS_ROL="$ROL" KAPANIS_BEKCI="$BEKCI" "$NODE_BIN" --input-type=module -e '
+  SATIR="$(printf '%s' "$GIRDI" | KAPANIS_KOK="$KOK" KAPANIS_ROL="$ROL" KAPANIS_BEKCI="$BEKCI" \
+    KAPANIS_BLOK="$BLOK" KAPANIS_EKLENDI="$EKLENDI" "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync } from "node:fs";
 let g = {};
 try { g = JSON.parse(readFileSync(0, "utf8")); } catch {}
 const rolHam = process.env.KAPANIS_ROL || "";
 const out = {
-  surum: 1,
+  surum: 2,
   ts: new Date().toISOString(),
   oturum: g.session_id || null,
   neden: g.reason || null,
   rol: /^[a-z0-9_-]+$/.test(rolHam) ? rolHam : null,
   bekci: process.env.KAPANIS_BEKCI || "yok",
+  blok: process.env.KAPANIS_BLOK || null,
+  bekleyen_eklendi: Number(process.env.KAPANIS_EKLENDI) || 0,
   damga_yasi_dk: null,
   sure_dk: null, girdi_token: null, cikti_token: null, cache_okuma: null, cache_yazma: null,
   not: null,
@@ -112,7 +218,7 @@ if [ -z "$SATIR" ]; then
   # node yok ya da çözümleyici öldü — DARALTILMIŞ satır yine düşer (iz hiç kaybolmaz)
   TS="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   ROLJ="null"; [ -n "$ROL" ] && ROLJ="\"$ROL\""
-  SATIR="{\"surum\":1,\"ts\":\"$TS\",\"oturum\":null,\"neden\":null,\"rol\":$ROLJ,\"bekci\":\"$BEKCI\",\"damga_yasi_dk\":null,\"sure_dk\":null,\"girdi_token\":null,\"cikti_token\":null,\"cache_okuma\":null,\"cache_yazma\":null,\"not\":\"node yok ya da cozumleyici oldu — daraltilmis meta\"}"
+  SATIR="{\"surum\":2,\"ts\":\"$TS\",\"oturum\":null,\"neden\":null,\"rol\":$ROLJ,\"bekci\":\"$BEKCI\",\"blok\":\"$BLOK\",\"bekleyen_eklendi\":$EKLENDI,\"damga_yasi_dk\":null,\"sure_dk\":null,\"girdi_token\":null,\"cikti_token\":null,\"cache_okuma\":null,\"cache_yazma\":null,\"not\":\"node yok ya da cozumleyici oldu — daraltilmis meta\"}"
 fi
 printf '%s\n' "$SATIR" >> "$GUNLUK" 2>/dev/null || printf 'kapanis: gunluk yazilamadi (%s)\n' "$GUNLUK" >&2
 exit 0
