@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, copyFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,6 +29,9 @@ function kurulum({ liste = VARSAYILAN_LISTE, kurulumTamam = true, aktifRol = nul
   mkdirSync(join(kok, '00_genesis'), { recursive: true });
   mkdirSync(join(kok, '.claude'), { recursive: true });
   writeFileSync(join(kok, 'tools', 'guard', 'korunan-yollar.txt'), liste);
+  // E2 Hat-1: içerik süzgeci kurulu dokuda file-guard'ın ön şartıdır (yokluğu fail-closed engel).
+  copyFileSync(join(BURASI, '..', 'icerik-suzgeci.sh'), join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'));
+  copyFileSync(join(BURASI, '..', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   writeFileSync(join(kok, '.claude', 'settings.json'), '{}\n');
   writeFileSync(join(kok, '02_kanon', 'kilitli', 'K-01.md'), '# kilitli karar\n');
   if (kurulumTamam) writeFileSync(join(kok, '.kurulum-tamam'), 'kuruldu\n');
@@ -383,3 +386,317 @@ test('çapa-dikişi: kurulum sürerken .taban-ref komutu sorulmaz (G4.3 doğumu 
   assert.equal(r.status, 0);
   assert.equal(r.stdout.trim(), '');
 });
+
+// --- E2 önleme katmanı (2026-07-27; tasarı docs/superpowers/plans/2026-07-27-e2-onleme-tasarisi.md) ---
+// Değerler ÜRETİLİR, literal saklanmaz (suzgec.test.mjs ile aynı kural).
+
+function e2TcknUret(on9) {
+  const d = on9.split('').map(Number);
+  const t10 = ((((d[0] + d[2] + d[4] + d[6] + d[8]) * 7 - (d[1] + d[3] + d[5] + d[7])) % 10) + 10) % 10;
+  const t11 = (d.reduce((a, b) => a + b, 0) + t10) % 10;
+  return on9 + String(t10) + String(t11);
+}
+const E2_TCKN = e2TcknUret('581436729');
+const askJson = (r) => JSON.parse(r.stdout).hookSpecificOutput;
+
+test('E2 Hat-1: serbest yola bile TCKN içerikli Write → ENGEL (önleme bulgusu; yol değil içerik)', () => {
+  const kok = kurulum();
+  const r = kos(kok, { tool_name: 'Write', tool_input: { file_path: join(kok, '01_kutular/not.md'), content: `no ${E2_TCKN}` } });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /önleme bulgusu \(tckn\)/);
+  assert.ok(!r.stderr.includes(E2_TCKN), 'engel metni değeri sızdırmamalı');
+});
+
+test('E2 Hat-1: Edit yeni-içerik taranır; hassas ESKİYİ silen düzeltme serbest', () => {
+  const kok = kurulum();
+  const kirli = { tool_name: 'Edit', tool_input: { file_path: join(kok, 'a.md'), old_string: 'x', new_string: `tc ${E2_TCKN}` } };
+  assert.equal(kos(kok, kirli).status, 2);
+  const temizleyen = { tool_name: 'Edit', tool_input: { file_path: join(kok, 'a.md'), old_string: `tc ${E2_TCKN}`, new_string: 'temiz' } };
+  assert.equal(kos(kok, temizleyen).status, 0);
+});
+
+test('E2 Hat-1 Bash yazım dikişi: yönlendirmeli komutta TCKN → ENGEL; yazımsız aynı komut serbest', () => {
+  const kok = kurulum();
+  assert.equal(kos(kok, { tool_name: 'Bash', tool_input: { command: `echo ${E2_TCKN} > not.txt` } }).status, 2);
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: `grep -r ${E2_TCKN} .` } });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('E2 Hat-1 fail-closed: süzgeç dosyası yoksa yazma engellenir, Bash yaşar', () => {
+  const kok = kurulum();
+  rmSync(join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'));
+  const r = kos(kok, write(kok, '01_kutular/x.md'));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /içerik süzgeci yok/);
+  assert.equal(kos(kok, { tool_name: 'Bash', tool_input: { command: 'ls' } }).status, 0);
+});
+
+test('E2 Hat-2 dışa-giden: git push → sahibe sor; bileşik komutta da (settings-öneki göremez, dikiş görür)', () => {
+  const kok = kurulum();
+  for (const komut of ['git push origin main', 'cd /tmp && git push', 'echo bitti | mail -s rapor a@b.c']) {
+    const r = kos(kok, { tool_name: 'Bash', tool_input: { command: komut } });
+    assert.equal(r.status, 0, komut);
+    assert.match(askJson(r).permissionDecisionReason, /DIŞARI çıkan/, komut);
+  }
+});
+
+test('E2 Hat-2 dışa-giden komut-konumu: gömülü kelime yakalanmaz (alt-dize değil)', () => {
+  const kok = kurulum();
+  for (const komut of ['echo "high grade"', 'ls sshdir', 'git log --oneline', 'echo curl-benzeri-metin']) {
+    const r = kos(kok, { tool_name: 'Bash', tool_input: { command: komut } });
+    assert.equal(r.status, 0, komut);
+    assert.equal(r.stdout.trim(), '', komut);
+  }
+});
+
+test('E2 MCP dikişi: koşu-AÇIK iken mcp__ çağrısı sorulur; koşu yokken serbest (el-sürüşlü değişmez)', () => {
+  const kok = kurulum();
+  const cagri = { tool_name: 'mcp__ornek__gonder', tool_input: { x: 'y' } };
+  const kapali = kos(kok, cagri);
+  assert.equal(kapali.status, 0);
+  assert.equal(kapali.stdout.trim(), '');
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
+  writeFileSync(join(kok, 'tools', 'sevk', '.kosu-acik'), 'KOSU-1\tkutu\t2026-07-27T10:00:00Z\n');
+  const acik = kos(kok, cagri);
+  assert.equal(acik.status, 0);
+  assert.match(askJson(acik).permissionDecisionReason, /MCP/);
+});
+
+test('E2 git-obje dikişi: koşu-AÇIK iken commit sorulur; worktree bağlamında ENGEL; koşu yokken serbest', () => {
+  const kok = kurulum();
+  const commit = { tool_name: 'Bash', tool_input: { command: 'git commit -m x' } };
+  assert.equal(kos(kok, commit).status, 0);
+  assert.equal(kos(kok, commit).stdout.trim(), '', 'koşu yokken dikiş yok');
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
+  writeFileSync(join(kok, 'tools', 'sevk', '.kosu-acik'), 'KOSU-1\tkutu\t2026-07-27T10:00:00Z\n');
+  const soru = kos(kok, commit);
+  assert.match(askJson(soru).permissionDecisionReason, /doğrulayıcı yeşili/);
+  const wtKomut = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git -C .claude/worktrees/ag-1 add .' } });
+  assert.equal(wtKomut.status, 2);
+  assert.match(wtKomut.stderr, /nesne veritabanını paylaşır/);
+  const wtCwd = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git add .' }, cwd: join(kok, '.claude/worktrees/ag-1') });
+  assert.equal(wtCwd.status, 2, 'çıplak git add worktree cwd üzerinden yakalanmalı');
+});
+
+test('E2 yazım+korumalı-yol dikişi: cp → golden sorulur; goldensiz yazım serbest', () => {
+  const kok = kurulum();
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'cp /tmp/a.md 02_kanon/golden/a.md' } });
+  assert.equal(r.status, 0);
+  assert.match(askJson(r).permissionDecisionReason, /korumalı yolu/);
+  const serbest = kos(kok, { tool_name: 'Bash', tool_input: { command: 'echo x > 01_kutular/n.md' } });
+  assert.equal(serbest.stdout.trim(), '');
+});
+
+test('E2 yazım dikişi kurulum penceresi: çekirdek-dışı susar, çekirdek yine sorulur (A5 ruhu)', () => {
+  const kok = kurulum({ kurulumTamam: false });
+  const golden = kos(kok, { tool_name: 'Bash', tool_input: { command: 'cp /tmp/a.md 02_kanon/golden/a.md' } });
+  assert.equal(golden.stdout.trim(), '', 'GENESIS doğumu sürtünmesiz');
+  const cekirdek = kos(kok, { tool_name: 'Bash', tool_input: { command: 'echo hile > tools/guard/file-guard.sh' } });
+  assert.match(askJson(cekirdek).permissionDecisionReason, /korumalı yolu/);
+});
+
+// Worktree sanal kökü: kurulu projenin checkout'unu temsil eden GERÇEK worktree kur.
+// `git worktree add`in bıraktığı `.git` DOSYASI zorunlu (hasım bulgusu: sanal kök yalnız gerçek
+// worktree'de kurulur; uydurma .claude/worktrees/<x>/ yolu sanal kök AÇMAZ).
+function worktreeKur(kok, ajan = 'ag-1') {
+  const wt = join(kok, '.claude', 'worktrees', ajan);
+  for (const d of ['01_kutular', 'tools/guard', '02_kanon/kilitli', '02_kanon/golden', '03_roller/denetci']) {
+    mkdirSync(join(wt, d), { recursive: true });
+  }
+  writeFileSync(join(wt, '.git'), 'gitdir: ' + join(kok, '.git', 'worktrees', ajan) + '\n');
+  writeFileSync(join(wt, '.kurulum-tamam'), 'kuruldu\n');
+  return wt;
+}
+
+test('E2 worktree sanal kökü: iş alanı serbest, worktree içi çekirdek/kilitli yine SERT, golden yine sorulur', () => {
+  const kok = kurulum();
+  const wt = worktreeKur(kok);
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '01_kutular/KUTU.md'), content: 'iş' } }).status, 0, 'E0 çarpışması çözülmeli: iş alanı yazılabilir');
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, 'tools/guard/h.sh'), content: 'x' } }).status, 2);
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '02_kanon/kilitli/K.md'), content: 'x' } }).status, 2);
+  const golden = kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '02_kanon/golden/g.md'), content: 'x' } });
+  assert.equal(golden.status, 0);
+  assert.equal(askJson(golden).permissionDecision, 'ask');
+});
+
+test('E2 worktree kaçakları: tek-parça dosya ve iç-içe worktree SERT kalır; .. kaçışı gerçek köke döner', () => {
+  const kok = kurulum();
+  const wt = worktreeKur(kok);
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(kok, '.claude/worktrees/basit.md'), content: 'x' } }).status, 2, 'worktrees köküne dosya .claude/ SERT');
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '.claude/worktrees/ic/n.md'), content: 'x' } }).status, 2, 'iç-içe eşleme tek seviye');
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '01_kutular/../../../settings.json'), content: 'x' } }).status, 2, '.. kaçışı kanonikle gerçek kök .claude/ SERT');
+});
+
+test('E2 worktree + rol kafesi: yazamaz rol worktree iş alanında da kesilir; worktree içi kendi evi serbest', () => {
+  const kok = kurulum({ aktifRol: 'denetci\tyazamaz\t03_roller/denetci/\n' });
+  const wt = worktreeKur(kok);
+  const dis = kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '01_kutular/n.md'), content: 'x' } });
+  assert.equal(dis.status, 2);
+  assert.match(dis.stderr, /rol kafesi/);
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '03_roller/denetci/DURUM.md'), content: 'x' } }).status, 0);
+});
+
+test('E2 settings kablosu: dışa-giden ask kuralları şablon ayarında duruyor', () => {
+  const ayar = JSON.parse(readFileSync(join(BURASI, '..', '..', '..', '.claude', 'settings.json'), 'utf8'));
+  for (const kural of ['Bash(git push:*)', 'Bash(curl:*)', 'Bash(gh:*)']) {
+    assert.ok(ayar.permissions.ask.includes(kural), kural + ' şablon ask listesinde olmalı');
+  }
+});
+
+// --- E2 hasım incelemesi düzeltmeleri (2026-07-27; koşu wf_1fea1dba) ---
+
+test('E2 hasım/dışa-giden: git -C push, mutlak yol, çok-satır, npm publish HEPSİ SOR-DISA', () => {
+  const kok = kurulum();
+  const kacaklar = [
+    'git -C /some/dir push origin main',
+    'git --no-pager push',
+    '/usr/bin/curl https://x',
+    'sudo scp a b:c',
+    'cd /tmp\ngit push origin main',       // çok-satır: satırsonu ayraç
+    'ls; git push',                          // ; sonrası komut-konumu
+    'nohup wget http://x &',
+    'npm publish --access public',
+  ];
+  for (const komut of kacaklar) {
+    const r = kos(kok, { tool_name: 'Bash', tool_input: { command: komut } });
+    assert.equal(r.status, 0, komut);
+    assert.match(askJson(r).permissionDecisionReason, /DIŞARI çıkan/, komut);
+  }
+});
+
+test('E2 hasım/dışa-giden negatif: git log, npm test, ssh-içeren-yol GEC', () => {
+  const kok = kurulum();
+  for (const komut of ['git log --oneline', 'npm test', 'git status', 'ls sshkeys/', 'cat wgetrc']) {
+    const r = kos(kok, { tool_name: 'Bash', tool_input: { command: komut } });
+    assert.equal(r.status, 0, komut);
+    assert.equal(r.stdout.trim(), '', komut);
+  }
+});
+
+test('E2 hasım/git-obje: koşu-AÇIK git -C commit worktree bağlamında ENGEL, dışında SOR-GIT', () => {
+  const kok = kurulum();
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
+  writeFileSync(join(kok, 'tools', 'sevk', '.kosu-acik'), 'K\tkutu\t2026-07-27T10:00:00Z\n');
+  const wt = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git -C .claude/worktrees/ag-1 commit -m x' } });
+  assert.equal(wt.status, 2);
+  assert.match(wt.stderr, /nesne veritabanını paylaşır/);
+  const dis = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git -C /elsewhere commit -m y' } });
+  assert.match(askJson(dis).permissionDecisionReason, /doğrulayıcı yeşili/);
+});
+
+test('E2 hasım/yazım-kalıbı: sed -i korumalı yolda SOR-YAZIM; sed (yerinde-değil) serbest', () => {
+  const kok = kurulum();
+  const inplace = kos(kok, { tool_name: 'Bash', tool_input: { command: 'sed -i s/a/b/ 02_kanon/golden/x.md' } });
+  assert.match(askJson(inplace).permissionDecisionReason, /korumalı yolu/);
+  const okuma = kos(kok, { tool_name: 'Bash', tool_input: { command: 'sed -n 1p 02_kanon/golden/x.md' } });
+  assert.equal(okuma.stdout.trim(), '', 'sed -n (yerinde-değil) yazım sayılmaz');
+});
+
+test('E2 hasım/2>/dev/null: korumalı yolu OKUYAN komut (stderr /dev/null) yanlış SOR-YAZIM üretmez', () => {
+  const kok = kurulum();
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'cat 02_kanon/golden/x.md 2>/dev/null' } });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '', 'okuma komutu 2>/dev/null ile yazıma dönüşmemeli');
+});
+
+test('E2 hasım/sahte-worktree: .git YOKKEN .claude/worktrees/<x>/ [SERT] delinmez (uydurma yol ENGEL)', () => {
+  const kok = kurulum();
+  // gerçek worktree marker YOK → sanal kök kurulmaz → .claude/ [SERT] uygulanır
+  for (const yol of [
+    '.claude/worktrees/hayalet/01_kutular/gizli.md',
+    '.claude/worktrees/hayalet/02_kanon/kilitli/K.md',
+    '.claude/worktrees/hayalet/.kurulum-tamam',
+  ]) {
+    const r = kos(kok, { tool_name: 'Write', tool_input: { file_path: join(kok, yol), content: 'x' } });
+    assert.equal(r.status, 2, yol + ' — sahte worktree [SERT] delmemeli');
+  }
+});
+
+test('E2 hasım/gerçek-worktree: .git VARKEN iş alanı serbest, çekirdek+kilitli SERT, golden ask', () => {
+  const kok = kurulum();
+  const wt = worktreeKur(kok); // artık .git dosyası yazıyor
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '01_kutular/K.md'), content: 'iş' } }).status, 0);
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, 'tools/guard/h.sh'), content: 'x' } }).status, 2);
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '02_kanon/kilitli/K.md'), content: 'x' } }).status, 2);
+  assert.equal(askJson(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '02_kanon/golden/g.md'), content: 'x' } })).permissionDecision, 'ask');
+});
+
+test('E2 hasım/worktree symlink kaçağı: worktree içinden .. ile gerçek köke çıkış SERT kalır', () => {
+  const kok = kurulum();
+  const wt = worktreeKur(kok);
+  // worktree iş-alanından .. ile gerçek kök .claude/settings.json (SERT) hedefi
+  const r = kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, '01_kutular/../../../../.claude/settings.json'), content: 'x' } });
+  assert.equal(r.status, 2, '.. kaçışı kanonikle gerçek kök .claude/ SERT');
+});
+
+test('E2 hasım/MCP içerik: mcp__ tool_input TCKN taşıyorsa her kipte ENGEL (içerik fail-closed)', () => {
+  const kok = kurulum();
+  const tckn = e2TcknUret('134679258');
+  const derin = { tool_name: 'mcp__x__send', tool_input: { body: 'merhaba', nested: { list: ['ek: ' + tckn] } } };
+  const r = kos(kok, derin);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /önleme bulgusu \(tckn\)/);
+  assert.ok(!r.stderr.includes(tckn), 'MCP engel metni değeri sızdırmamalı');
+  // temiz MCP koşu-KAPALI serbest
+  assert.equal(kos(kok, { tool_name: 'mcp__x__send', tool_input: { body: 'selam' } }).status, 0);
+});
+
+test('E2 hasım/süzgeç-hata degrade: bozuk süzgeç (rc=1) → YAZMA engel, Bash serbest', () => {
+  const kok = kurulum();
+  writeFileSync(join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'), '#!/bin/bash\nexit 1\n');
+  const yazma = kos(kok, write(kok, '01_kutular/x.md'));
+  assert.equal(yazma.status, 2);
+  assert.match(yazma.stderr, /içerik süzgeci koşamadı/);
+  const bash = kos(kok, { tool_name: 'Bash', tool_input: { command: 'echo x > 01_kutular/y.md' } });
+  assert.equal(bash.status, 0, 'süzgeç bozukken Bash pre-E2 tabanına düşer (komut serbest)');
+});
+
+test('E2 hasım/MultiEdit ve NotebookEdit file-guard ÜZERİNDEN içerik taranır', () => {
+  const kok = kurulum();
+  const tckn = e2TcknUret('246813579');
+  const me = { tool_name: 'MultiEdit', tool_input: { file_path: join(kok, '01_kutular/a.md'), edits: [{ old_string: 'a', new_string: 'b' }, { old_string: 'c', new_string: 'tc ' + tckn }] } };
+  assert.equal(kos(kok, me).status, 2);
+  const ne = { tool_name: 'NotebookEdit', tool_input: { notebook_path: join(kok, '01_kutular/n.ipynb'), new_source: 'kart ' + e2CardUret() } };
+  assert.equal(kos(kok, ne).status, 2);
+});
+
+test('E2 hasım/dışa-giden liste genişliği: 11 fiilin HEPSİ dikişte SOR-DISA', () => {
+  const kok = kurulum();
+  const fiiller = {
+    'git push': 'git push origin main', 'curl': 'curl http://x', 'wget': 'wget http://x',
+    'ssh': 'ssh host ls', 'scp': 'scp a h:b', 'sftp': 'sftp h', 'rsync': 'rsync -a a h:b',
+    'mail': 'mail -s x a@b.c', 'sendmail': 'sendmail a@b.c', 'gh': 'gh pr create', 'npm publish': 'npm publish',
+  };
+  for (const [ad, komut] of Object.entries(fiiller)) {
+    const r = kos(kok, { tool_name: 'Bash', tool_input: { command: komut } });
+    assert.equal(r.status, 0, ad);
+    assert.match(askJson(r).permissionDecisionReason, /DIŞARI çıkan/, ad);
+  }
+});
+
+test('E2 hasım/settings kablosu: 11 dışa-giden ask kuralının HEPSİ şablonda', () => {
+  const ayar = JSON.parse(readFileSync(join(BURASI, '..', '..', '..', '.claude', 'settings.json'), 'utf8'));
+  for (const k of ['Bash(git push:*)', 'Bash(curl:*)', 'Bash(wget:*)', 'Bash(ssh:*)', 'Bash(scp:*)', 'Bash(sftp:*)', 'Bash(rsync:*)', 'Bash(mail:*)', 'Bash(sendmail:*)', 'Bash(gh:*)', 'Bash(npm publish:*)']) {
+    assert.ok(ayar.permissions.ask.includes(k), k + ' şablon ask listesinde olmalı');
+  }
+});
+
+test('E2 hasım/worktree × kurulum-penceresi: kurulum sürerken bile gerçek worktree çekirdeği SERT', () => {
+  const kok = kurulum({ kurulumTamam: false });   // ana proje kurulum sürüyor
+  const wt = join(kok, '.claude', 'worktrees', 'ag-1');
+  mkdirSync(join(wt, 'tools', 'guard'), { recursive: true });
+  mkdirSync(join(wt, '01_kutular'), { recursive: true });
+  writeFileSync(join(wt, '.git'), 'gitdir: x\n');
+  // worktree checkout'unda .kurulum-tamam YOK (ana proje henüz kurulmamış) → kurulum penceresi;
+  // ama çekirdek (tools/guard) kurulumda da SERT kalır (A5 ruhu)
+  assert.equal(kos(kok, { tool_name: 'Write', tool_input: { file_path: join(wt, 'tools/guard/h.sh'), content: 'x' } }).status, 2);
+});
+
+function e2CardUret() {
+  const hane = '478213456789012';
+  const d = hane.split('').map(Number);
+  let top = 0; const r = [...d].reverse();
+  for (let i = 0; i < r.length; i++) { let x = r[i]; if (i % 2 === 0) { x *= 2; if (x > 9) x -= 9; } top += x; }
+  return hane + String((10 - (top % 10)) % 10);
+}

@@ -135,7 +135,7 @@ Muğlak-mesaj kuralı (EL_KITABI, mühür ritüeli) çatal cevaplarına da geni�
 4. CEVAP-BEKLİYOR çatalın `BEKLETİR` listesindeki görevleri sevk AÇAMAZ; bağımsız işler koşar.
    (Mekanikleri E3'te kurulur; kural bugünden yazılıdır.)
 
-## 7 · Sır-cinsi ilkesi + Bash-yazım kuralı (önleme — mekaniği E2)
+## 7 · Sır-cinsi ilkesi + Bash-yazım kuralı (önleme — mekaniği KURULU, E2)
 
 - **"Git'te geri alınır" kişisel veri/sır cinsinde güvence DEĞİLDİR.** Bu cinsin tek
   güvencesi hiç yazılmaması ya da tek atılabilir kopyada kalmasıdır. Worktree ayrı depo
@@ -147,6 +147,11 @@ Muğlak-mesaj kuralı (EL_KITABI, mühür ritüeli) çatal cevaplarına da geni�
 - **Serbest-metin yasağı (dışa giden):** e-posta/haber gövdesi yalnız zarfın ve kapanış
   bloğunun tanımlı alanlarından kurulur; serbest metin eklenmez. Her gönderim önce içerik
   süzgecinden geçer; süzgeç red verirse gövde GİTMEZ (sansürlü sabit-şablon alarm gider).
+- **E2 mekaniği:** süzgeç `tools/guard/icerik-suzgeci.sh` (+işaret listesi) yazım-öncesi
+  keser — Edit/Write/Bash-yazımı VE MCP tool_input içeriği (her kanalda içerik fail-closed).
+  Koşuda MCP çağrısı SORULUR; `git add/commit/stash` SORULUR, worktree bağlamında ENGEL
+  (yalnız git-obje ENGEL — MCP her bağlamda SOR). Worktree'de koruma haritası aynen (sanal
+  kök; yalnız gerçek worktree'de). Dışa-giden (`git push`/`curl`/`gh`/…) her kipte SORULUR.
 
 ## 8 · Aynı-model uyarısı
 

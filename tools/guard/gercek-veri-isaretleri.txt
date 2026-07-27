@@ -1,0 +1,10 @@
+# gercek-veri-isaretleri — icerik-suzgeci.sh'ın okuduğu VERİ dosyası (kod değil; E2 Hat-1).
+# Amaç: SAHİBİN gerçek-veri işaretleri — jenerik desenlerin (TCKN/IBAN/kart) yakalayamayacağı,
+# bu projeye özgü gerçek dizeler: gerçek ad-soyad, gerçek dosya adları, hesap takma adları vb.
+# Bu listedeki bir dize YAZIMA GİDEN İÇERİKTE geçerse yazım engellenir (önleme bulgusu).
+# Biçim: satır başına BİR dize; eşleşme birebir BAYTTIR (büyük/küçük harf dönüşümü YOK —
+# Türkçe İ/ı güvenliği); "#" ile başlayan satır yorumdur; 4 karakterden KISA satır yok sayılır
+# (aşırı-engelleme freni — "Ali" gibi kısa dize her metni keserdi).
+# DOLDURAN: kurulumda sahip/GENESIS (GENESIS bağlanması ayrı iş — o güne dek elle).
+# Boşken süzgeç yalnız jenerik desenlerle koşar; doluluğu E4 kurulum denetçisi arar (kalem 7).
+# ÖRNEK GERÇEK DEĞER BU DOSYAYA ŞABLONDAN GİRMEZ (bu dosya kurulu projede sahip verisidir).

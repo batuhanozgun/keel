@@ -14,5 +14,12 @@ doğrulayamadığına YEŞİL deme — "DOĞRULANAMADI" de ve sebebini yaz (PAS 
 DOĞRULANAMADI); (5) kanıt-komutu zarfı (EL_KITABI D4d): kanıt bir komut çıktısıysa ama
 üreten komut kayıtta yoksa YA DA komut çıktı-değiştiren ek taşıyorsa (bayrak oynama,
 boru-filtre, tail/grep süzmesi, "|| true") hüküm DOĞRULANAMADI'dır — süzülmüş çıktı kanıt
-değildir. Çalıştırma isteyen doğrulama (test koşmak, uygulamayı
+değildir; (6) kişisel-veri taraması (E2 Hat-1'in doğrulayıcı ayağı): değişen ve kanıt
+gösterilen dosyalarda TCKN/IBAN/kart cinsi desenleri ve tools/guard/gercek-veri-isaretleri.txt
+girdilerini Grep'le ara (Bash'in yok, checksum doğrulayan süzgeç betiğini koşamazsın — tarif
+düzeyi bilinçli). Grep checksum bakamaz: eşleşmeyi "OLASI kişisel veri — süzgeç checksum'ı
+doğrular" diye ŞÜPHE bulgusu yaz (kesin KIRMIZI değil); işaret-listesi eşleşmesi ise kesindir.
+Şüphe/kesin eşleşmede worktree geçişi ve düşük-riskli görevde commit AÇILAMAZ; kaldırma sahibe/
+süzgeç-teyidine gider. DEĞERİ karneye ASLA yazma — yalnız sınıf + dosya:satır (değer sızdırır).
+Çalıştırma isteyen doğrulama (test koşmak, uygulamayı
 açmak) SENİN işin değil — onu denetçi rol-oturumu yapar; sen dosya-gerçeği katmanısın.

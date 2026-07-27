@@ -8,3 +8,8 @@
 tools/guard/.aktif-rol
 # koşu-AÇIK göstergesi (E1) — koşu-durumu, izlenmez (.aktif-rol emsali; yazarı /kosu, sileni sevk)
 tools/sevk/.kosu-acik
+# harness worktree'leri (E2) — atılabilir/geçici git worktree'leri; izlenmez ki bekçi porcelain
+# hattı meşru bir riskli-görev worktree'sini [SERT] .claude/ kirliliği sanıp KIRMIZI basmasın
+# (hasım bulgusu). Worktree yazımları zaten file-guard sanal-kök haritasıyla korunur (tool katmanı);
+# porcelain körlüğünün gideri o katman + doğrulanmadan ana ağaca geçmeme kuralıdır.
+.claude/worktrees/

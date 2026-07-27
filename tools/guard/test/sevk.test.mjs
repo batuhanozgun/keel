@@ -420,6 +420,9 @@ function guardKurulum({ kurulumTamam = true } = {}) {
   mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
   mkdirSync(join(kok, '00_pano'), { recursive: true });
   copyFileSync(join(KOK_REPO, 'tools', 'guard', 'korunan-yollar.txt'), join(kok, 'tools', 'guard', 'korunan-yollar.txt'));
+  // E2 Hat-1: içerik süzgeci kurulu dokuda file-guard'ın ön şartıdır (yokluğu fail-closed engel).
+  copyFileSync(join(KOK_REPO, 'tools', 'guard', 'icerik-suzgeci.sh'), join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'));
+  copyFileSync(join(KOK_REPO, 'tools', 'guard', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   if (kurulumTamam) writeFileSync(join(kok, '.kurulum-tamam'), 'kuruldu\n');
   return kok;
 }

@@ -2,7 +2,18 @@
   "permissions": {
     "ask": [
       "Edit(/02_kanon/kilitli/**)",
-      "Edit(/02_kanon/golden/**)"
+      "Edit(/02_kanon/golden/**)",
+      "Bash(git push:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(sftp:*)",
+      "Bash(rsync:*)",
+      "Bash(mail:*)",
+      "Bash(sendmail:*)",
+      "Bash(gh:*)",
+      "Bash(npm publish:*)"
     ]
   },
   "hooks": {
