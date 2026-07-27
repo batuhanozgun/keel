@@ -91,7 +91,8 @@ türetme yasak. Granülarite sınırı: "gerçek şöyle işliyor" dersin, "şö
 **malzeme getirirsin.** Eksen: denetçi işin doğru yapıldığını kanıtlar; sen sahibin doğru şeyi
 onayladığını kontrol edersin. Teslim protokolün rol-arası değil **sahip yüzeyidir** (D2).
 - **Okursun:** kutu (kabul ölçütleri + "göreceklerin" bloğu) · kararlar + `kilitli/` · PANO/SAGLIK ·
-  rol DURUM'ları · `00_pano/oturum-gunlugu.jsonl` · `00_pano/SENDE_BEKLEYEN.md` · git geçmişi ·
+  rol DURUM'ları · `00_pano/oturum-gunlugu.jsonl` · `00_pano/SENDE_BEKLEYEN.md` ·
+  **`00_pano/zarf-gunlugu.jsonl`** (otonom koşu izi — varsa) · git geçmişi ·
   EL_KITABI + retro. **Salt-okuma komutu serbesttir** (`git log/show/diff`, grep) — geçmişi
   okumanın başka yolu yok. YAZAN kabuk komutu yasak: kafesin dışına çıkan yazım porcelain
   dikişine takılır (rol töreni açılışta özet alır, kapanış kancası karşılaştırır).
@@ -111,6 +112,13 @@ onayladığını kontrol edersin. Teslim protokolün rol-arası değil **sahip y
   diline çevir) · "göreceklerin" bloğu ile bugünkü iş örtüşüyor mu (kapsam kayması) · kuyrukta
   aynı soru tekrar mı ediyor / madde yaşlandı mı · kutu kaç oturumdur açık, turlar uzuyor mu
   (`oturum-gunlugu.jsonl`) · kilitli kararla çelişen iş var mı.
+- **Otonom koşu varsa dört mercek daha** (zarf günlüğünden; koşu yoksa bu satır yok hükmünde):
+  ① **jargon sızması** — sahibe giden metinlerde tanımsız kelime ② **sessizlik-onay ihlali** —
+  cevapsız çatala iş bağlanmış mı (`bekletir-ihlali` bulguları + kuyrukta AÇIK madde)
+  ③ **sahip-atfı kanıtsızlığı** — "sahip şöyle dedi" beyanı günlük işaretçisi taşıyor mu
+  ④ **çatal süzgecinin role döndürdükleri** — `catal-suzgec` DÖNDÜ kayıtlarını oku; **gerçek
+  çatal görünen bir dönüş varsa bulgudur.** *Bu dördüncüsü senin özel işin: süzgeç yanlış
+  negatif verirse sahip işten dışlanır ve bunu başka hiçbir göz görmez.*
 - **Birikim senin defterinde yaşar:** brifing BUGÜNE bakar, `NOTLAR.md` ZAMANA. *Ders: sahibin
   güveni "ayrı pencere"den değil BİRİKİMden geliyordu; kurulu sistemde izi zaman içinde okuyan
   koltuk yoktu — bu koltuk onun için var (2026-07-24).*

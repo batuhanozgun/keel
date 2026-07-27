@@ -65,6 +65,14 @@ SubagentStop kapısı sessiz söner). Hepsi metin-eşleşmelidir, kusursuz deği
   `mv`/`dd`/`rsync`/`sed -i`) korunan-yollar kaydını anıyorsa SORULUR (hedef/kaynak metinden
   ayrılamaz; `2>/dev/null` yazım sayılmaz; kurulum sürerken yalnız çekirdek üçlü sorulur).
 
+**E3 kuyruk dikişi (2026-07-28; tasarı `…-e3-soru-kanali-tasarisi.md`):** koşu-AÇIK iken
+`00_pano/SENDE_BEKLEYEN.md`'ye yazma aracıyla dokunmak **ENGEL**dir. Gerekçesi
+`OTONOM_KOSU §6.1`: *"cevap yalnız sahibin açık cevabıyla CEVAPLANDI olur; başka hiçbir olay
+durumu değiştiremez"* — koşunun kendi eliyle `[x] cevap: …` yazabilmesi o kilidi deliyordu
+(hasım bulgusu; kilidin fiilen açıldığı ölçüldü). Meşru yazıcı kanca sürecindeki
+`tools/sevk/catal-kuyruk.sh` betiğidir ve o bu engelden geçmez. **El-sürüşlü oturumda dikiş
+YOKTUR:** D-21'in "cevabı alan rol kapanış işareti koyar" akışı aynen sürer.
+
 **Perf ve degrade (hasım bulguları):** Bash yalnız bir dikiş-tetikleyici token taşıyorsa
 node'a iner (`ls`/`grep`/`cat`/`pwd` node görmez). node YA DA süzgeç çalışamazsa: YAZMA
 araçları fail-closed (engel), Bash/MCP fail-open (komut serbest — pre-E2 tabanı korunur, ama

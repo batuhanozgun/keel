@@ -58,44 +58,13 @@ DURUM="${SATIR%%$'\t'*}"
 GOVDE="${SATIR#*$'\t'}"
 [ "$DURUM" = "TAMAM" ] || hata "sema: $GOVDE"
 
-# mkdir kilidi: 50×0,1 sn; bayat kilit kırılır; alınamazsa fail-closed.
-# Bayat tespiti İKİ dallı (hasım bulguları A11+D2): PID okunuyorsa ölü-PID kırılır; PID yoksa/
-# bozuksa (crash penceresi: mkdir ile pid-yazımı arası ölüm, ya da elle kalmış dizin) kilit
-# YAŞLA kırılır (mtime > 30 sn) — pid'siz taze kilit kırılmaz (fail-closed bekler). KIRMA
-# ATOMİKTİR: rm -rf değil `mv` (rename) — iki süreç aynı anda bayat görüp ikisi de rm yapsaydı
-# biri ötekinin TAZE kilidini silebilirdi (D2 yarış deliği); mv'yi yalnız biri kazanır.
-KILIT_BIZDE=0
-temizlik() { [ "$KILIT_BIZDE" = "1" ] && rm -rf "$KILIT" 2>/dev/null; }
-trap 'temizlik; hata "ic hata (fail-closed): arac beklenmedik durdu, satir YAZILMADI"' ERR
-kilit_kir() { # atomik: mv'yi tek süreç kazanır; kaybeden sessizce döngüye döner
-  local COP="$KILIT.kirik.$$"
-  if mv "$KILIT" "$COP" 2>/dev/null; then rm -rf "$COP" 2>/dev/null || true; fi
-}
-DENEME=0
-while ! mkdir "$KILIT" 2>/dev/null; do
-  DENEME=$((DENEME + 1))
-  if [ "$DENEME" -ge 50 ]; then
-    ESKI_PID="$(cat "$KILIT/pid" 2>/dev/null || true)"
-    case "$ESKI_PID" in
-      *[!0-9]*|'')
-        KILIT_ZAMAN="$(stat -f %m "$KILIT" 2>/dev/null || stat -c %Y "$KILIT" 2>/dev/null || echo 0)"
-        case "$KILIT_ZAMAN" in *[!0-9]*|'') KILIT_ZAMAN=0;; esac
-        if [ "$KILIT_ZAMAN" -gt 0 ] && [ $(( $(date +%s) - KILIT_ZAMAN )) -gt 30 ]; then
-          kilit_kir; DENEME=0; continue
-        fi
-        hata "kilit alinamadi ($KILIT): sahibi okunamadi ve kilit taze — yazim yigilmis olabilir, elle bak" ;;
-      *) if kill -0 "$ESKI_PID" 2>/dev/null; then
-           hata "kilit alinamadi ($KILIT, sahibi PID $ESKI_PID yasiyor) — yazim yigilmis olabilir"
-         else
-           kilit_kir; DENEME=0; continue
-         fi ;;
-    esac
-  fi
-  sleep 0.1
-done
-KILIT_BIZDE=1
-printf '%s\n' "$$" > "$KILIT/pid" 2>/dev/null || true
+# Kilit ORTAK KİTAPLIKTAN gelir (E3: tools/sevk/kilit.sh — catal-kuyruk.sh ile aynı mekanik;
+# iki kopya = sürüklenme, D-02 dersi). Semantik değişmedi: mkdir · 50×0,1 sn · bayat kilit iki
+# dallı kırılır (ölü PID / pid'siz + 30 sn) · kırma `mv` ile ATOMİK · alınamazsa fail-closed.
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/kilit.sh"
+trap 'kilit_birak; hata "ic hata (fail-closed): arac beklenmedik durdu, satir YAZILMADI"' ERR
+kilit_al "$KILIT" || hata "kilit alinamadi: $KILIT_HATA"
 
-printf '%s\n' "$GOVDE" >> "$GUNLUK" || { temizlik; hata "gunluge yazilamadi: $GUNLUK"; }
-rm -rf "$KILIT" 2>/dev/null; KILIT_BIZDE=0
+printf '%s\n' "$GOVDE" >> "$GUNLUK" || { kilit_birak; hata "gunluge yazilamadi: $GUNLUK"; }
+kilit_birak
 exit 0

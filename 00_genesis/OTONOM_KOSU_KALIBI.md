@@ -5,8 +5,15 @@
      Kalıp metni SABİTTİR: kopyala, «alanları» doldur, bu bloğu sil. Alanlar: «SAHİP».
      EL_KITABI'na TEK HARF eklenmez (marj 44B; tavan sorusu sahibe gitmeden ek giremez) —
      otonom kural evi BU dosyadır; keşfi rol sözleşmelerinin "Açılış ek-okumaları" satırından.
-     Tavan: 12.288 B (şablon testi tools/guard/test/otonom-sim.test.mjs ölçer; kurulu bekçiye
-     girmez — F3 tablosu EL_KITABI'nda ve ona dokunulmuyor; ilk gerçek retroda kalibre edilir). -->
+     Tavan: 14.336 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
+     ölçer; kurulu bekçiye girmez — F3 tablosu EL_KITABI'nda ve ona dokunulmuyor).
+     Tavan E3'te 12.288'den çıkarıldı (2026-07-27): E1'in sayısı içerik yazılmadan seçilmişti
+     ve dört evreye 658 B pay bırakıyordu; E3 sıkıştırma sınırına geldi (§6'nın beş-kalem
+     listesi koltuk dosyasına bırakıldı — F3 "kural-atıf kopyası" sınıfı). Sayı yine bir
+     TAHMİNDİR; marj freni onu bir dahaki sefere sessizce kaydırılamaz kılar: 500 B'nin altına
+     inecek ek, tavan kararını YENİDEN aldırır. Bu dosya sahip yüzeyi DEĞİLDİR (karar alanı
+     çizgisi madde 8: yapının kendi işleyişi sahibe soru değildir) — karar danışmanındır,
+     beyanı paketin raporundadır. İlk gerçek retroda ölçümle kalibre edilir. -->
 # OTONOM KOŞU — otonom kipin kuralları
 
 Bu belge yalnız **otonom koşu** kipinde devreye girer; el-sürüşlü günlük döngüyü (rol töreni,
@@ -123,17 +130,29 @@ metni harness ajanının çıktısına sızdı — ölçüldü (E0 §6.1).*
 
 ## 6 · Sessizlik onay değildir (çatal genişletmesi; mühür kuralının kardeşi)
 
-Muğlak-mesaj kuralı (EL_KITABI, mühür ritüeli) çatal cevaplarına da genişler:
+Muğlak-mesaj kuralı (EL_KITABI, mühür ritüeli) çatal cevaplarına da genişler. **Hangi soru
+sahibe gider:** `02_kanon/KARAR_ALANI.md` (Bölüm A soru çizgisi · Bölüm B sahip profili).
+Dosya yoksa ya da profil boşsa **çatal sahibe gidemez** — soru kanalı kapalıdır.
 
 1. Sahibe giden çatal `SENDE_BEKLEYEN` kuyruğuna düşer, durumu **CEVAP-BEKLİYOR**; yalnız
    sahibin açık cevabıyla **CEVAPLANDI** olur. Zaman aşımı, yeni koşu, "itiraz gelmedi" —
-   hiçbiri durumu değiştiremez.
+   hiçbiri durumu değiştiremez. `[x]` işareti tek başına da yetmez: boş cevap · "anlamadım"
+   sınıfı · sorunun yankısı → madde AÇIK kalır.
 2. **"Anlamadım" = çatal soruyu getirene döner** (çeviri kusuru); rol düzeltip yeniden
-   getirir, kararı basamaz.
-3. **Cevap-eşleşme + İNAT:** soruyla eşleşmeyen cevap CEVAP DEĞİLDİR; soru açık kalır, rol
-   daha sade çeviriyle yeniden getirir (sahibin kendi kuralı: "en temizi inat etsin").
-4. CEVAP-BEKLİYOR çatalın `BEKLETİR` listesindeki görevleri sevk AÇAMAZ; bağımsız işler koşar.
-   (Mekanikleri E3'te kurulur; kural bugünden yazılıdır.)
+   getirir, kararı basamaz. Eski madde SİLİNMEZ (D-21) ama kilidi yeni maddeye **devreder**:
+   satırına `devretti: Ç-NN` yazılır — yoksa bağlı işler sonsuza dek kilitli kalır.
+3. **Cevap-eşleşme + İNAT:** soruyla eşleşmeyen cevap CEVAP DEĞİLDİR. Mekanik yalnız üç kaba
+   dalı tutar; gerisi rolün ve çatal denetçisinin işidir (beyanlı sınır).
+4. CEVAP-BEKLİYOR çatalın `BEKLETİR` görevlerini sevk AÇAMAZ; bağımsız işler koşar. İkinci hat
+   biçim kapısıdır: o görevin dönüşü red alır.
+5. **Çatal sahibe gitmeden yazamaz bir gözden geçer:** `catal-denetcisi` koşusu (beş kalem,
+   sözleşmesi kendi dosyasında). Hükmü GEÇTİ/DÖNDÜ'dür ve **metni yeniden yazamaz** — sahip
+   cümlesi zarfın günlük kaydından mekanik alınır (§9). DÖNDÜ izini dış göz okur.
+6. **Sahibin bilmediği kelime kırmızıdır:** çeviride karar/görev numarası, dosya adı ya da yol
+   geçen çatal kapıdan döner. *Ders: sahip anlamadığı soruya "olur" der.*
+
+Mekanikler: `tools/sevk/karar-alani.sh` (kanal açık mı) · `catal-kuyruk.sh` (durum + ekleme) ·
+biçim kapısı (jargon · TÜRETME-İZİ çapası · BEKLETİR kilidi · denetçi sözleşmesi).
 
 ## 7 · Sır-cinsi ilkesi + Bash-yazım kuralı (önleme — mekaniği KURULU, E2)
 

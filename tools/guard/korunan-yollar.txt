@@ -23,3 +23,6 @@ tools/sevk/
 00_genesis/
 # Otonom kipin kural evi (E1): kurulu projede elle kopyalanır; koşu içinde sessizce değiştirilemez.
 02_kanon/OTONOM_KOSU.md
+# Sahibin karar alanı (E3): hangi sorunun sahibe gideceğinin yazılı evi (soru çizgisi + profil).
+# Ajan kendi soru alanını genişletemez/daraltamaz — değişikliği sahibin kararıdır.
+02_kanon/KARAR_ALANI.md

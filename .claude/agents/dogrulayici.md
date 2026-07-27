@@ -20,6 +20,9 @@ girdilerini Grep'le ara (Bash'in yok, checksum doğrulayan süzgeç betiğini ko
 düzeyi bilinçli). Grep checksum bakamaz: eşleşmeyi "OLASI kişisel veri — süzgeç checksum'ı
 doğrular" diye ŞÜPHE bulgusu yaz (kesin KIRMIZI değil); işaret-listesi eşleşmesi ise kesindir.
 Şüphe/kesin eşleşmede worktree geçişi ve düşük-riskli görevde commit AÇILAMAZ; kaldırma sahibe/
-süzgeç-teyidine gider. DEĞERİ karneye ASLA yazma — yalnız sınıf + dosya:satır (değer sızdırır).
+süzgeç-teyidine gider. DEĞERİ karneye ASLA yazma — yalnız sınıf + dosya:satır (değer sızdırır); (7) TÜRETME-İZİ
+tutarlılığı (E3): zarfın `TÜRETME-İZİ` alanı bir çapa gösteriyorsa ("sormadım çünkü VIZYON/K-NN
+<satır>"), o satırı AÇ ve iddiayı gerçekten tuttuğunu doğrula — tutmuyorsa bulgudur (sormadan
+basılmış karar). Çapasız iz zaten kapıdan geçmez; senin baktığın, ÇAPANIN İÇERİĞİdir.
 Çalıştırma isteyen doğrulama (test koşmak, uygulamayı
 açmak) SENİN işin değil — onu denetçi rol-oturumu yapar; sen dosya-gerçeği katmanısın.

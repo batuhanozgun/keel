@@ -1,6 +1,6 @@
 // otonom-sim.test.mjs — E1 bayt ölçümleri (kurulu-sim emsali, tasarım §5.1 "KUTU bayt ölçümü").
-// İki fren: (1) OTONOM_KOSU kalıbının kurulu boyu kendi tavanına (12.288B, kalıp yorum-bloğunda
-// beyanlı) sığar; (2) yeni KUTU bloklarının (duruş sözleşmesi + bağımlılık/risk, KT-003 ölçeği
+// İki fren: (1) OTONOM_KOSU kalıbının kurulu boyu tavanına sığar (sayı bu dosyada SABİT,
+// kalıptaki beyanla eşleşmesi ayrıca denetlenir — hasım bulgusu 2026-07-28); (2) yeni KUTU bloklarının (duruş sözleşmesi + bağımlılık/risk, KT-003 ölçeği
 // 25 görev) bayt EKİ sınırlı kalır — KUTU sarı tavanı 10KB'dir ve yeni bloklar onu yemez.
 // KUTU tavan KIRMIZI'sının otonom statüsü (kapanış kilidi, duran kapı değil) bekçi tarifinde
 // ve OTONOM_KOSU §1'de beyanlıdır; bu test yalnız SAYIYI yeniden-üretilebilir kılar.
@@ -14,23 +14,77 @@ const BURASI = dirname(fileURLToPath(import.meta.url));
 const KALIP_YOLU = join(BURASI, '..', '..', '..', '00_genesis', 'OTONOM_KOSU_KALIBI.md');
 const KUTU_SARI = 10 * 1024; // EL_KITABI F3 (değişmedi; buraya kopya değil çapa — sayı F3'te yaşar)
 
-function kalipTavani(kalip) {
+// TAVAN SAYILARI BURADA SABİTTİR (hasım bulgusu 2026-07-28): eskiden test, tavanı ölçtüğü
+// dosyanın KENDİ yorum satırından okuyordu — metni büyüten kişi aynı düzenlemede sayıyı da
+// büyütünce hem tavan testi hem marj freni yeşil kalıyordu, yani fren fren değildi.
+// Artık tavanı değiştirmek İKİ ayrı dosyada bilinçli edim ister ve diff'te görünür.
+const TAVANLAR = { OTONOM_KOSU: 14336, KARAR_ALANI: 8192 };
+
+function kalipTavani(kalip, ad) {
   const m = kalip.match(/Tavan:\s*([\d.]+)\s*B/);
   assert.ok(m, 'kalıp yorum-bloğunda "Tavan: N B" beyanı bulunamadı');
-  return Number(m[1].replace('.', ''));
+  const beyan = Number(m[1].replace('.', ''));
+  assert.equal(beyan, TAVANLAR[ad],
+    `kalıptaki tavan beyanı (${beyan}B) testteki sabitle (${TAVANLAR[ad]}B) uyuşmuyor — tavan değişikliği İKİ dosyada birden, bilinçli olarak yapılır`);
+  return beyan;
+}
+
+// Kurulu-sim üretici: kalıp yorum bloğu atılır, «alanlar» doldurulur.
+function kuruluSim(kalip, alanlar = { '«SAHİP»': 'Deneme' }) {
+  const satirlar = kalip.split('\n');
+  const yorumSonu = satirlar.findIndex((s) => s.trimEnd().endsWith('-->'));
+  assert.ok(yorumSonu >= 0 && yorumSonu < 40, 'kalıp-yorumu bloğu bulunamadı');
+  let sim = satirlar.slice(yorumSonu + 1).join('\n');
+  for (const [a, d] of Object.entries(alanlar)) sim = sim.replaceAll(a, d);
+  return sim;
 }
 
 test('OTONOM_KOSU kurulu-sim: beyan edilen tavana sığar (marj raporlanır)', (t) => {
   const kalip = readFileSync(KALIP_YOLU, 'utf8');
-  const TAVAN = kalipTavani(kalip);
-  const satirlar = kalip.split('\n');
-  const yorumSonu = satirlar.findIndex((s) => s.trimEnd().endsWith('-->'));
-  assert.ok(yorumSonu >= 0 && yorumSonu < 25, 'kalıp-yorumu bloğu bulunamadı');
-  const sim = satirlar.slice(yorumSonu + 1).join('\n').replaceAll('«SAHİP»', 'Deneme');
+  const TAVAN = kalipTavani(kalip, "OTONOM_KOSU");
+  const sim = kuruluSim(kalip);
   assert.ok(!sim.includes('«'), 'kurulu-sim içinde doldurulmamış «alan» kaldı');
   const B = Buffer.byteLength(sim, 'utf8');
   t.diagnostic(`otonom-sim: ${B}B · tavan: ${TAVAN}B · marj: ${TAVAN - B}B`);
   assert.ok(B <= TAVAN, `OTONOM_KOSU kurulu boyu tavanı aşıyor: ${B}B > ${TAVAN}B`);
+});
+
+// MARJ FRENİ (E3, 2026-07-27): kurulu-sim/EL_KITABI emsali. Tavanın kendisi bir TAHMİNDİR;
+// fren, tavanın "yeni metin sığmadı" baskısıyla sessizce büyütülmesini engeller — marj 500B'nin
+// altına inen ek, tavan kararını YENİDEN aldırır (E1'in 12.288'i dört evreye 658B pay bırakmıştı
+// ve E3'te fark edildi; o gecikme bu frenin doğuş sebebidir).
+const OTONOM_MARJ_FRENI = 500;
+test('OTONOM_KOSU marj freni: tavana 500B kalmadan ek giremez', (t) => {
+  const kalip = readFileSync(KALIP_YOLU, 'utf8');
+  const TAVAN = kalipTavani(kalip, "OTONOM_KOSU");
+  const B = Buffer.byteLength(kuruluSim(kalip), 'utf8');
+  const marj = TAVAN - B;
+  t.diagnostic(`otonom-sim marj: ${marj}B (fren: ${OTONOM_MARJ_FRENI}B)`);
+  assert.ok(marj >= OTONOM_MARJ_FRENI,
+    `OTONOM_KOSU marjı frenin altında: ${marj}B < ${OTONOM_MARJ_FRENI}B — metni sıkıştır ya da tavan kararını yeniden al (kalıp yorum bloğunda beyanla)`);
+});
+
+// KARAR ALANI kalıbı (E3): kendi tavanı + Bölüm A'nın bütünlüğü. Bölüm A KEEL-geneldir ve
+// kurulumda DOLDURULMAZ — kopyalanır; aşınması karar-alanı denetçisinin KIRMIZI'sıdır.
+const KARAR_KALIP_YOLU = join(BURASI, '..', '..', '..', '00_genesis', 'KARAR_ALANI_KALIBI.md');
+test('KARAR_ALANI kurulu-sim: tavana sığar + Bölüm A sekiz madde', (t) => {
+  const kalip = readFileSync(KARAR_KALIP_YOLU, 'utf8');
+  const TAVAN = kalipTavani(kalip, "KARAR_ALANI");
+  const sim = kuruluSim(kalip, {
+    '«SAHİP»': 'Deneme',
+    '«BİLİR — yalnız sahipte olan ham bilgi ve tercih: hayatı/işi/parası, ürünün amacı ve "bu kadarı\nyeter" hissi, kapsam tercihi, karar verme tarzı. Madde madde, her madde tek satır.»': '- doldurulmuş örnek',
+  });
+  const B = Buffer.byteLength(sim, 'utf8');
+  t.diagnostic(`karar-alani-sim: ${B}B · tavan: ${TAVAN}B · marj: ${TAVAN - B}B`);
+  assert.ok(B <= TAVAN, `KARAR_ALANI kalıbı tavanı aşıyor: ${B}B > ${TAVAN}B`);
+  // Bölüm A'nın 8 maddesi + üç çapa (karar-alani.sh bunları arar — desen ile metin birlikte yaşar)
+  for (let i = 1; i <= 8; i++) {
+    assert.ok(new RegExp(`^${i}\\. `, 'm').test(kalip), `Bölüm A ${i}. madde yok`);
+  }
+  for (const capa of ['bilgi kaynağı değildir', 'Türetilebilen sorulmaz', 'eşleşmeyen cevap']) {
+    assert.ok(kalip.includes(capa), `Bölüm A çapası kalıpta yok: ${capa}`);
+  }
+  assert.ok(kalip.includes('## Bölüm A') && kalip.includes('## Bölüm B'), 'iki bölüm başlığı da olmalı');
 });
 
 // KT-003 ölçeğinde (25 görev) yeni blokların GERÇEKÇİ dolgusu — asgari-dolgu hilesi yok:

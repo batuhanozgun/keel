@@ -137,6 +137,19 @@ if (String(j.tool_name || "").startsWith("mcp__")) {
   console.log("GEC"); process.exit(0);
 }
 
+// KUYRUK DİKİŞİ (E3 hasim bulgusu; YALNIZ kosu-ACIK): otonom kosuda hicbir rol sahibin
+// kuyruguna (00_pano/SENDE_BEKLEYEN.md) YAZAMAZ. Gerekcesi OTONOM_KOSU §6.1: "cevap yalniz
+// sahibin acik cevabiyla CEVAPLANDI olur; baska hicbir olay durumu degistiremez" — kosunun
+// kendi eliyle "[x] cevap: evet" yazabilmesi o kilidi mekanik olarak DELIYORDU. Mesru yazici
+// kanca surecindeki tools/sevk/catal-kuyruk.sh betigidir ve o bu engelden gecmez. EL-SURUSLU
+// kullanimda dikis YOK: D-21 akisi ("cevabi alan rol kapanis isareti koyar") aynen surer.
+if (kosuAcik && /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(String(j.tool_name || ""))) {
+  const hedefYol = String(ti.file_path || ti.notebook_path || "").replace(/\\/g, "/");
+  if (/(^|\/)00_pano\/SENDE_BEKLEYEN\.md$/.test(hedefYol)) {
+    console.log("ENGEL-KUYRUK\t00_pano/SENDE_BEKLEYEN.md"); process.exit(0);
+  }
+}
+
 // Kural listesi ERKEN okunur (E2: Bash yazim-dikisi de korumali-yol metnine bakar).
 // Liste HER ZAMAN gercek kokten okunur (worktree kopyasi degil — tasari §5).
 // Bicim: satir basina bir yol; sondaki "/" = dizin-oneki; "#" yorum; [SERT]/[SORULUR] bolum.
@@ -373,6 +386,9 @@ case "$DURUM" in
     GEREKCE="Bu kabuk komutu koşu-AÇIK göstergesine (tools/sevk/.kosu-acik) dokunuyor. Gösterge otonom koşunun anahtarıdır: silinirse SubagentStop biçim kapısı sessizce kapanır. Meşru yolu /kosu töreni ve sevk kapanışıdır; elle müdahale sahip kararı ister." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
+    ;;
+  ENGEL-KUYRUK)
+    engel "otonom koşuda sahibin kuyruğuna ($DETAY) yazım YASAK — «cevap yalnız sahibin açık cevabıyla CEVAPLANDI olur; başka hiçbir olay durumu değiştiremez» (OTONOM_KOSU §6.1). Koşunun kendi eliyle cevap işaretlemesi bu kilidi delerdi. Meşru yazıcı sevk kancasıdır (tools/sevk/catal-kuyruk.sh); el-sürüşlü oturumda bu engel YOKTUR."
     ;;
   SOR-MCP)
     GEREKCE="Otonom koşu AÇIKKEN MCP araç çağrısı ($DETAY) sahip kapısındadır: kutu dışına iş çıkarabilen, dosya izi bırakmayan kanal (E2 dikişi; başsız koşuda bu soru red + iz olur)." \
