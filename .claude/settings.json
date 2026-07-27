@@ -2,11 +2,7 @@
   "permissions": {
     "ask": [
       "Edit(/02_kanon/kilitli/**)",
-      "Write(/02_kanon/kilitli/**)",
-      "NotebookEdit(/02_kanon/kilitli/**)",
-      "Edit(/02_kanon/golden/**)",
-      "Write(/02_kanon/golden/**)",
-      "NotebookEdit(/02_kanon/golden/**)"
+      "Edit(/02_kanon/golden/**)"
     ]
   },
   "hooks": {
