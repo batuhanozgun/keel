@@ -9,11 +9,17 @@
 [SERT]
 # Kesin engel (exit 2): oturum içinde ASLA değiştirilmez. Meşru ihtiyaç → sahip kararı + tören.
 tools/guard/
+tools/sevk/
 .claude/
 .kurulum-tamam
 02_kanon/kilitli/
+# Zarf günlüğü (E1): otonom kapıların okuduğu tek veri katmanı — araç katmanında dokunulmaz.
+# Meşru yazım YALNIZ tools/sevk/zarf-ekle.sh iledir (kancalar bash sürecinde koşar, bu engelden geçmez).
+00_pano/zarf-gunlugu.jsonl
 
 [SORULUR]
 # Sahibe sorulur (ask): golden güncellemesi meşru olabilir, karar sahibindir.
 02_kanon/golden/
 00_genesis/
+# Otonom kipin kural evi (E1): kurulu projede elle kopyalanır; koşu içinde sessizce değiştirilemez.
+02_kanon/OTONOM_KOSU.md

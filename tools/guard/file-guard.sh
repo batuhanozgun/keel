@@ -24,6 +24,7 @@ case "$INPUT" in
   *'.aktif-rol'*) : ;;  # rol damgasına dokunan çağrı — kesin karar aşağıda node'da
   *'.kurulum'*) : ;;    # kurulum işaretine dokunan çağrı (.kurulum-tamam + .kurulum-* glob) — karar node'da
   *'.taban-ref'*) : ;;  # kilitli-tarih çapasına dokunan çağrı — karar node'da
+  *'.kosu-acik'*) : ;;  # koşu-AÇIK göstergesine dokunan çağrı (E1 hasım bulgusu A3) — karar node'da
   *) exit 0 ;;
 esac
 
@@ -88,6 +89,13 @@ if ((j.tool_name || "") === "Bash") {
   // korunan-yollar [SERT] oldugundan silinme bekcinin porcelain hattinda KIRMIZI basar.
   // Isaret yokken serbest (GENESIS dogumu sürtünmesiz).
   if (komut.includes(".kurulum") && existsSync(resolve(ROOT, ".kurulum-tamam"))) { console.log("SOR-ISARET\t.kurulum-tamam"); process.exit(0); }
+  // Kosu-dikisi (E1 hasim bulgusu A3): kosu-ACIK gostergesine (.kosu-acik) dokunan Bash komutu
+  // sahibe SORULUR — dosya git-izsiz (.gitignore) oldugundan bekci porcelain hatti onu GOREMEZ;
+  // tek guvencesi bu dikis + [SERT] arac-katmani. Tek bir rm komutu SubagentStop kapisini
+  // sessiz sondururdu; simdi o rm sahibe soru olur. /kosu toreninin kendi yazimi da buraya takilir ve
+  // sahip onayiyla gecer (rol-toreni damga-dikisi emsali — G3.3c "bu NORMALdir"). Metin-es
+  // sinir damga-dikisiyle aynidir (bilinen sinir).
+  if (komut.includes(".kosu-acik")) { console.log("SOR-KOSU\ttools/sevk/.kosu-acik"); process.exit(0); }
   console.log("GEC"); process.exit(0);
 }
 
@@ -126,9 +134,12 @@ const kurulumSuruyor = !existsSync(resolve(ROOT, ".kurulum-tamam"));
 const sert = kurallar.find((k) => k.bolum === "[SERT]" && eslesir(k));
 if (sert) {
   if (kurulumSuruyor) {
-    // Cekirdekli istisna: kurulum surerken yalniz tools/guard/ + .claude/ sert kalir;
-    // onun icinde de korunan-yollar.txt yazilabilir (GENESIS veri doldurur).
-    const cekirdekte = altinda("tools/guard") || altinda(".claude");
+    // Cekirdekli istisna: kurulum surerken yalniz tools/guard/ + .claude/ + tools/sevk/ sert
+    // kalir; onun icinde de korunan-yollar.txt yazilabilir (GENESIS veri doldurur).
+    // tools/sevk cekirdege E1 hasim bulgusu A5 ile girdi: sevk betikleri SABLONLA SABIT gelir,
+    // GENESIS sevk alanina yazmaz (OTONOM_KOSU kurulumu elle/ayri is) — kuran ajan koruma/sevk
+    // kodunu ve damgalar/ tatbikat damgalarini kurulum penceresinde yeniden yazamasin.
+    const cekirdekte = altinda("tools/guard") || altinda(".claude") || altinda("tools/sevk");
     const listeDosyasi = hedef === kanonik(resolve(ROOT, "tools/guard/korunan-yollar.txt"));
     const beceriAlani = altinda(".claude/skills"); // GENESIS rol becerilerini kurulumda buraya yazar (G3.3c)
     if (!cekirdekte || listeDosyasi || beceriAlani) { console.log("GEC"); process.exit(0); }
@@ -190,6 +201,11 @@ case "$DURUM" in
     ;;
   SOR-TABAN)
     GEREKCE="Bu kabuk komutu kilitli-tarih çapasına (02_kanon/kilitli/.taban-ref) dokunuyor. Çapayı ilerletmek, kilitli-karar ihlal sinyalini söndürür — sahip kararı ister (bekçi koruma-hattı iii)." \
+      "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
+    exit 0
+    ;;
+  SOR-KOSU)
+    GEREKCE="Bu kabuk komutu koşu-AÇIK göstergesine (tools/sevk/.kosu-acik) dokunuyor. Gösterge otonom koşunun anahtarıdır: silinirse SubagentStop biçim kapısı sessizce kapanır. Meşru yolu /kosu töreni ve sevk kapanışıdır; elle müdahale sahip kararı ister." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;

@@ -54,6 +54,16 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/sevk/zarf-bicim-kapisi.sh\""
+          }
+        ]
+      }
     ]
   }
 }
