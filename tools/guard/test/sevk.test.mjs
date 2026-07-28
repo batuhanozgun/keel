@@ -20,7 +20,7 @@ function kurulum({ kosu = true, kadro = ['e1test'] } = {}) {
   mkdirSync(join(kok, '00_pano'), { recursive: true });
   mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
   mkdirSync(join(kok, '.claude', 'agents'), { recursive: true });
-  for (const b of ['kilit.sh', 'zarf-ekle.sh', 'zarf-bicim-kapisi.sh']) {
+  for (const b of ['ortak.sh', 'kilit.sh', 'zarf-ekle.sh', 'zarf-bicim-kapisi.sh']) {
     copyFileSync(join(KOK_REPO, 'tools', 'sevk', b), join(kok, 'tools', 'sevk', b));
     chmodSync(join(kok, 'tools', 'sevk', b), 0o755);
   }

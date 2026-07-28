@@ -120,6 +120,20 @@ for s in "$KOK"/.claude/skills/*/SKILL.md; do
 done
 gecti "SKILL frontmatter + kilit taraması"
 
+# 6b · Alt-ajan dosyalarında `memory:` alanı YASAK (Otonom KEEL tasarımı §2.3 — E4).
+#      Roller arası zorunlu unutma bu yapının en eski korunanıdır (Değişmeyenler m.1) ve
+#      alt-ajan `memory` alanı onun TEK ölüm noktasıdır: taze bağlam kalkarsa "beş varsayımın
+#      beşi yazılı olmadığı için yakalandı" ölçümü de kalkar. Kural yazılıydı, kapısı yoktu.
+MEM_KIRLI=""
+for a in "$KOK"/.claude/agents/*.md; do
+  if grep -qE '^[[:space:]]*memory[[:space:]]*:' "$a"; then MEM_KIRLI="$MEM_KIRLI $(basename "$a")"; fi
+done
+if [ -n "$MEM_KIRLI" ]; then
+  kirmizi "alt-ajan dosyasında memory alanı var:$MEM_KIRLI — roller arası zorunlu unutma delinir (hiçbir rol alt-ajan dosyasına memory yazılmaz)"
+else
+  gecti "alt-ajan memory yasağı"
+fi
+
 # 7 · Rol slug'ları tek-token ASCII + rol↔beceri eşliği (yokluk körlüğü yok: sıfır rol = KIRMIZI)
 ROL_SAYISI=0
 for r in "$KOK"/03_roller/*/; do

@@ -36,7 +36,7 @@ case "$INPUT" in
     # deliğidir (bu yüzden çıplak: "cp" baştaki cp'yi de yakalar — hasım bulgusu). Gate dikiş
     # tetikleyicilerinin TAM üst-kümesidir (markerlar + dışa-giden + git-obje + yazım fiilleri).
     case "$INPUT" in
-      *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.kosu-acik'*) : ;;
+      *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.kosu-acik'*|*'.dur'*) : ;;
       *git*|*curl*|*wget*|*ssh*|*scp*|*sftp*|*rsync*|*mail*|*sendmail*|*gh*|*npm*) : ;;
       *'>'*|*'<<'*|*tee*|*cp*|*mv*|*dd*|*sed*|*install*|*truncate*) : ;;
       *) exit 0 ;;
@@ -93,7 +93,7 @@ if [ -z "$NODE_BIN" ]; then
   case "$INPUT" in
     *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*)
       engel "node bulunamadı — kanca karar veremiyor; GÜVENLİ taraf: yalnız BU YAZMA işlemi engellendi (okuma ve komutlar serbest). Çözüm: node kur (kokpit de istiyor). Bakım: tools/guard/README.md" ;;
-    *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.kosu-acik'*)
+    *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.kosu-acik'*|*'.dur'*)
       engel "node bulunamadı — koruma damgası/işaretine dokunan komut güvenli tarafta engellendi (fail-closed; pre-E2 damga koruması). Çözüm: node kur." ;;
     *) exit 0 ;;
   esac
@@ -191,6 +191,11 @@ if ((j.tool_name || "") === "Bash") {
   // sahip onayiyla gecer (rol-toreni damga-dikisi emsali — G3.3c "bu NORMALdir"). Metin-es
   // sinir damga-dikisiyle aynidir (bilinen sinir).
   if (komut.includes(".kosu-acik")) { console.log("SOR-KOSU\ttools/sevk/.kosu-acik"); process.exit(0); }
+  // DUR-dikisi (E4 hasim bulgusu): `.dur` sahibin acil frenidir ve .gitignore icindedir — bekcinin
+  // porcelain hatti onu GOREMEZ. Kosu-gostergesiyle ayni sinif: ona dokunan Bash komutu SORULUR
+  // (kosu icinde modelin freni sessizce silmesini engeller; el-suruslu oturumda da sorulur —
+  // dosya zaten yalnizca kosu baglaminda anlamlidir).
+  if (komut.includes(".dur")) { console.log("SOR-KOSU\ttools/sevk/.dur"); process.exit(0); }
   // ---- E2 dikisleri (tasari §3) — icerik ENGELi bash katmaninda coktan kosuldu ----
   // Komut bolutleri: ; & | ` $( VE SATIRSONU ayraclarindan bolunur (hasim bulgusu: cok-satirli
   // komut satirsonuyla ucunu de atliyordu). "komut-konumu" = bir bolutun BASI.

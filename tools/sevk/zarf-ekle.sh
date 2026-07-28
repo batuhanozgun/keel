@@ -27,20 +27,20 @@ KILIT="$GUNLUK.kilit"
 GIRDI="$(cat)"
 [ -n "$GIRDI" ] || hata "stdin bos — yazilacak satir yok"
 
-# node keşfi (guard ailesiyle aynı: GUI oturumunda PATH dardır — Faz-1 bulgusu)
-NODE_BIN="$(command -v node 2>/dev/null || true)"
-if [ -z "$NODE_BIN" ]; then
-  for aday in /usr/local/bin/node /opt/homebrew/bin/node /usr/local/opt/node*/bin/node /opt/homebrew/opt/node*/bin/node; do
-    if [ -x "$aday" ]; then NODE_BIN="$aday"; break; fi
-  done
-fi
-[ -n "$NODE_BIN" ] || hata "node bulunamadi — sema denetimi yapilamiyor (fail-closed)"
+# node keşfi ORTAK KİTAPLIKTAN (E4: tools/sevk/ortak.sh — beş betikteki aynı blok tek eve alındı;
+# D-02 dersi. Kitaplık yoksa fail-closed: denetimsiz yazım yok.)
+ORTAK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ortak.sh"
+[ -r "$ORTAK" ] || hata "ortak kitaplik yok ($ORTAK) — sevk ailesi eksik (fail-closed)"
+# shellcheck source=/dev/null
+. "$ORTAK"
+node_bul || hata "node bulunamadi — sema denetimi yapilamiyor (fail-closed)"
 
 # Şema denetimi + normalizasyon: geçerliyse TEK satıra serileştirilmiş JSON basar (gömülü
 # satırsonu JSON.stringify ile fiziken imkânsızlaşır), geçersizse HATA\t<sebep>.
 SATIR="$(printf '%s' "$GIRDI" | "$NODE_BIN" --input-type=module -e '
 import { readFileSync } from "node:fs";
-const TIPLER = new Set(["kosu-acilis","kosu-kapanis","nabiz","zarf","bicim","sevk-karar","catal-suzgec","sahip-temas","izin-engel","bulgu"]);
+const TIPLER = new Set(["kosu-acilis","kosu-kapanis","nabiz","zarf","bicim","sevk-karar","catal-suzgec","sahip-temas","izin-engel","bulgu",
+                        "karne","devir","bekci"]);
 let ham = "";
 try { ham = readFileSync(0, "utf8"); } catch { console.log("HATA\tstdin okunamadi"); process.exit(0); }
 if (ham.trim().split("\n").length !== 1) { console.log("HATA\tgirdi tek satir degil"); process.exit(0); }
@@ -61,6 +61,7 @@ GOVDE="${SATIR#*$'\t'}"
 # Kilit ORTAK KİTAPLIKTAN gelir (E3: tools/sevk/kilit.sh — catal-kuyruk.sh ile aynı mekanik;
 # iki kopya = sürüklenme, D-02 dersi). Semantik değişmedi: mkdir · 50×0,1 sn · bayat kilit iki
 # dallı kırılır (ölü PID / pid'siz + 30 sn) · kırma `mv` ile ATOMİK · alınamazsa fail-closed.
+# shellcheck source=/dev/null
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/kilit.sh"
 trap 'kilit_birak; hata "ic hata (fail-closed): arac beklenmedik durdu, satir YAZILMADI"' ERR
 kilit_al "$KILIT" || hata "kilit alinamadi: $KILIT_HATA"

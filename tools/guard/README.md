@@ -73,6 +73,14 @@ durumu değiştiremez"* — koşunun kendi eliyle `[x] cevap: …` yazabilmesi o
 `tools/sevk/catal-kuyruk.sh` betiğidir ve o bu engelden geçmez. **El-sürüşlü oturumda dikiş
 YOKTUR:** D-21'in "cevabı alan rol kapanış işareti koyar" akışı aynen sürer.
 
+**E4 kabloları (2026-07-28; tasarı `…-e4-sevk-tetik-kurulum-tasarisi.md`):** `.claude/settings.json`
+iki yeni kanca bağlar — **`Stop` → `tools/sevk/sevk.sh`** (koşunun motoru; koşu-AÇIK değilse tam
+sessiz) ve **`PreToolUse` matcher `Task|Agent` → `tools/sevk/devir-kapisi.sh`** (alt-ajan
+çağrısının şema + talimat↔fiil kapısı; koşu-AÇIK değilse yok hükmünde). file-guard'ın `*`
+matcher'lı hattı değişmedi, ikisi yan yana koşar. Ayrıca `kurulum-denetimi.sh`e **alt-ajan
+`memory:` yasağı** eklendi (KIRMIZI): roller arası zorunlu unutmanın tek ölüm noktası artık
+kurulumun sabit kapısında aranıyor.
+
 **Perf ve degrade (hasım bulguları):** Bash yalnız bir dikiş-tetikleyici token taşıyorsa
 node'a iner (`ls`/`grep`/`cat`/`pwd` node görmez). node YA DA süzgeç çalışamazsa: YAZMA
 araçları fail-closed (engel), Bash/MCP fail-open (komut serbest — pre-E2 tabanı korunur, ama

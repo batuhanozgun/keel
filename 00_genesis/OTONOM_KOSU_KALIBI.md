@@ -34,7 +34,7 @@ doldu · bekçi KIRMIZI'sı ya da DUR işareti. **İzin kapısı (`ask`) bunlard
 iki dalda da koşuyu bitirmez (E0 ölçümü, 2026-07-27):** başsız kipte ask = anında red + iz
 (görev raporlar, koşu sürer; engel zarfın İZİN-ENGELİ satırına düşer); **interaktif kipte ask
 cevapsızsa koşu süresiz ASILI KALIR** — sahip klavye başında değilken tek çıkış
-watchdog/DUR'dur (E5). Koşu kipi seçimi bu iki davranış arasında bilinçli tercihtir (E4 vidası).
+watchdog/DUR'dur (E5). Kip bilinçli tercihtir ve göstergenin 4. alanında yazılıdır (§11).
 
 **Koşuyu durduran KIRMIZI'lar sayılıdır:** bekçi KIRMIZI'sı · zarf günlüğü bütünlük
 KIRMIZI'sı. **KUTU tavan KIRMIZI'sı bunlardan DEĞİLDİR:** bugünkü davranışını korur —
@@ -108,15 +108,14 @@ GERİ-ÇEKİLEN: yok | <koşu içinde açılıp geri çekilen çatal/karar — t
   doğrudan yazmaz. Güvence katmanları ayrık: günlük araç katmanında [SERT] (Edit/Write
   kesilir) · bozuk/yarım satır bekçide KIRMIZI + koşuda duran kapı · şema-GEÇERLİ sahte satıra
   karşı mekanik yakalayıcı YOK — bilinen sınır, süreç disiplini (E2+ adayı).
-- **Koşu-AÇIK göstergesi** `tools/sevk/.kosu-acik`tir (tek satır: koşu-kimliği + kutu-dizini +
-  damga; yazarı `/kosu`, sileni sevk kapanışı). Git-izlenmez; güvencesi bekçi değil **koşu
+- **Koşu-AÇIK göstergesi** `tools/sevk/.kosu-acik`tir (1. satır: kimlik · kutu · tür · kip ·
+  sınıf; 2. satır damga; yazarı `/kosu`, sileni sevk). Git-izlenmez; güvencesi bekçi değil **koşu
   dikişidir**: göstergeye dokunan Bash komutu sahibe SORULUR (rol-damgası emsali). Bozuk
   gösterge (dizin/boş kimlik) biçim kapısında fail-closed'dur — "koşu yok" sayılmaz.
 - **Dönüş mekaniği:** çatal cevabı ya da kapı düzeltmesi gelince rol TAZE çağrıyla sürer;
   aynı alt-ajan sürdürülmez. Durum dosyada yaşar, hafızada değil.
-- **Tur-tavanı şüphesi:** `maxTurns` kesmesi işaretsizdir (E0 ölçümü) — zarfı hiç dönmeyen
-  koşu biçim kapısında yakalanır; karneye `tur-tavanı şüphesi` alanı düşer (görev "bitti"
-  sayılmaz, bölünme adayıdır).
+- **Tur-tavanı şüphesi:** `maxTurns` kesmesi İŞARETSİZDİR (E0 ölçümü); zarfsız dönüş "bitti"
+  sayılmaz, bölünme adayıdır (mekaniği `tools/sevk/README.md`).
 
 ## 5 · SubagentStop biçim kapısı + beyaz liste
 
@@ -166,11 +165,10 @@ biçim kapısı (jargon · TÜRETME-İZİ çapası · BEKLETİR kilidi · denet�
 - **Serbest-metin yasağı (dışa giden):** e-posta/haber gövdesi yalnız zarfın ve kapanış
   bloğunun tanımlı alanlarından kurulur; serbest metin eklenmez. Her gönderim önce içerik
   süzgecinden geçer; süzgeç red verirse gövde GİTMEZ (sansürlü sabit-şablon alarm gider).
-- **E2 mekaniği:** süzgeç `tools/guard/icerik-suzgeci.sh` (+işaret listesi) yazım-öncesi
-  keser — Edit/Write/Bash-yazımı VE MCP tool_input içeriği (her kanalda içerik fail-closed).
-  Koşuda MCP çağrısı SORULUR; `git add/commit/stash` SORULUR, worktree bağlamında ENGEL
-  (yalnız git-obje ENGEL — MCP her bağlamda SOR). Worktree'de koruma haritası aynen (sanal
-  kök; yalnız gerçek worktree'de). Dışa-giden (`git push`/`curl`/`gh`/…) her kipte SORULUR.
+- **E2 mekaniği:** `tools/guard/icerik-suzgeci.sh` (+işaret listesi) yazım-öncesi keser —
+  Edit/Write/Bash-yazımı ve MCP içeriği (her kanalda fail-closed). Koşuda MCP ve
+  `git add/commit/stash` SORULUR (worktree bağlamında git-obje ENGEL); worktree'de koruma
+  haritası aynen kurulur. Dışa-giden (`git push`/`curl`/`gh`/…) her kipte SORULUR.
 
 ## 8 · Aynı-model uyarısı
 
@@ -193,3 +191,23 @@ dış göz koltuğu kurulu · **T0 damgası** (E0 ölçüm raporu) · **T1 damga
 koşusunda ek iki şart: T6 damgası (E5) + watchdog fiilen kurulu. Damga evi:
 `tools/sevk/damgalar/` (tek satır: tarih + kanıt-rapor işaretçisi). Tatbikat damgası düşmeden
 otonom koşu YOKTUR — bu sahibin kararıdır (D-25 ②③) ve betiğin ilk satırlarıdır.
+
+## 11 · Sevk döngüsü (E4)
+
+Tören: `/kosu <kutu> [yapim|kurulum|kapanis] [interaktif|bassiz] [gercek|tatbikat]`.
+**İzin zemini `--allowedTools` bayrağıdır** — `settings.allow` başsız alt-ajanda ÖLÜ ölçüldü,
+oraya yazılmaz. **`gercek` sınıf** §10'un iki ek şartını (T6 damgası + kurulu watchdog) arar;
+tatbikat muaftır. Sevk (Stop kancası) iş yapmaz, karar basmaz, kapı kapatmaz.
+
+**Görev beşi birden sağlanmadan açılmaz:** durumu `açık` · sahibi kadroda · önkoşulları karneyle
+kapalı · açık çatalın BEKLETİR listesinde DEĞİL (K-B birincil hattı) · uçuşta değil.
+
+**Karne şartı (K2):** kapı ancak tabloda `kapalı` + TAZE YEŞİL `karne` kaydı varsa kapalı
+SAYILIR (taze = son iş-zarfından sonra); karneyi işi yapan yazamaz. Karnesiz kapı Stop'tan geçmez.
+
+**Devir metni yalnız işaretçidir** (`gorev · kutu · sozlesme · kural · ek-okuma`; tavan 800 B).
+Serbest metin, tavan aşımı, `memory` alanı ve sevkin açmadığı (rol, görev) ikilisi çağrı anında
+kesilir — iç içe alt-ajan da orada durur.
+
+**Frenler:** bütçe · ilerleme-yok · mutlak tur tavanı; sevkin kendi hatası koşuyu KAPATIR.
+Tamamı: `tools/sevk/README.md`.

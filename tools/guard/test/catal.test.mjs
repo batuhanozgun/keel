@@ -36,7 +36,7 @@ function kurulum({ kosu = true, kadro = ['po', 'catal-denetcisi'], profil = true
   mkdirSync(join(kok, '01_kutular', 'KT-001'), { recursive: true });
   mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
   mkdirSync(join(kok, '.claude', 'agents'), { recursive: true });
-  for (const b of ['kilit.sh', 'zarf-ekle.sh', 'zarf-bicim-kapisi.sh', 'karar-alani.sh', 'catal-kuyruk.sh']) {
+  for (const b of ['ortak.sh', 'kilit.sh', 'zarf-ekle.sh', 'zarf-bicim-kapisi.sh', 'karar-alani.sh', 'catal-kuyruk.sh']) {
     copyFileSync(join(KOK_REPO, 'tools', 'sevk', b), join(kok, 'tools', 'sevk', b));
     chmodSync(join(kok, 'tools', 'sevk', b), 0o755);
   }

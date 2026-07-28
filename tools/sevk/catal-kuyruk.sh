@@ -27,14 +27,12 @@ KOK="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 KUYRUK="$KOK/00_pano/SENDE_BEKLEYEN.md"
 GUNLUK="$KOK/00_pano/zarf-gunlugu.jsonl"
 
-# node keşfi (guard ailesiyle aynı: GUI oturumunda PATH dardır — Faz-1 bulgusu)
-NODE_BIN="$(command -v node 2>/dev/null || true)"
-if [ -z "$NODE_BIN" ]; then
-  for aday in /usr/local/bin/node /opt/homebrew/bin/node /usr/local/opt/node*/bin/node /opt/homebrew/opt/node*/bin/node; do
-    if [ -x "$aday" ]; then NODE_BIN="$aday"; break; fi
-  done
-fi
-[ -n "$NODE_BIN" ] || hata "node bulunamadi (fail-closed)"
+# node keşfi ORTAK KİTAPLIKTAN (E4: tools/sevk/ortak.sh; D-02 dersi — tek ev)
+ORTAK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ortak.sh"
+[ -r "$ORTAK" ] || hata "ortak kitaplik yok ($ORTAK) — sevk ailesi eksik (fail-closed)"
+# shellcheck source=/dev/null
+. "$ORTAK"
+node_bul || hata "node bulunamadi (fail-closed)"
 
 KIP="${1:-}"
 

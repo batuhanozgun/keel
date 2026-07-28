@@ -8,6 +8,12 @@
 tools/guard/.aktif-rol
 # koşu-AÇIK göstergesi (E1) — koşu-durumu, izlenmez (.aktif-rol emsali; yazarı /kosu, sileni sevk)
 tools/sevk/.kosu-acik
+# DUR işareti (E4) — koşu-durumu; sevkin okuduğu tek satır, izlenmez (koşu-göstergesi emsali)
+tools/sevk/.dur
+# watchdog kaydı (E5'te doğar) — makineye özel kurulum izi, depoya girmez
+tools/sevk/watchdog-kurulu
+# kurulum kapısının mekanik raporu (E4) — her kurulum koşusunda sevk yeniden üretir
+00_pano/kurulum-kapisi.txt
 # harness worktree'leri (E2) — atılabilir/geçici git worktree'leri; izlenmez ki bekçi porcelain
 # hattı meşru bir riskli-görev worktree'sini [SERT] .claude/ kirliliği sanıp KIRMIZI basmasın
 # (hasım bulgusu). Worktree yazımları zaten file-guard sanal-kök haritasıyla korunur (tool katmanı);

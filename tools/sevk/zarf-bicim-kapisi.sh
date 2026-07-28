@@ -63,18 +63,20 @@ KOSU_KUTU="$(head -n1 "$KOSU_YOL" 2>/dev/null | cut -f2 || true)"
 case "$KOSU_KUTU" in *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) KOSU_KUTU="";; esac  # eski 2-alan biçim: 2. alan damga
 [ -n "$KOSU_ID" ] || engel_e "koşu göstergesi boş: tools/sevk/.kosu-acik ilk satırında koşu kimliği yok — kimliksiz günlük kaydı düşer, koşu dilimlenemez (fail-closed)"
 
-# node keşfi (guard ailesiyle aynı)
-NODE_BIN="$(command -v node 2>/dev/null || true)"
-if [ -z "$NODE_BIN" ]; then
-  for aday in /usr/local/bin/node /opt/homebrew/bin/node /usr/local/opt/node*/bin/node /opt/homebrew/opt/node*/bin/node; do
-    if [ -x "$aday" ]; then NODE_BIN="$aday"; break; fi
-  done
+# node keşfi ORTAK KİTAPLIKTAN (E4: tools/sevk/ortak.sh; D-02 dersi — tek ev). Kitaplık yoksa
+# döngü emniyetini bozmadan fail-closed davran (aşağıdaki node-yok dalıyla aynı kural).
+ORTAK="$KOK/tools/sevk/ortak.sh"
+NODE_BIN=""
+if [ -r "$ORTAK" ]; then
+  # shellcheck source=/dev/null
+  . "$ORTAK"
+  node_bul || NODE_BIN=""
 fi
 if [ -z "$NODE_BIN" ]; then
   # Döngü emniyeti node'suz da tutmalı: ikinci turda kilitlenme üretme.
   case "$GIRDI" in
     *'"stop_hook_active":true'*|*'"stop_hook_active": true'*) exit 0 ;;
-    *) engel "node bulunamadi — bicim denetimi yapilamiyor (fail-closed; kosu acikken zarf denetimsiz gecmez)" ;;
+    *) engel "node ya da ortak kitaplik (tools/sevk/ortak.sh) yok — bicim denetimi yapilamiyor (fail-closed; kosu acikken zarf denetimsiz gecmez)" ;;
   esac
 fi
 
@@ -135,10 +137,18 @@ const red = (sebep, ipucu) => {
 
 // Alan ayristirma: satir basinda (liste imi/kalin toleransli) ETIKET: deger
 const ETIKETLER = ["BİTEN", "ÇATAL", "DEĞERLENDİRMEDİKLERİM", "SIRADAKİ", "TÜRETME-İZİ", "GERİ-ÇEKİLEN", "İZİN-ENGELİ", "ÇEVİRİ", "ETKİ", "BEKLETİR",
-                   "ÇATAL-KAYNAK", "HÜKÜM", "KALEMLER"];   // E3: denetçi dönüş sözleşmesi
+                   "ÇATAL-KAYNAK", "HÜKÜM", "KALEMLER",    // E3: denetçi dönüş sözleşmesi
+                   "KARNE-KAPI", "MADDELER"];              // E4: karne dönüş sözleşmesi
 // E3 · denetçi sınıfı: dönüşü ZARF + üç ek satır taşıyan yazamaz koltuklar. Bu koltukların
 // dönüşü "iş" değil "hüküm"dür — BEKLETİR kilidi (aşağıda) onlara uygulanmaz.
 const DENETCILER = new Set(["catal-denetcisi"]);
+// E4 · karneci sınıfı: kapı hükmü üreten yazamaz koltuklar (K2 — "kimse kendi işine yeşil
+// diyemez" kuralının mekanik yüzü). Dönüşleri ZARF + KARNE-KAPI/HÜKÜM/MADDELER taşır ve
+// günlüğe ayrıca `karne` kaydı düşer; sevk kapıyı YALNIZ o kayda bakarak kapalı sayar.
+const KARNECILER = new Set(["dogrulayici", "kurulum-denetcisi"]);
+// Hüküm üreten koltuklar: iş değil yargı döndürürler — BEKLETİR kilidi ve çatal-iz şüphesi
+// onlara uygulanmaz (T3a dersi: denetçinin İŞİ çatal değerlendirmektir, şüphe değil beklentidir).
+const HUKUM_SINIFI = new Set([...DENETCILER, ...KARNECILER]);
 const alan = {};
 for (const satirHam of (metin || "").split("\n")) {
   const satir = satirHam.replace(/^[\s>*+-]*(?:\d+[.)])?\s*/, "").replace(/\*\*/g, "");
@@ -258,7 +268,7 @@ const geriYok = /^yok\b/i.test(alan["GERİ-ÇEKİLEN"] || "");
 // gerekcesi zarfin kendi "ÇATAL:" etiketiydi — o gerekce artik ETIKET SUZGECIYLE karsilaniyor,
 // mesaji komple dislamaya gerek yok. Etiket satirlari (6+3 alan) havuzdan cikarilir.
 const ETIKET_DESENI = /^[\s>*+-]*(?:\d+[.)])?\s*\**(?:ÇATAL|ÇATAL-KAYNAK|ÇEVİRİ|ETKİ|BEKLETİR|BİTEN|DEĞERLENDİRMEDİKLERİM|SIRADAKİ|TÜRETME-İZİ|GERİ-ÇEKİLEN|İZİN-ENGELİ|HÜKÜM|KALEMLER)\**\s*:/;
-if (catalYok && geriYok && !DENETCILER.has(tipHam) && ajanMetinleri.length) {
+if (catalYok && geriYok && !HUKUM_SINIFI.has(tipHam) && ajanMetinleri.length) {
   const govde = ajanMetinleri.join("\n")
     .split("\n").filter((s) => !ETIKET_DESENI.test(s)).join("\n");
   if (/ÇATAL\b/.test(govde) || /sahibe (mi )?sor/i.test(govde)) {
@@ -275,6 +285,13 @@ if (catalYok && geriYok && !DENETCILER.has(tipHam) && ajanMetinleri.length) {
 // karar-alani on kosulu + kuyruga ekleme. Hepsi kosu-ACIK sartinin ARDINDA (el-surusluye
 // dokunmaz) ve stop_hook_active dalinda ENGELLEMEZ (red() bunu zaten tasiyor).
 const denetciMi = DENETCILER.has(tipHam);
+const karneciMi = KARNECILER.has(tipHam);
+const hukumSinifi = HUKUM_SINIFI.has(tipHam);
+// Talimat-fiil dikisinin bakacagi gorev: uretim rolunde BİTEN satirinin G-NNsi; hukum
+// koltuklarinda HÜKMÜN KONUSU (catal denetcisinde ÇATAL-KAYNAK, karnecide KARNE-KAPI) —
+// cunku onlarin BİTEN satiri kendi kosularini anlatir, sevkin actigi gorevi degil.
+let dikisGorev = gorev;
+let karneKaydi = null;
 
 // (1) Jargon kapisi — ÇEVİRİ satiri sahibin bilmedigi kelime tasiyor mu. DAR kural (tasari
 //     §4.1): yalniz ID + dosya uzantisi + kok-dizinli yol. Genel teknik-terim taramasi yargi
@@ -287,12 +304,12 @@ const denetciMi = DENETCILER.has(tipHam);
 // okuyucu hata verirse dönüş DURUR ve iz duser; kuyruk hic yoksa acik catal da yoktur, gecer.
 const kuyrukHam = process.env.KAPI_KUYRUK || "";
 const kuyrukHata = process.env.KAPI_KUYRUK_HATA === "1";
-if (gorev && !denetciMi && kuyrukHata) {
+if (gorev && !hukumSinifi && kuyrukHata) {
   kayit({ tip: "bulgu", ajan: tipHam, gorev, cins: "kuyruk-okunamadi", detay: "BEKLETİR kilidi degerlendirilemedi (fail-closed)" });
   red("sahibin kuyrugu okunamadi — BEKLETİR kilidi degerlendirilemedi (fail-closed)",
       "00_pano/SENDE_BEKLEYEN.md okunabilir mi ve tools/sevk/catal-kuyruk.sh kosuyor mu, bak");
 }
-if (gorev && !denetciMi && kuyrukHam) {
+if (gorev && !hukumSinifi && kuyrukHam) {
   const bekleyen = [], cozulemeyen = [];
   for (const s of kuyrukHam.split("\n")) {
     if (!s.trim()) continue;
@@ -416,12 +433,64 @@ if (denetciMi) {
   // kez biçim redi yerse ikinci tur SHA olur ve "!SHA" sarti sahibin sorusunu SESSIZCE yutuyordu.
   // Cift-yazim riski yok: --ekle tekillestirmesi kaynak imzasiyladir (ayni gunluk satiri).
   if (hukum === "GECTI") eylemler.push("kuyruk-ekle\t" + kaynakGorev + "\t" + tipHam);
+  dikisGorev = kaynakGorev;
 }
 // ═══ E3 sonu ════════════════════════════════════════════════════════════════════════════
 
-// Talimat↔fiil dikişi: günlükte sevk-karar kaydi varsa zarfin G-NNsi o kümede aranir;
-// küme BOSSA atlanir (E4 öncesi — beyanli). Sapma ENGELLEMEZ: kirmizi iz düşer, duran
-// kapiya çevirmek sevkin Stop-turu isidir (E4).
+// ═══ E4 · KARNE SÖZLEŞMESİ (K2) ═════════════════════════════════════════════════════════
+// "Kimse kendi isine yesil diyemez" bugune kadar bir KURALDI; burada kosum oluyor. Karneci
+// koltuklarin donusu uc ek satir tasir ve gunluge ayri bir `karne` kaydi duser — sevk kapiyi
+// YALNIZ o kayda bakarak kapali sayar (tasarim §2.5: karnesiz kapi Stop kancasindan gecmez).
+if (karneciMi) {
+  const kapiHam = (alan["KARNE-KAPI"] || "").trim();
+  const hukumHam2 = (alan["HÜKÜM"] || "").trim();
+  const maddeler = (alan["MADDELER"] || "").trim();
+  const eksikK = [];
+  if (!kapiHam) eksikK.push("KARNE-KAPI");
+  if (!hukumHam2) eksikK.push("HÜKÜM");
+  if (!maddeler) eksikK.push("MADDELER");
+  if (eksikK.length) {
+    red("karne dönüşünde eksik alan: " + eksikK.join(", "),
+        "karneci koltuk zarfa üç satır daha ekler: KARNE-KAPI: G-NN|KURULUM|KAPANIS · HÜKÜM: YEŞİL|KIRMIZI|DOĞRULANAMADI · MADDELER: <iddia=hüküm çiftleri>");
+  }
+  const kapiEs = kapiHam.split(/\s+/)[0].match(/^(G-\d+|KURULUM|KAPANIS)$/);
+  if (!kapiEs) red("KARNE-KAPI çözülmüyor: " + kapiHam, "hükmün konusu olan kapıyı yaz (G-NN ya da KURULUM/KAPANIS)");
+  const kapi = kapiEs[1];
+  // Ilk jeton BIREBIR karsilastirilir (E3 dersi: ASCII \b Turkce harfte sinir saymaz).
+  const hIlk = hukumHam2.split(/\s+/)[0];
+  const HUKUMLER = { "YEŞİL": "YEŞİL", "KIRMIZI": "KIRMIZI", "DOĞRULANAMADI": "DOĞRULANAMADI" };
+  const hukumK = HUKUMLER[hIlk] || null;
+  if (!hukumK) red("HÜKÜM okunmuyor: " + hukumHam2, "yalnız «YEŞİL», «KIRMIZI» ya da «DOĞRULANAMADI» yazılır");
+  // OZ-KARNE YASAGI: isi yapan kendi karnesini yazamaz. Kaynak, o kapinin son IS zarfinin
+  // ajanidir (karne sinifi zarflar disarida birakilir — karneci kendi kaydini kaynak sayamaz).
+  let isAjani = null;
+  try {
+    const gy2 = join(KOK, "00_pano", "zarf-gunlugu.jsonl");
+    if (existsSync(gy2)) {
+      for (const l of readFileSync(gy2, "utf8").split("\n")) {
+        if (!l) continue;
+        let j; try { j = JSON.parse(l); } catch { continue; }
+        if (j.tip === "zarf" && j.gorev === kapi && j.sinif !== "karne") isAjani = j.ajan || null;
+      }
+    }
+  } catch {}
+  if (isAjani && isAjani === tipHam) {
+    kayit({ tip: "bulgu", ajan: tipHam, gorev: kapi, cins: "oz-karne", detay: "isi yapan koltuk kendi karnesini yazmaya calisti" });
+    red("öz-karne yasak: " + kapi + " işini yapan koltuk (" + tipHam + ") kendi karnesini yazamaz",
+        "karneyi işe dokunmamış bir koltuk verir — «kimse kendi işine yeşil diyemez» kuralının mekanik yüzü budur");
+  }
+  dikisGorev = kapi;
+  karneKaydi = { tip: "karne", ajan: tipHam, kapi, hukum: hukumK, maddeler: maddeler.slice(0, 400) };
+}
+// ═══ E4 sonu ════════════════════════════════════════════════════════════════════════════
+
+// Talimat↔fiil dikişi (DÖNÜŞ ucu; çağrı ucu E4te devir-kapisi.sh): günlükte sevk-karar kaydi
+// varsa zarfin gorevi o kümede aranir; küme BOSSA atlanir. Sapma ENGELLEMEZ: kirmizi iz düşer,
+// duran kapiya çevirmek sevkin Stop-turu isidir.
+// E4 iki daraltma getirdi: (1) kume YALNIZ BU KOSUnun kararlarindan kurulur (eski kosunun
+// karari bugunku sapmayi ortemez); (2) rol de eslesir — sevk G-01i uygulayiciya verdiyse ayni
+// gorevi baska bir koltugun donmesi SAPMADIR (T4e). Rolu YAZILMAMIS eski kayitlar icin (E1/E3
+// donemi) yalniz gorev eslesmesi aranir — geri uyum.
 let dikis = "atlandi";
 try {
   const gy = join(KOK, "00_pano", "zarf-gunlugu.jsonl");
@@ -430,18 +499,26 @@ try {
     for (const l of readFileSync(gy, "utf8").split("\n")) {
       if (!l) continue;
       let j; try { j = JSON.parse(l); } catch { continue; }
-      if (j.tip === "sevk-karar" && typeof j.gorev === "string") acik.add(j.gorev);
+      if (j.tip !== "sevk-karar" || typeof j.gorev !== "string") continue;
+      if (KOSU && j.kosu && j.kosu !== KOSU) continue;
+      acik.add(typeof j.rol === "string" && j.rol ? j.rol + " " + j.gorev : j.gorev);
     }
-    if (acik.size) dikis = gorev && acik.has(gorev) ? "esti" : "sapma";
+    if (acik.size) {
+      const esti = dikisGorev && (acik.has(tipHam + " " + dikisGorev) || acik.has(dikisGorev));
+      dikis = esti ? "esti" : "sapma";
+    }
   }
 } catch {}
 if (dikis === "sapma") {
-  kayit({ tip: "bulgu", ajan: tipHam, gorev, cins: "dikis-sapma", detay: "sevkin acmadigi gorev donusu (talimat-fiil dikisi)" });
+  kayit({ tip: "bulgu", ajan: tipHam, gorev: dikisGorev, cins: "dikis-sapma", detay: "sevkin acmadigi (rol, gorev) ikilisinden donus geldi (talimat-fiil dikisi, donus ucu)" });
 }
 
 // Geçti: zarf + biçim kaydı günlüğe (tek append-aracı üzerinden; ham metin 4000 karakterle kirpilir).
+// `sinif: karne` (E4): karneci koltugun zarfi IS zarfi degildir — karne TAZELIK olcumunde ve
+// oz-karne kaynak aramasinda bu zarflar disarida birakilir (aksi halde karne kendi zarfindan
+// eski gorunur ve sevk sonsuza dek yeniden dogrulayici acardi).
 kayit({
-  tip: "zarf", ajan: tipHam, gorev,
+  tip: "zarf", ajan: tipHam, gorev, sinif: karneciMi ? "karne" : (denetciMi ? "hukum" : "is"),
   alanlar: {
     biten: biten, catal: catalYok ? "yok" : "dolu",
     ceviri: alan["ÇEVİRİ"] || null, etki: alan["ETKİ"] || null, bekletir: alan["BEKLETİR"] || null,
@@ -451,6 +528,9 @@ kayit({
   },
   dikis, ham: (metin || "").slice(0, 4000),
 });
+// Karne kaydi ZARFTAN SONRA duser: tazelik "karne indeksi > son is-zarfi indeksi" ile olculur;
+// sira tersine donerse kendi zarfi karneyi bayat gosterirdi.
+if (karneKaydi) kayit(karneKaydi);
 kayit({ tip: "bicim", ajan: tipHam, gorev, sonuc: "gecti", sebep: null });
 bitir(0, SHA, "");
 ')" || engel "bicim cozumleyicisi kosamadi (fail-closed)"

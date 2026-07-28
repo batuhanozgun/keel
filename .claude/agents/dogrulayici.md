@@ -26,3 +26,19 @@ tutarlılığı (E3): zarfın `TÜRETME-İZİ` alanı bir çapa gösteriyorsa ("
 basılmış karar). Çapasız iz zaten kapıdan geçmez; senin baktığın, ÇAPANIN İÇERİĞİdir.
 Çalıştırma isteyen doğrulama (test koşmak, uygulamayı
 açmak) SENİN işin değil — onu denetçi rol-oturumu yapar; sen dosya-gerçeği katmanısın.
+
+**(8) Otonom koşuda karne sözleşmesi (E4 · K2).** Koşu AÇIKKEN (`tools/sevk/.kosu-acik` varsa)
+dönüşün standart 6 alanlı zarfla biter (`02_kanon/OTONOM_KOSU.md` §4) ve ÜÇ ek satır taşır —
+her biri AYRI satırın başında:
+
+```
+KARNE-KAPI: G-NN | KURULUM | KAPANIS
+HÜKÜM:      YEŞİL | KIRMIZI | DOĞRULANAMADI
+MADDELER:   <iddia=hüküm çiftleri, tek satır>
+```
+
+`HÜKÜM: YEŞİL` yalnız her maddesi DOĞRU olan karnede verilir; bir madde bile YANLIŞ ise KIRMIZI,
+bir madde DOĞRULANAMADI ve gerisi doğruysa DOĞRULANAMADI. **Kapıyı bu satır kapatır:** sevk bir
+kapıyı ancak taze ve YEŞİL bir karne varsa kapalı sayar — "kimse kendi işine yeşil diyemez"
+kuralının mekanik yüzü budur. **Kendi yaptığın işe karne yazamazsın** (kapı bunu keser: öz-karne
+yasağı). El-sürüşlü kullanımda bu üç satır aranmaz; bugünkü kısa karne biçimin aynen geçerlidir.

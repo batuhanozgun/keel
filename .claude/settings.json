@@ -26,6 +26,25 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/guard/file-guard.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/sevk/devir-kapisi.sh\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/sevk/sevk.sh\""
+          }
+        ]
       }
     ],
     "SessionStart": [

@@ -62,6 +62,19 @@ test('betik hijyeni: tek-tırnaklı gömülü blokların içinde apostrof YOK (s
   }
 });
 
+test('betik hijyeni: kabuk betiklerinde NUL baytı YOK (görünmez düzenleme kazası)', () => {
+  // Doğuş (E4, 2026-07-28): düzenleme sırasında iki ayrı yerde `" "` dizesi NUL baytına
+  // dönüştü. `bash -n` bunu YAKALAMAZ (NUL'u sessizce atar), gözle de görünmez, ama gömülü
+  // node bloğunda ayraç olarak kullanılan dize bozulur ve karşılaştırma sessizce başarısız
+  // olur. Bu, "kapsam-tabanlı test kod yolu koşulmazsa yakalamaz" sınıfının bir üyesidir.
+  for (const y of HEPSI) {
+    const b = readFileSync(y);
+    assert.ok(!b.includes(0),
+      `${relative(KOK, y)} — dosyada NUL baytı var (düzenleme kazası; bash -n bunu yakalamaz).\n` +
+      `Muhtemelen bir dize ayracı bozulmuş: dosyayı aç ve NUL'u doğru karakterle değiştir.`);
+  }
+});
+
 test('betik hijyeni: ASCII olmayan karaktere bitişik $degisken süslü parantezli (bash 3.2)', () => {
   // «$capa» → bash 3.2 değişken adına »'in baytını katar: "unbound variable", dal sessiz ölür.
   // Doğrusu «${capa}». Tarama yalnız açık tehlikeyi arar: $ad hemen ardından ASCII-dışı bayt.
