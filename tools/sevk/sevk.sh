@@ -24,8 +24,41 @@ GOSTERGE="$DIZIN/.kosu-acik"
 
 GIRDI="$(cat 2>/dev/null || true)"
 
+# ── Kapanış yüzeyi (E5) — koşunun DÖRT bitiş hâlinde de aynı üç blok ─────────────────────
+# Üç iş: uyanık-tutma savını bırak · 00_pano/SABAH.md'yi yerinde yeniden yaz · kosu-bitti
+# haberini gönder. Üçü de fail-OPEN'dır: kapanışın kendisi bunlara bağlı olamaz (kapanamayan
+# koşu, kapanan koşudan çok daha kötüdür). Bloklar çözümleyiciden gelir — TEK üretici.
+kapanis_yuzeyi() { # $1: 3. blok yedeği (bloklar hiç üretilemediyse)
+  local B1="${BLOK1:-}" B2="${BLOK2:-}" B3="${BLOK3:-}"
+  [ -n "$B1" ] || B1="koşu turu tamamlanamadı — sayaçlar okunamadı"
+  [ -n "$B2" ] || B2="kuyruk durumu okunamadı (00_pano/SENDE_BEKLEYEN.md)"
+  [ -n "$B3" ] || B3="${1:-durdu}"
+
+  # Sav sızarsa Mac hiç uyumaz — bu ayrı bir arızadır; üç bırakma noktasından biri burasıdır.
+  if [ -f "$DIZIN/.caffeinate-pid" ]; then
+    kill "$(head -n1 "$DIZIN/.caffeinate-pid" 2>/dev/null)" 2>/dev/null || true
+    rm -f "$DIZIN/.caffeinate-pid"
+  fi
+
+  # SABAH.md — YERİNDE yeniden yazılır (append DEĞİL), tavanlı. Gerekçe: D-21'in kapanış bloğu
+  # bir SOHBET yüzeyidir; gözetimsiz gecenin sonunda sohbet yoktur. Yüzey dosya olmak zorunda,
+  # ama şişme dedektörü kendi yüzeyinde de geçerli (PANO disiplini).
+  if [ -d "$KOK/00_pano" ]; then
+    {
+      printf '# SABAH — %s · %s · %s\n\n' "${KOSU_KUTU:-?}" "${KOSU_ID:-?}" "$(date '+%Y-%m-%d %H:%M')"
+      printf '## GECE NE OLDU\n%s\n\n## SENDE BEKLEYEN\n%s\n\n## ŞİMDİ NE YAPIYOR\n%s\n' "$B1" "$B2" "$B3"
+    } 2>/dev/null | cut -c1-4096 > "$KOK/00_pano/SABAH.md" 2>/dev/null || true
+  fi
+
+  if command -v haber_at >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$KOK" haber_at --olay kosu-bitti --kosu "${KOSU_ID:-bilinmiyor}" \
+      --kutu "${KOSU_KUTU:-}" --blok1 "$B1" --blok2 "$B2" --blok3 "$B3" || true
+  fi
+}
+
 kapat() { # $1: sınıf · $2: sebep (tek satır) — koşuyu kapatır, gösterge silinir
   rm -f "$GOSTERGE"
+  kapanis_yuzeyi "durdu — $1: $2"
   if [ -n "${NODE_BIN:-}" ]; then
     J_tip=kosu-kapanis J_kosu="${KOSU_ID:-bilinmiyor}" J_kutu="${KOSU_KUTU:-}" \
       J_sinif="$1" J_sebep="$2" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
@@ -116,19 +149,46 @@ const KUTU = process.env.S_KUTU || "";
 const TUR = process.env.S_TUR || "yapim";
 const KIP = process.env.S_KIP || "interaktif";
 
-const loglar = [], metin = [];
+const loglar = [], metin = [], alarmlar = [];
 const kayit = (o) => loglar.push(JSON.stringify({ surum: 1, ts: new Date().toISOString(), kosu: KOSU, ...o }));
 const yaz = (s) => metin.push(s);
 let BEKCI_GEREK = 0;
+
+// SABAH YUZEYI — uc blok, TEK uretici (E5). Eskiden bu uc satir yalnizca "acik is yok" dalinda
+// yaz() ile kuruluyordu; artik HER karar yolunda OZET icinden uretilir ve UC yere birden gider:
+// stdout (sahip ekrani) · 00_pano/SABAH.md (sabah yuzeyi) · e-posta govdesi. Ayni cumleyi iki
+// yerde ayri ayri kurmak surüklenmenin en ucuz dogdugu yerdir (D-02 dersi).
+const OZET = { sevk: 0, kapiToplam: 0, karneli: 0, bulgu: 0, miras: 0, pas: [], bekleyen: null, simdi: "" };
+const ucBlok = () => {
+  const b1 = OZET.kapiToplam
+    ? OZET.sevk + " alt-ajan kosusu · " + OZET.karneli + "/" + OZET.kapiToplam + " kapi karneyle kapali"
+      + (OZET.miras ? " · " + OZET.miras + " miras kapi (karnesiz, kosudan once kapanmis)" : "")
+      + " · " + OZET.bulgu + " bulgu"
+    : OZET.sevk + " alt-ajan kosusu · kapi tablosu okunamadi · " + OZET.bulgu + " bulgu";
+  const b2 = OZET.bekleyen === null
+    ? "kuyruk durumu okunamadi (00_pano/SENDE_BEKLEYEN.md)"
+    : (OZET.bekleyen ? OZET.bekleyen + " gorevi bekleten acik catal var (00_pano/SENDE_BEKLEYEN.md)"
+                     : "kuyrukta acik catal yok");
+  const b3 = (OZET.simdi || "durdu")
+    + (OZET.pas.length ? "; " + OZET.pas.length + " kapi PAS (is YAPILMADI: " + OZET.pas.join(" ") + ")" : "");
+  return [b1, b2, b3];
+};
 const bitir = (karar) => {
   console.log("KARAR\t" + karar);
   console.log("BEKCI\t" + BEKCI_GEREK);
+  const bl = ucBlok();
+  for (let i = 0; i < 3; i++) console.log("BLOK\t" + (i + 1) + "\t" + bl[i].replace(/\t/g, " "));
+  for (const a of alarmlar) console.log("ALARM\t" + a);
   for (const l of loglar) console.log("LOG\t" + l);
   // Cok satirli mesaj protokolu bozmasin: her fiziksel satir ayri METIN kaydidir.
   for (const m of metin) for (const s of String(m).split("\n")) console.log("METIN\t" + s);
   process.exit(0);
 };
-const dur = (sebep) => { kayit({ tip: "bulgu", cins: "duran-kapi", detay: sebep }); yaz(sebep); bitir("DUR"); };
+const dur = (sebep) => {
+  kayit({ tip: "bulgu", cins: "duran-kapi", detay: sebep });
+  if (!OZET.simdi) OZET.simdi = "durdu — " + String(sebep).split("\n")[0];
+  yaz(sebep); bitir("DUR");
+};
 
 // ── KUTU.md: kapi tablosu + durus sozlesmesi + bagimlilik/risk blogu ────────────────────
 const kutuYol = join(KOK, "01_kutular", KUTU, "KUTU.md");
@@ -231,6 +291,36 @@ for (const s of (process.env.S_KUYRUK || "").split("\n")) {
   if (durum !== "CEVAP-BEKLIYOR" && durum !== "CEVIRI-KUSURU") continue;
   for (const g of (bek || "").split(/\s+/)) if (/^G-\d+$/.test(g)) bekletilen.add(g);
 }
+// OZET her karar yolunda dolu olmasi icin (E5): uc blok artik SEVK/DUR/KAPAT ayrimi
+// gozetmeden basilir, bu yuzden sayilar hesaplandiklari anda buraya yazilir.
+OZET.sevk = sevkKararlari.length;
+OZET.kapiToplam = kapilar.length;
+OZET.bulgu = buKosu.filter((r) => r.j.tip === "bulgu").length;
+OZET.miras = buKosu.filter((r) => r.j.cins === "miras-kapi").length;
+OZET.pas = kapilar.filter((k) => k.durum === "pas").map((k) => k.id);
+OZET.bekleyen = bekletilen.size;
+
+// ── SISME ALARMI (E5; tasarim §7.4) — sahibin 13 kez ELLE yaptigi is mekaniklesiyor ───────
+// "Bu kutu neden buyuyor?" sorusu artik yapinin kendi gozu. Capa: bu kutu icin gunlukteki EN
+// ESKI kapi-sayaci kaydi; yoksa bugunku sayi capa olur (ilk kosu kendi capasini kurar).
+// DURDURMAZ — haberdir. Esik burada SABITTIR: olculen sayi frene girerse fren fren olmaktan
+// cikar (E3 tavan dersi). Ilk gercek kutuda kalibre edilecek, bugun kalibre EDILMEMISTIR.
+const SISME_ORANI = 1.5;
+const capalar = kayitlar.filter((r) => r.j.tip === "kapi-sayaci" && r.j.kutu === KUTU && Number.isFinite(r.j.kapi_sayisi));
+if (!capalar.length) {
+  kayit({ tip: "kapi-sayaci", kutu: KUTU, kapi_sayisi: kapilar.length, cins: "capa" });
+} else {
+  const capa = capalar[0].j.kapi_sayisi;
+  const zatenSoylendi = buKosu.some((r) => r.j.tip === "bulgu" && r.j.cins === "sisme");
+  if (kapilar.length > Math.ceil(capa * SISME_ORANI) && !zatenSoylendi) {
+    kayit({ tip: "bulgu", cins: "sisme", detay: "kutu buyudu: " + capa + " -> " + kapilar.length + " kapi" });
+    // TAMPONLANIR, dogrudan basilmaz: protokolun ILK satiri KARAR olmak zorunda (kabuk
+    // ${CIKTI%%\n*} ile okuyor). Erken basilan tek satir motoru sessizce yanlis karara surer.
+    alarmlar.push("sisme\tKutu buyuyor: acilistaki " + capa + " kapidan " + kapilar.length +
+      " kapiya cikti (esik: +%50). Bu bir DURDURMA degil, HABER. K-H beyanlarina bakmak isteyebilirsin: 01_kutular/" + KUTU + "/KUTU.md");
+  }
+}
+
 if (cozulemeyen.length) {
   dur("sahibin kuyrugunda yapisi okunmayan madde var (" + cozulemeyen.join(" ") + ") — hangi gorevin bekledigi bilinemiyor (fail-closed); 00_pano/SENDE_BEKLEYEN.md maddesini bicime dondur");
 }
@@ -414,20 +504,16 @@ if (secilen) {
 // (c) Acik is yok
 const acikVar = kapilar.some((k) => k.durum === "açık" || k.durum === "sürüyor" || k.durum === "mühür-bekliyor");
 if (!acikVar) {
-  const bulgular = buKosu.filter((r) => r.j.tip === "bulgu").length;
-  const karneli = kapilar.filter((k) => k.durum === "kapalı" && kapaliSayilir(k.id)).length;
   // PAS AYRI SAYILIR (hasim bulgusu): pas kapida IS YAPILMADI; onu "kapali" diye raporlamak
-  // sahip yuzeyinde yalan olur. Kapanis cumlesi pas sayisini acikca soyler.
-  const pasli = kapilar.filter((k) => k.durum === "pas").map((k) => k.id);
-  const miras = buKosu.filter((r) => r.j.cins === "miras-kapi").length;
+  // sahip yuzeyinde yalan olur. Kapanis cumlesi pas sayisini acikca soyler (ucBlok icinde).
+  OZET.karneli = kapilar.filter((k) => k.durum === "kapalı" && kapaliSayilir(k.id)).length;
+  OZET.simdi = "durdu — acik kapi kalmadi. Kapanis muhru sahibin (D7 paketi)";
   kayit({ tip: "nabiz", tur_no: TUR_NO, zarf_sayisi: zarfSayisi });
-  yaz("GECE NE OLDU: " + sevkKararlari.length + " alt-ajan kosusu · " + karneli + "/" + kapilar.length +
-      " kapi karneyle kapali" + (miras ? " · " + miras + " miras kapi (karnesiz, koşudan once kapanmis)" : "") + " · " + bulgular + " bulgu");
-  yaz("SENDE BEKLEYEN: " + (bekletilen.size ? bekletilen.size + " gorevi bekleten acik catal var (00_pano/SENDE_BEKLEYEN.md)" : "kuyrukta acik catal yok"));
-  yaz("SIMDI NE YAPIYOR: durdu — acik kapi kalmadi" +
-      (pasli.length ? "; " + pasli.length + " kapi PAS (is YAPILMADI: " + pasli.join(" ") + ")" : "") +
-      ". Kapanis muhru sahibin (D7 paketi).");
-  if (KIP === "interaktif") yaz("not: bu kosu interaktif kipteydi — izin sorusu cikarsa kosu ASILI kalir (E5 watchdog/DUR yok).");
+  const bl = ucBlok();
+  yaz("GECE NE OLDU: " + bl[0]);
+  yaz("SENDE BEKLEYEN: " + bl[1]);
+  yaz("SIMDI NE YAPIYOR: " + bl[2]);
+  if (KIP === "interaktif") yaz("not: bu kosu interaktif kipteydi — izin sorusu cikarsa kosu ASILI kalir; cikisi DUR ya da watchdog olur (E5).");
   bitir("KAPAT");
 }
 
@@ -441,6 +527,21 @@ KARAR="$(printf '%s' "${CIKTI%%$'\n'*}" | cut -f2)"
 BEKCI_GEREK="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="BEKCI"{print $2; exit}')"
 LOGLAR="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="LOG"{sub(/^LOG\t/,""); print}')"
 MESAJ="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="METIN"{sub(/^METIN\t/,""); print}')"
+# Üç blok (E5): sabah yüzeyinin ve kapanış e-postasının gövdesi. TEK üretici çözümleyicidir.
+BLOK1="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="BLOK" && $2=="1"{print $3; exit}')"
+BLOK2="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="BLOK" && $2=="2"{print $3; exit}')"
+BLOK3="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="BLOK" && $2=="3"{print $3; exit}')"
+# Alarmlar (E5): DURDURMAYAN haberler — koşu sürer, sahip bilir. Gönderim fail-open.
+ALARMLAR="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="ALARM"{sub(/^ALARM\t/,""); print}')"
+if [ -n "$ALARMLAR" ]; then
+  while IFS=$'\t' read -r A_CINS A_DETAY; do
+    [ -n "$A_CINS" ] || continue
+    CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins "$A_CINS" --anahtar "$A_CINS" \
+      --kosu "$KOSU_ID" --kutu "$KOSU_KUTU" --detay "$A_DETAY" || true
+  done <<EOF_ALARM
+$ALARMLAR
+EOF_ALARM
+fi
 
 # ── 7 · Bekçi koşu-içi tazeliği (§7.4): kapı kapanışı turunda ışık tazelenir ──────────────
 # Otonom koşuda oturum uzundur; bekçi yalnız SessionEnd'de koşarsa Stop-turu BAYAT ışık okur.
@@ -480,7 +581,17 @@ EOF_BEKCI
   J_tip=bekci J_kosu="$KOSU_ID" J_isik="$BEKCI_ISIK" JN_cikis="$BEKCI_CIKIS" \
     J_kaynak="sevk kapı-turu" json_kur 2>/dev/null | yaz_ya_da_kapat
   if [ "$BEKCI_ISIK" = "KIRMIZI" ]; then
+    # Ayrı `alarm` postası ATILMAZ: kapat() zaten kosu-bitti haberini gönderiyor ve 3. blok
+    # sebebi taşıyor. İki posta aynı olayı anlatırsa kanal gürültüye döner (dört olay sözleşmesi).
     kapat "duran-kapi" "bekçi KIRMIZI (koşu-içi tazeleme): ${DURDURAN} — otonom koşuda bekçi kırmızısı duran kapıdır (OTONOM_KOSU §1)."
+  fi
+  # TAVAN-KIRMIZI koşuyu DURDURMAZ (kanonun iki yerde yazdığı istisna: kapanış kilidi, duran
+  # kapı değil) — ama sahibe HİÇ söylenmezse kutu sessizce tavanı aşmış olur. Alarm tam da
+  # "görür ama bağlamaz"ın kapandığı yer: haber gider, koşu sürer.
+  if [ "$BEKCI_ISIK" = "TAVAN-KIRMIZI" ]; then
+    CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins kirmizi --anahtar tavan \
+      --kosu "$KOSU_ID" --kutu "$KOSU_KUTU" \
+      --detay "Bekçi KUTU tavanı için KIRMIZI basıyor. Bu bir DURAN KAPI değildir (kapanış kilidi): koşu sürüyor, ama kutu kapanış mührüne bu hâliyle gidemez." || true
   fi
 fi
 
@@ -505,6 +616,7 @@ case "$KARAR" in
     ;;
   KAPAT)
     rm -f "$GOSTERGE"
+    kapanis_yuzeyi "durdu — açık iş kalmadı"
     J_tip=kosu-kapanis J_kosu="$KOSU_ID" J_kutu="$KOSU_KUTU" J_sinif="acik-is-yok" \
       J_sebep="acik is kalmadi" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
     printf 'KOŞU KAPANDI · %s · açık iş yok\n%s\n' "$KOSU_ID" "$MESAJ"

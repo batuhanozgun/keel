@@ -589,11 +589,53 @@ const k = (s, n) => String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
 console.log(JSON.stringify({ surum: 1, ts: new Date().toISOString(), kosu: k(process.env.B_KOSU, 120) || null,
   tip: "bulgu", gorev: k(process.env.B_GOREV, 24), cins: k(process.env.B_CINS, 40), detay: k(process.env.B_DETAY, 200) }));
 ' | bash "$KOK/tools/sevk/zarf-ekle.sh" >/dev/null 2>&1 || true
+        # ── HABER · catal-bekliyor (E5) ─────────────────────────────────────────────────
+        # Metin KUYRUK SATIRINDAN okunur, zarftan DEĞİL: kuyruğa yazılan cümle catal-kuyruk.sh
+        # tarafından zaten temizlenmiş/kısaltılmıştır (yapı işaretleri soyulur, tavan uygulanır).
+        # Böylece sahibin ekranda gördüğü cümle ile telefonuna düşen cümle AYNI olur — iki ayrı
+        # yerde ayrı ayrı kurulan metin, sürüklenmenin en ucuz doğduğu yerdir (D-02 dersi).
+        if [ "$DURUM" = "EKLENDI" ]; then
+          KUYRUK_ALAN="$(K_YOL="$KOK/00_pano/SENDE_BEKLEYEN.md" K_ID="$AYRINTI" "$NODE_BIN" --input-type=module -e '
+import { readFileSync } from "node:fs";
+let s = "";
+try { s = readFileSync(process.env.K_YOL || "", "utf8"); } catch { process.exit(0); }
+const id = String(process.env.K_ID || "");
+const satir = s.split("\n").find((r) => r.includes("ÇATAL " + id));
+if (!satir) process.exit(0);
+const al = (re) => { const m = satir.match(re); return m ? m[1].trim() : ""; };
+const ceviri = al(/ÇATAL\s+\S+\s+·\s+"([^"]*)"/);
+const etki = al(/·\s*etki:\s*([^·]*)/);
+const bekletir = al(/·\s*bekletir:\s*([^·]*)/);
+console.log([ceviri, etki, bekletir].join("\t"));
+' 2>/dev/null || true)"
+          if [ -n "$KUYRUK_ALAN" ]; then
+            H_CEVIRI="$(printf '%s' "$KUYRUK_ALAN" | cut -f1)"
+            H_ETKI="$(printf '%s' "$KUYRUK_ALAN" | cut -f2)"
+            H_BEKLETIR="$(printf '%s' "$KUYRUK_ALAN" | cut -f3)"
+            CLAUDE_PROJECT_DIR="$KOK" haber_at --olay catal-bekliyor --kosu "$KOSU_ID" \
+              --kutu "$KOSU_KUTU" --catal "$AYRINTI" --anahtar "$AYRINTI" \
+              --ceviri "$H_CEVIRI" --etki "$H_ETKI" --bekletir "$H_BEKLETIR" || true
+          fi
+        fi
         ;;
     esac
   done <<EOF_EYLEM
 $EYLEMLER
 EOF_EYLEM
+fi
+
+# ── DUR · HAT-2: TEYİT KAYDI (E5) ─────────────────────────────────────────────────────────
+# Bu hat koşuyu DURDURMAZ — SubagentStop kancasının çıkışı yalnız alt-ajanın dönüşüne etki eder
+# (tasarı §4'ün düzeltmesi; tasarımın "birincil hat" cümlesi mekanik karşılıksızdı). Yaptığı iş
+# KAYITTIR: DUR'un en erken KESİN görüldüğü an burasıdır — paralel demette Stop, ana modelin
+# turu bitene kadar hiç ateşlenmez. Sabah yüzeyi "DUR ne zaman işledi, o an ne uçuyordu"
+# sorusunu bu kayıttan cevaplar. Frenleme hat-1'de (devir kapısı), kapatma hat-3'te (sevk).
+# Ayrı e-posta ATILMAZ: dört olay sözleşmesi şişirilmez, haber kosu-bitti ile gider.
+if [ -e "$KOK/tools/sevk/.dur" ] && [ -n "${NODE_BIN:-}" ]; then
+  DUR_SEBEP="$(head -n1 "$KOK/tools/sevk/.dur" 2>/dev/null || true)"
+  J_tip=dur-alindi J_kosu="$KOSU_ID" J_kutu="$KOSU_KUTU" J_kaynak="isaret" \
+    J_sebep="${DUR_SEBEP:-sebep yazılmamış}" json_kur 2>/dev/null \
+    | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
 fi
 
 if [ "$YAZIM_HATASI" = "1" ] && [ "$SHA_BAYRAK" != "1" ]; then

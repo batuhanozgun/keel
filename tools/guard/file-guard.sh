@@ -37,6 +37,10 @@ case "$INPUT" in
     # tetikleyicilerinin TAM üst-kümesidir (markerlar + dışa-giden + git-obje + yazım fiilleri).
     case "$INPUT" in
       *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.kosu-acik'*|*'.dur'*) : ;;
+      # E5 kanal betikleri: ön-eleme listesi dikiş kapsamının ÜST-kümesi olmak zorundadır —
+      # buraya eklenmezse aşağıdaki kanal dikişi HİÇ koşmaz (yaşanmış: dikiş yazıldı, gate
+      # elemişti; sessiz delik). "Az eşleşme koruma deliğidir" kuralının canlı örneği.
+      *haber.sh*|*nabiz.sh*) : ;;
       *git*|*curl*|*wget*|*ssh*|*scp*|*sftp*|*rsync*|*mail*|*sendmail*|*gh*|*npm*) : ;;
       *'>'*|*'<<'*|*tee*|*cp*|*mv*|*dd*|*sed*|*install*|*truncate*) : ;;
       *) exit 0 ;;
@@ -196,6 +200,15 @@ if ((j.tool_name || "") === "Bash") {
   // (kosu icinde modelin freni sessizce silmesini engeller; el-suruslu oturumda da sorulur —
   // dosya zaten yalnizca kosu baglaminda anlamlidir).
   if (komut.includes(".dur")) { console.log("SOR-KOSU\ttools/sevk/.dur"); process.exit(0); }
+  // Kanal-dikisi (E5): haber.sh ve nabiz.sh disa POSTA gonderir. Mesru cagiranlari yalnizca
+  // kancalardir (kosu-ac · sevk · SubagentStop kapisi · launchd) ve kanca sureci arac
+  // katmanindan GECMEZ — yani bu dikis onlari hic gormez, hicbir mesru yolu kesmez.
+  // Bir AJANIN bu betikleri cagirmasi ise "modelin yazdigi metni disari cikarma" yolunu acardi:
+  // serbest-metin yasagi tam da bu yuzden arayuze gomulu (haber.sh icinde govde argumani YOKTUR).
+  // Yol yine de kapatilir — E2 Hat-2 disa-giden fiillerinin kardesi.
+  if (komut.includes("haber.sh") || komut.includes("nabiz.sh")) {
+    console.log("ENGEL-KANAL\ttools/sevk/haber.sh"); process.exit(0);
+  }
   // ---- E2 dikisleri (tasari §3) — icerik ENGELi bash katmaninda coktan kosuldu ----
   // Komut bolutleri: ; & | ` $( VE SATIRSONU ayraclarindan bolunur (hasim bulgusu: cok-satirli
   // komut satirsonuyla ucunu de atliyordu). "komut-konumu" = bir bolutun BASI.
@@ -386,6 +399,10 @@ case "$DURUM" in
     GEREKCE="Bu kabuk komutu kilitli-tarih çapasına (02_kanon/kilitli/.taban-ref) dokunuyor. Çapayı ilerletmek, kilitli-karar ihlal sinyalini söndürür — sahip kararı ister (bekçi koruma-hattı iii)." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
+    ;;
+  ENGEL-KANAL)
+    printf 'file-guard ENGEL: haber kanalı ajan eliyle çağrılamaz (%s).\nBu betikler sahibin adına DIŞARI posta gönderir; meşru çağıranları yalnız kancalardır (/kosu töreni · sevk · SubagentStop kapısı · launchd watchdog) ve onlar araç katmanından geçmez.\nSerbest metnin dışarı çıkmaması bu tasarımın çekirdek güvencesidir: gövde yalnız tanımlı alanlardan kurulur ve gönderim öncesi içerik süzgecinden geçer (OTONOM_KOSU §7 · §12).\n' "$DETAY" >&2
+    exit 2
     ;;
   SOR-KOSU)
     GEREKCE="Bu kabuk komutu koşu-AÇIK göstergesine (tools/sevk/.kosu-acik) dokunuyor. Gösterge otonom koşunun anahtarıdır: silinirse SubagentStop biçim kapısı sessizce kapanır. Meşru yolu /kosu töreni ve sevk kapanışıdır; elle müdahale sahip kararı ister." \

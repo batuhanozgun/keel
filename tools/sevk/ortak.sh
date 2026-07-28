@@ -11,6 +11,8 @@
 #                             (2 fail-closed'dur: "okunamıyor" ile "koşu yok" AYNI ŞEY DEĞİLDİR)
 #   gunluge_yaz <kök>       → stdin'deki tek satır JSON'u zarf-ekle.sh ile günlüğe append eder
 #   json_kur                → J_/JN_ önekli env değişkenlerinden güvenli JSON kurar
+#   kanal_oku <kök>         → kanal.conf'u AYRIŞTIRIR (source ETMEZ); KANAL_* doldurur
+#                             0 = eksiksiz · 1 = dosya yok · 2 = zorunlu alan boş/bozuk
 export LC_ALL=C.UTF-8
 
 ORTAK_DIZIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -87,11 +89,99 @@ kosu_oku() {
 # Gerçek-kutu koşusunun ek iki şartı (OTONOM_KOSU §10; tatbikat koşuları MUAF — E4/E5
 # tatbikatları döngüsel bağımlılığa girmesin diye tasarımın bilinçli istisnası).
 # Çıktı: eksiklerin listesi (boşsa şart karşılanmış).
+# İŞARET DEĞİL CANLILIK (E5): "dosya var" ile "iş fiilen koşuyor" AYRI şeylerdir. E4'ün en
+# pahalı ders sınıfı dosyada duran ölü kuraldı — bu denetim işaretin gösterdiği launchd işini
+# `launchctl print` ile arar ve son nabız damgasının tazeliğine bakar. Kanal da aynı hatta:
+# haber kanalı kırıkken gerçek bir kutu koşarsa, gece sessiz geçer ve kimse bilmez.
 gercek_kutu_eksikleri() { # $1: sevk dizini
-  local D="${1:-$ORTAK_DIZIN}" E=""
+  local D="${1:-$ORTAK_DIZIN}" E="" ETIKET="" YAS=""
   [ -s "$D/damgalar/T6" ] || E="$E T6-damgasi(E5-kanal-tatbikati)"
-  [ -s "$D/watchdog-kurulu" ] || E="$E watchdog-kaydi(tools/sevk/watchdog-kurulu)"
+  if [ ! -s "$D/watchdog-kurulu" ]; then
+    E="$E watchdog-kaydi(tools/sevk/watchdog-kurulu)"
+  else
+    ETIKET="$(sed -n 's/^etiket=//p' "$D/watchdog-kurulu" 2>/dev/null | head -n1)"
+    if [ -z "$ETIKET" ]; then
+      E="$E watchdog-kaydinda-etiket-yok"
+    elif ! launchctl print "gui/$(id -u)/$ETIKET" >/dev/null 2>&1; then
+      E="$E watchdog-isi-YUKLU-DEGIL($ETIKET)"
+    elif [ ! -s "$D/.nabiz-son" ]; then
+      E="$E watchdog-hic-kosmamis"
+    else
+      YAS="$(N_D="$(head -n1 "$D/.nabiz-son" 2>/dev/null)" node -e 'const t=Date.parse(process.env.N_D||"");console.log(Number.isFinite(t)?Math.floor((Date.now()-t)/60000):999)' 2>/dev/null || echo 999)"
+      case "$YAS" in
+        ''|*[!0-9]*) E="$E watchdog-damgasi-okunmuyor" ;;
+        *) [ "$YAS" -le 20 ] || E="$E watchdog-nabzi-BAYAT(${YAS}dk)" ;;
+      esac
+    fi
+  fi
+  if [ -r "$D/kanal-yokla.sh" ]; then
+    [ "$(CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}" bash "$D/kanal-yokla.sh" --sig 2>/dev/null | head -n1)" = "HAZIR" ] \
+      || E="$E haber-kanali-HAZIR-DEGIL"
+  else
+    E="$E kanal-yoklamasi-yok(tools/sevk/kanal-yokla.sh)"
+  fi
   printf '%s' "$E"
+}
+
+# Haber kanalının yapılandırması (E5). SOURCE EDİLMEZ, ayrıştırılır: kanal.conf bir VERİ
+# dosyasıdır ve `.` ile alınması onu koda çevirirdi (kabuk enjeksiyonu). Yalnız ANAHTAR=değer
+# satırları okunur; anahtar beyaz listededir, değerde satırsonu/kontrol karakteri kabul edilmez.
+# PAROLA BU DOSYADA YOKTUR (Keychain'de) — okunması da bu fonksiyonun işi değildir.
+KANAL_SMTP_SUNUCU=""; KANAL_SMTP_PORT=""; KANAL_HESAP=""; KANAL_ALICI=""
+KANAL_KEYCHAIN_SERVIS=""; KANAL_IMAP_SUNUCU=""; KANAL_IMAP_PORT=""
+KANAL_DUR_KONU=""; KANAL_DUR_JETON=""; KANAL_SESSIZLIK_ESIK_DK=""; KANAL_HATA=""
+kanal_oku() { # $1: kök
+  local KOK="${1:-.}" YOL SATIR A D
+  YOL="$KOK/tools/sevk/kanal.conf"
+  KANAL_HATA=""
+  [ -f "$YOL" ] || { KANAL_HATA="kanal.conf yok: tools/sevk/kanal.conf"; return 1; }
+  while IFS= read -r SATIR || [ -n "$SATIR" ]; do
+    case "$SATIR" in ''|'#'*) continue ;; esac
+    case "$SATIR" in *=*) : ;; *) continue ;; esac
+    A="${SATIR%%=*}"; D="${SATIR#*=}"
+    # Baştaki/sondaki boşluk soyulur; içeride kontrol karakteri kalmışsa alan REDDEDİLİR.
+    A="$(printf '%s' "$A" | tr -d ' \t')"
+    D="$(printf '%s' "$D" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    case "$D" in *[[:cntrl:]]*) KANAL_HATA="kanal.conf: $A alanında kontrol karakteri var"; return 2 ;; esac
+    case "$A" in
+      SMTP_SUNUCU) KANAL_SMTP_SUNUCU="$D" ;;
+      SMTP_PORT) KANAL_SMTP_PORT="$D" ;;
+      HESAP) KANAL_HESAP="$D" ;;
+      ALICI) KANAL_ALICI="$D" ;;
+      KEYCHAIN_SERVIS) KANAL_KEYCHAIN_SERVIS="$D" ;;
+      IMAP_SUNUCU) KANAL_IMAP_SUNUCU="$D" ;;
+      IMAP_PORT) KANAL_IMAP_PORT="$D" ;;
+      DUR_KONU) KANAL_DUR_KONU="$D" ;;
+      DUR_JETON) KANAL_DUR_JETON="$D" ;;
+      SESSIZLIK_ESIK_DK) KANAL_SESSIZLIK_ESIK_DK="$D" ;;
+      *) : ;;   # tanınmayan anahtar sessizce atlanır (ileri uyum)
+    esac
+  done < "$YOL"
+  [ -n "$KANAL_DUR_KONU" ] || KANAL_DUR_KONU="KEEL DUR"
+  [ -n "$KANAL_SMTP_PORT" ] || KANAL_SMTP_PORT="587"
+  [ -n "$KANAL_IMAP_PORT" ] || KANAL_IMAP_PORT="993"
+  [ -n "$KANAL_KEYCHAIN_SERVIS" ] || KANAL_KEYCHAIN_SERVIS="keel-haber"
+  case "$KANAL_SESSIZLIK_ESIK_DK" in
+    ''|*[!0-9]*) KANAL_SESSIZLIK_ESIK_DK=30 ;;
+  esac
+  local EKSIK=""
+  [ -n "$KANAL_SMTP_SUNUCU" ] || EKSIK="$EKSIK SMTP_SUNUCU"
+  [ -n "$KANAL_HESAP" ] || EKSIK="$EKSIK HESAP"
+  [ -n "$KANAL_ALICI" ] || EKSIK="$EKSIK ALICI"
+  if [ -n "$EKSIK" ]; then
+    KANAL_HATA="kanal.conf doldurulmamış — eksik alan:$EKSIK"
+    return 2
+  fi
+  return 0
+}
+
+# Haber gönderimi — TEK çağrı noktası (E5). Çağıranı ASLA öldürmez: koşu içi gönderim
+# fail-OPEN'dır (tasarı §3.3 — geceyi bir yönlendirici arızasına rehin vermeyiz), ama izsiz
+# değildir: haber.sh kendi sonucunu günlüğe yazar. Dönüş kodu bilgi amaçlıdır.
+haber_at() {
+  local H="$ORTAK_DIZIN/haber.sh"
+  [ -r "$H" ] || return 1
+  CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}" bash "$H" "$@" >/dev/null 2>&1
 }
 
 # Günlüğe tek satır JSON append (TEK append-aracı üzerinden — F1'in süreç karşılığı).

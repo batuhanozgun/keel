@@ -7,7 +7,8 @@
 # sahte satıra karşı mekanik yakalayıcı YOK — o sınır süreç disiplinidir (bilinen sınır, E2+ adayı).
 # Girdi: stdin'de TEK satır JSON. Şema (surum:1): zorunlu alanlar surum=1 · ts (ISO) · tip
 #   (bilinen liste) · kosu (dize ya da null). Tip listesi: kosu-acilis · kosu-kapanis · nabiz ·
-#   zarf · bicim · sevk-karar · catal-suzgec · sahip-temas · izin-engel · bulgu.
+#   zarf · bicim · sevk-karar · catal-suzgec · sahip-temas · izin-engel · bulgu · karne · devir ·
+#   bekci · haber · dur-alindi · kapi-sayaci (son üçü E5).
 # FAIL-CLOSED: geçersiz girdi / kilit alınamadı / yazım hatası → exit 1 + stderr gerekçe;
 #   satır SESSİZCE düşmez (bozuk satır bütün gözleri köreltir — günlük tek-nokta veri katmanı).
 # Kilit: mkdir kilidi (macOS tabanında flock yok) + tek printf-append. Bayat kilit (PID ölü)
@@ -40,7 +41,12 @@ node_bul || hata "node bulunamadi — sema denetimi yapilamiyor (fail-closed)"
 SATIR="$(printf '%s' "$GIRDI" | "$NODE_BIN" --input-type=module -e '
 import { readFileSync } from "node:fs";
 const TIPLER = new Set(["kosu-acilis","kosu-kapanis","nabiz","zarf","bicim","sevk-karar","catal-suzgec","sahip-temas","izin-engel","bulgu",
-                        "karne","devir","bekci"]);
+                        "karne","devir","bekci",
+                        // E5 (kanal + nabiz): haber = disa giden posta sonucu · dur-alindi = DUR
+                        // isaretinin gorulme ani (kaynak: isaret|posta) · kapi-sayaci = sisme
+                        // alarminin capasi. Beyaz liste FAIL-CLOSED: listede olmayan tip
+                        // reddedilir ve sevkin uc freni gunlukten sayildigi icin kosu KAPANIR.
+                        "haber","dur-alindi","kapi-sayaci","alarm"]);
 let ham = "";
 try { ham = readFileSync(0, "utf8"); } catch { console.log("HATA\tstdin okunamadi"); process.exit(0); }
 if (ham.trim().split("\n").length !== 1) { console.log("HATA\tgirdi tek satir degil"); process.exit(0); }

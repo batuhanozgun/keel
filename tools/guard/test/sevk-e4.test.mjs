@@ -650,10 +650,29 @@ test('gerçek-kutu şartı: T6 damgası + watchdog yoksa `gercek` koşu AÇILMAZ
   assert.match(g.stderr, /watchdog-kaydi/);
   assert.ok(!existsSync(GOSTERGE(kok)));
 
+  // E5 SERTLEŞTİRMESİ (2026-07-28): bu test eskiden buraya SAHTE bir watchdog işareti yazıp
+  // koşunun açılmasını bekliyordu — yani "dosya var" ile "iş fiilen koşuyor" aynı sayılıyordu.
+  // E5'in canlılık denetimi (ortak.sh · gercek_kutu_eksikleri) o kabulü kaldırdı: işaretin
+  // gösterdiği launchd işi `launchctl print` ile aranır, son nabız damgasının tazeliği ölçülür.
+  // Sahte işaret ARTIK YETMEZ — kâğıt üstünde korunan bir gece, korunmayan gecedir (E4'ün
+  // "dosyada duran ölü kural" dersinin E5'teki karşılığı). Gerçek yol T6e'de canlı sınanır.
   writeFileSync(join(kok, 'tools', 'sevk', 'damgalar', 'T6'), '2026-07-28 · test\n');
   writeFileSync(join(kok, 'tools', 'sevk', 'watchdog-kurulu'), 'launchd: test\n');
   const g2 = kos(kok, 'kosu-ac.sh', [KUTU_ADI, 'yapim', 'bassiz']);
-  assert.equal(g2.status, 0, 'iki şart karşılanınca gerçek koşu açılmalı: ' + g2.stderr);
+  assert.equal(g2.status, 1, 'ŞEKİLSİZ (etiketsiz) watchdog işareti gerçek koşuyu AÇMAMALI');
+  assert.match(g2.stderr, /watchdog-kaydinda-etiket-yok/);
+
+  // Etiketi olan ama launchd'ye YÜKLENMEMİŞ işaret de yetmez (T6e'nin birim karşılığı).
+  writeFileSync(join(kok, 'tools', 'sevk', 'watchdog-kurulu'),
+    'etiket=dev.keel.nabiz.olmayan-is-' + process.pid + '\nplist=/yok\n');
+  const g3 = kos(kok, 'kosu-ac.sh', [KUTU_ADI, 'yapim', 'bassiz']);
+  assert.equal(g3.status, 1, 'yüklü OLMAYAN launchd işi gerçek koşuyu AÇMAMALI');
+  assert.match(g3.stderr, /watchdog-isi-YUKLU-DEGIL/);
+  assert.ok(!existsSync(GOSTERGE(kok)));
+
+  // Tatbikat sınıfı muafiyeti korunur (E4/E5 tatbikatları döngüsel bağımlılığa girmesin).
+  const g4 = kos(kok, 'kosu-ac.sh', [KUTU_ADI, 'yapim', 'bassiz', 'tatbikat']);
+  assert.equal(g4.status, 0, 'tatbikat sınıfı bu şartlardan muaf olmalı: ' + g4.stderr);
 });
 
 test('bayat gösterge: 12 saatten eski koşu duran kapıdır (watchdogun 2. hattı)', () => {

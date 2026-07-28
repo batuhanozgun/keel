@@ -1,4 +1,7 @@
 .DS_Store
+# Obsidian'ın kasa ayarları — depo Obsidian'da açıldığında doğar; ürünün parçası değil
+# (izlenmezse bekçinin porcelain hattı onu "beklenmeyen dosya" diye SARI basmaz)
+.obsidian/
 # NOT: .kurulum-tamam bilerek İZLENİR (GENESIS onu commit'ler; dış temizlik/git clean
 # kurulum işaretini uçuramasın). Bu yüzden burada yok.
 
@@ -12,6 +15,18 @@ tools/sevk/.kosu-acik
 tools/sevk/.dur
 # watchdog kaydı (E5'te doğar) — makineye özel kurulum izi, depoya girmez
 tools/sevk/watchdog-kurulu
+# haber kanalının GERÇEK yapılandırması (E5) — sahibin e-posta adresini taşır, yani kişisel
+# veridir ve hiçbir depoya girmez. Şablonda yalnız kanal.conf.ornek yaşar; kurulu kutuda
+# sahip onu kopyalayıp doldurur. (Parola bu dosyada DEĞİL, Keychain'dedir.)
+tools/sevk/kanal.conf
+# haber kanalının koşu-içi sayacı (gönderim tavanı + olay tekilleştirmesi) — koşu-durumu
+tools/sevk/.haber-durum
+# watchdog canlılık damgası + hata günlüğü + uyanık-tutma savının PID'i (E5) — makine durumu
+tools/sevk/.nabiz-son
+tools/sevk/.nabiz-hata.log
+tools/sevk/.caffeinate-pid
+# sabah yüzeyi (E5) — her koşunun kendi çıktısı, yerinde yeniden yazılır
+00_pano/SABAH.md
 # kurulum kapısının mekanik raporu (E4) — her kurulum koşusunda sevk yeniden üretir
 00_pano/kurulum-kapisi.txt
 # harness worktree'leri (E2) — atılabilir/geçici git worktree'leri; izlenmez ki bekçi porcelain

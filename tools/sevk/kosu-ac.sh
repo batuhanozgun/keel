@@ -35,6 +35,11 @@ if [ "${1:-}" = "kapat" ]; then
   if [ ! -e "$GOSTERGE" ]; then printf 'KOŞU YOK: kapatılacak açık koşu bulunmadı.\n'; exit 0; fi
   kosu_oku "$KOK" || true
   rm -f "$GOSTERGE"
+  # Uyanık-tutma savını BIRAK (E5): sızan sav Mac'i hiç uyutmaz — ayrı bir arızadır.
+  if [ -f "$DIZIN/.caffeinate-pid" ]; then
+    kill "$(head -n1 "$DIZIN/.caffeinate-pid" 2>/dev/null)" 2>/dev/null || true
+    rm -f "$DIZIN/.caffeinate-pid"
+  fi
   J_tip=kosu-kapanis J_kosu="${KOSU_ID:-bilinmiyor}" J_kutu="${KOSU_KUTU:-}" \
     J_sebep="sahip kapattı (/kosu kapat)" json_kur 2>/dev/null | gunluge_yaz "$KOK" || true
   printf 'KOŞU KAPANDI: %s (sahip kararı).\n' "${KOSU_ID:-bilinmiyor}"
@@ -93,6 +98,39 @@ else
 fi
 [ "$KANAL" = "HAZIR" ] || hata "soru kanalı kapalı — $KANAL. Sahibin karar alanı yazılmadan otonom koşu açılmaz (D-25 ③)."
 
+# ── 5b · Haber kanalı DERİN yoklaması (E5; yalnız gerçek sınıf) ───────────────────────────
+# Neden burada ve neden SERT: kanalın kırık olduğunu öğrenmenin en ucuz anı, sahibin klavyede
+# olduğu tek andır. Gece yarısı keşfedilen kırık kanal = haber alınmayan bir gecedir.
+# Derin yoklama ağa çıkar (SMTP kimlik doğrulaması — POSTA GÖNDERMEZ); sevkin her Stop turunda
+# yaptığı ucuz yoklamadan farkı budur.
+if [ "$SINIF" = "gercek" ]; then
+  if [ -r "$DIZIN/kanal-yokla.sh" ]; then
+    HKANAL="$(CLAUDE_PROJECT_DIR="$KOK" bash "$DIZIN/kanal-yokla.sh" 2>/dev/null | head -n1 || true)"
+  else
+    HKANAL="HAZIR DEĞİL · tools/sevk/kanal-yokla.sh yok"
+  fi
+  [ "$HKANAL" = "HAZIR" ] || hata "haber kanalı kapalı — $HKANAL. Haber gitmeyen bir gece, gözetimsiz değil KÖRDÜR (tasarı §3.3)."
+fi
+
+# ── 5c · Uyanık tutma (E5; ölçüme dayalı) ─────────────────────────────────────────────────
+# Bu makinede `pmset -g` uyku eşiğini dakikayla ölçtü: boşta kalan Mac uyur, uyuyan Mac'te ne
+# koşu sürer ne watchdog ateşler — yani sessiz-ölüm alarmının KENDİSİ sessizce ölür. Sav koşu
+# boyunca tutulur; sevk kapanışta, nabız bayat koşuda bırakır (sızan sav = Mac hiç uyumaz).
+UYKU_NOT=""
+if [ "$SINIF" = "gercek" ] && command -v caffeinate >/dev/null 2>&1; then
+  # `-w $$` KULLANILMAZ: tören betiği hemen biter, sav da onunla ölürdü. Sav koşu boyunca
+  # yaşamalı — bu yüzden bağımsız süreç olarak başlar, PID diske yazılır, üç yerden bırakılır
+  # (sevk kapanışı · nabız bayat-koşu turu · /kosu kapat).
+  nohup caffeinate -dimsu >/dev/null 2>&1 &
+  CAFF_PID=$!
+  disown "$CAFF_PID" 2>/dev/null || true
+  printf '%s\n' "$CAFF_PID" > "$DIZIN/.caffeinate-pid" 2>/dev/null || true
+  UYKU_ESIK="$(pmset -g 2>/dev/null | sed -n 's/^ *sleep *\([0-9][0-9]*\).*/\1/p' | head -n1)"
+  UYKU_NOT="uyanık tutma: AÇIK (sistem uyku eşiği ${UYKU_ESIK:-?} dk; sav pid $CAFF_PID)"
+elif [ "$SINIF" = "gercek" ]; then
+  UYKU_NOT="uyanık tutma: YOK (caffeinate bulunamadı) — makine uyursa koşu durur ve haber GELMEZ"
+fi
+
 # ── 6 · Damga ─────────────────────────────────────────────────────────────────────────────
 SIMDI="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 KOSU="K$(date -u '+%Y%m%d-%H%M%S')-$$"
@@ -114,13 +152,32 @@ J_tip=kosu-acilis J_kosu="$KOSU" J_kutu="$KUTU" J_tur="$TUR" J_kip="$KIP" J_sini
   J_izin_zemini="$ZEMIN" J_not="$ZEMIN_NOT" json_kur 2>/dev/null | gunluge_yaz "$KOK" \
   || printf 'UYARI: açılış kaydı günlüğe yazılamadı (zarf-ekle.sh) — koşu açık ama izsiz başladı.\n' >&2
 
+# ── 7b · İLK HABER: kanalın canlı kanıtı (E5) ─────────────────────────────────────────────
+# Gerçek sınıfta bu gönderim BİR KAPIDIR: gidemezse koşu açılmaz ve gösterge geri alınır.
+# Derin yoklama (§5b) kimlik doğrulamasını sınadı; bu satır tesliminin fiilen olduğunu sınar —
+# ikisi ayrı arızalardır (kimlik doğru olup kota/engel yüzünden teslim edilmeyen posta).
+# Koşu İÇİNDEKİ sonraki gönderimler fail-OPEN'dır (tasarı §3.3): geceyi bir yönlendirici
+# arızasına rehin vermeyiz. Asimetri bilinçlidir.
+geri_al() {
+  rm -f "$GOSTERGE"
+  [ -f "$DIZIN/.caffeinate-pid" ] && { kill "$(head -n1 "$DIZIN/.caffeinate-pid" 2>/dev/null)" 2>/dev/null || true; rm -f "$DIZIN/.caffeinate-pid"; }
+  hata "$1"
+}
+if [ "$SINIF" = "gercek" ]; then
+  CLAUDE_PROJECT_DIR="$KOK" haber_at --olay kosu-basladi --kosu "$KOSU" --kutu "$KUTU" \
+    --tur "$TUR" --kip "$KIP" --sinif "$SINIF" --uyku "$UYKU_NOT" \
+    || geri_al "koşu-başladı haberi GÖNDERİLEMEDİ — kanal ayakta görünüyor ama teslim olmuyor. Gözü olmayan koşu açılmaz; gösterge geri alındı. Elle dene: bash tools/sevk/haber.sh --olay kosu-basladi --kosu deneme --kutu $KUTU"
+fi
+
 # ── 8 · Sahip yüzeyi ──────────────────────────────────────────────────────────────────────
 cat <<TOREN
 KOŞU AÇIK: $KOSU
   kutu : $KUTU   ·   tür: $TUR   ·   kip: $KIP   ·   sınıf: $SINIF
   izin zemini : $ZEMIN
   $ZEMIN_NOT
-
+${UYKU_NOT:+  $UYKU_NOT
+}${HKANAL:+  haber kanalı: HAZIR — koşu başladı postası gönderildi
+}
 Bundan sonrası yapının işi: sevk (Stop kancası) sıradaki görevi seçer, alt-ajan koşusunu
 açtırır, kapıyı bağımsız karne olmadan kapatmaz. Sen yalnız duran kapıda çağrılırsın.
 Koşuyu elle bitirmek: /kosu kapat

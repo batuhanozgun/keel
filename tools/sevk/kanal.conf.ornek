@@ -1,0 +1,45 @@
+# kanal.conf — haber kanalının yapılandırması (E5). VERİ dosyasıdır, kod DEĞİLDİR:
+# hiçbir zaman `source` edilmez, satır satır ayrıştırılır (kabuk enjeksiyonu kapalı).
+#
+# ŞABLONDA BOŞTUR. Kurulu projede sahibin kendi eliyle doldurulur ve .gitignore içindedir:
+# alıcı adresi kişisel veridir, depoya girmez. Dosyanın kendisi tools/sevk/ altındadır,
+# yani [SERT] korumadadır — hiçbir ajan bu dosyayı araç katmanından okuyamaz/yazamaz.
+#
+# PAROLA BU DOSYAYA YAZILMAZ. Parola yalnız macOS Keychain'de durur ve oradan okunur:
+#   security add-generic-password -s "<KEYCHAIN_SERVIS>" -a "<HESAP>" -w   (parolayı sorar)
+# Betik onu argüman olarak DEĞİL, curl yapılandırmasına stdin'den geçirir; `ps` çıktısında
+# ve diskte hiçbir an görünmez.
+#
+# Biçim: ANAHTAR=değer · satır başında "#" yorumdur · tırnak kullanılmaz.
+
+# ── Gönderim (SMTP) ────────────────────────────────────────────────────────────────────
+# iCloud   : SMTP_SUNUCU=smtp.mail.me.com   SMTP_PORT=587   (uygulama parolası: appleid.apple.com)
+# Gmail    : SMTP_SUNUCU=smtp.gmail.com     SMTP_PORT=587   (uygulama parolası: Google hesap ayarları)
+SMTP_SUNUCU=
+SMTP_PORT=587
+
+# Gönderen hesap = SMTP kullanıcı adı (genelde e-posta adresinin kendisi)
+HESAP=
+
+# Haberin gideceği adres (sahibin kendisi)
+ALICI=
+
+# Keychain kaydının servis adı (parola bu adla saklanır)
+KEYCHAIN_SERVIS=keel-haber
+
+# ── Uzaktan DUR (IMAP; yalnız başlık okunur, gövde OKUNMAZ) ────────────────────────────
+# iCloud: imap.mail.me.com 993 · Gmail: imap.gmail.com 993
+IMAP_SUNUCU=
+IMAP_PORT=993
+
+# DUR postasının konusu — birebir eşleşir. Gönderen ALICI ile aynı olmalıdır.
+DUR_KONU=KEEL DUR
+
+# İsteğe bağlı paylaşılan jeton: dolu ise konu "KEEL DUR <jeton>" olmalıdır.
+# Varsayılan BOŞ (kapalı): bu kanalın tek etkisi durdurmaktır, sahteciliğin bedeli
+# gecenin iptalidir — veri sızmaz, karar basılmaz. Gerekçe tasarı §4.1.
+DUR_JETON=
+
+# ── Nabız ──────────────────────────────────────────────────────────────────────────────
+# Koşu AÇIK görünürken bu kadar dakika nabız gelmezse "yapı sustu" alarmı gider.
+SESSIZLIK_ESIK_DK=30

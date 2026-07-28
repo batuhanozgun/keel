@@ -112,3 +112,54 @@ Tasarılar: `docs/superpowers/plans/2026-07-27-e1-durus-zarf-tasarisi.md` ·
 `…-e2-onleme-tasarisi.md` · `…-e3-soru-kanali-tasarisi.md`.
 Testler: `tools/guard/test/sevk.test.mjs` + `otonom-sim.test.mjs` (D-10: guard testleri
 kokpit test klasörüne girmez; sevk de aynı evde yaşar).
+
+## Kanal, nabız ve sabah yüzeyi (E5)
+
+**Dosyalar.** `haber.sh` (tek gönderim noktası) · `kanal-yokla.sh` (sağlık kontrolü) ·
+`nabiz.sh` (watchdog, launchd ile koşar) · `watchdog-kur.sh` (kur/kaldır/durum) ·
+`kanal.conf.ornek` → kurulu kutuda `kanal.conf` (**.gitignore**; parola YOK, Keychain'de).
+
+**Kurulum (kutu başına bir kez).**
+
+```
+cp tools/sevk/kanal.conf.ornek tools/sevk/kanal.conf   # doldur: sunucu · hesap · alıcı
+security add-generic-password -s keel-haber -a <hesap> -w   # parolayı SAHİP girer
+bash tools/sevk/kanal-yokla.sh          # HAZIR bekleriz (ağa çıkar, posta GÖNDERMEZ)
+bash tools/sevk/watchdog-kur.sh         # launchd işini kurar + yükler
+```
+
+**Dört olay ve kim atar.** `kosu-basladi` → `/kosu` töreni (gerçek sınıfta **gidemezse koşu
+açılmaz**) · `kosu-bitti` → sevkin dört bitiş hâlinin hepsi (üç blok) · `catal-bekliyor` →
+SubagentStop kapısı, çatal kuyruğa düştüğü an (metin **kuyruk satırından** okunur, iki yerde
+ayrı kurulmaz) · `alarm` → şişme (+%50) · KUTU tavan KIRMIZI'sı · watchdog sessizliği ·
+kanalın kendi süzgeç redi.
+
+**Neden kanca-içi gönderim ve bedeli.** Kanca süreci araç katmanından geçmez: `permissions.ask`
+ve PreToolUse onu görmez (E2 Hat-2 muafiyeti). Muafiyetin bedeli **gönderim-öncesi zorunlu
+süzgeç**tir — konu+gövde `icerik-suzgeci.sh --metin`den geçer; red → posta GİTMEZ, sabit-şablon
+sansürlü alarm gider, günlüğe bulgu düşer. Süzgeç *koşamazsa* da temiz sayılmaz.
+Gövde yalnız tanımlı alanlardan kurulur: **`--govde` diye bir argüman yoktur.**
+
+**Fail yönleri (bilinçli asimetri).** Tören: kanal HAZIR değilse ya da ilk posta gidemezse
+koşu **AÇILMAZ** (sahip klavyededir — kırık kanalı öğrenmenin en ucuz anı). Koşu içi gönderimler
+**fail-open** ama izsiz değil (günlüğe `haber` kaydı). Frenler: koşu başına 10 gönderim + olay
+tekilleştirmesi (`--anahtar`).
+
+**DUR üç hat.** ① `devir-kapisi.sh` — `.dur` varsa yeni alt-ajan açılmaz (**frenleme**)
+② `zarf-bicim-kapisi.sh` — görülme anı günlüğe (`dur-alindi`) ③ `sevk.sh` — koşuyu kapatır.
+Koşan görevi **kesmez**. `.dur`'u yazan: sahip (elle) ya da `nabiz.sh`'ın IMAP yoklaması —
+yapılandırılmış adresten `KEEL DUR` konulu posta; **yalnız başlık okunur, gövde OKUNMAZ.**
+*Beyanlı sınır:* `From` taklit edilebilir; bu kanalın tek etkisi durdurmak olduğu için kabul
+edildi (jeton alanı `kanal.conf`'ta hazır, varsayılan kapalı).
+
+**Watchdog iki durum.** (a) nabız durdu — eşik (varsayılan 30 dk) aşıldı · (b) hiç doğmadı —
+koşu açık, tek kaydı açılış. **Diriltmez.** Canlılık `launchctl print` + `.nabiz-son` tazeliğiyle
+ölçülür: *işaret dosyası yetmez.*
+
+**Uyanık tutma.** macOS'ta boşta kalan makine uyur; uyuyan makinede ne koşu sürer ne watchdog
+ateşler. `/kosu` gerçek sınıfta `caffeinate` savı başlatır (PID `.caffeinate-pid`), üç yerden
+bırakılır: sevk kapanışı · nabzın bayat-koşu turu · `/kosu kapat`.
+
+**Sabah yüzeyi.** `00_pano/SABAH.md` — üç blok, **yerinde** yeniden yazılır (append değil),
+4 KB tavanlı; her kapanışta tazelenir. Blokların TEK üreticisi sevkin çözümleyicisidir
+(stdout · SABAH.md · e-posta gövdesi aynı kaynaktan). `acilis.sh` sabah tek satır işaretçi verir.

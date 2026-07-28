@@ -32,6 +32,18 @@ KOSU_RC=0; kosu_oku "$KOK" || KOSU_RC=$?
 [ "$KOSU_RC" != "2" ] || engel "koşu göstergesi bozuk: ${KOSU_HATA} — devir eşleştirmesi yapılamıyor (fail-closed)"
 [ "$KOSU_RC" = "0" ] || exit 0
 
+# ── DUR · HAT-1: FRENLEME (E5) ────────────────────────────────────────────────────────────
+# Tasarım §7.3 "DUR yoklaması SubagentStop kancasındadır (birincil)" diyordu; mekaniği yazarken
+# düzeltildi (tasarı §4). SubagentStop koşuyu DURDURAMAZ — çıkışı yalnız alt-ajanın dönüşüne
+# etki eder. DUR ile Stop arasındaki gerçek boşluk şudur: alt-ajan döndükten sonra ana model,
+# Stop'a hiç varmadan YENİ bir alt-ajan açabilir. İşin yayılmasını fiilen durduran tek nokta
+# çağrının önündeki bu kapıdır. (Hat-2 = SubagentStop teyit+haber · Hat-3 = sevkin kapatması.)
+# Beyan: DUR koşmakta olan alt-ajanı KESMEZ — en geç o görev bittiğinde işler.
+if [ -e "$DIZIN/.dur" ]; then
+  DUR_SEBEP="$(head -n1 "$DIZIN/.dur" 2>/dev/null || true)"
+  engel "DUR işareti var (tools/sevk/.dur): ${DUR_SEBEP:-sebep yazılmamış}. Yeni alt-ajan AÇILMAZ; uçuştaki görev bitince koşu kapanır. Sahibin freni ancak yine sahibin eliyle kalkar."
+fi
+
 node_bul || engel "node bulunamadı — devir şeması denetlenemiyor (fail-closed)"
 
 KARAR="$(printf '%s' "$GIRDI" | D_KOK="$KOK" D_KOSU="$KOSU_ID" "$NODE_BIN" --input-type=module -e '

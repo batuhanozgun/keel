@@ -192,22 +192,22 @@ koşusunda ek iki şart: T6 damgası (E5) + watchdog fiilen kurulu. Damga evi:
 `tools/sevk/damgalar/` (tek satır: tarih + kanıt-rapor işaretçisi). Tatbikat damgası düşmeden
 otonom koşu YOKTUR — bu sahibin kararıdır (D-25 ②③) ve betiğin ilk satırlarıdır.
 
-## 11 · Sevk döngüsü (E4)
+## 11 · Sevk döngüsü ve kanal (E4-E5)
 
 Tören: `/kosu <kutu> [yapim|kurulum|kapanis] [interaktif|bassiz] [gercek|tatbikat]`.
-**İzin zemini `--allowedTools` bayrağıdır** — `settings.allow` başsız alt-ajanda ÖLÜ ölçüldü,
-oraya yazılmaz. **`gercek` sınıf** §10'un iki ek şartını (T6 damgası + kurulu watchdog) arar;
-tatbikat muaftır. Sevk (Stop kancası) iş yapmaz, karar basmaz, kapı kapatmaz.
+Sevk (Stop kancası) iş yapmaz, karar basmaz, kapı kapatmaz; işi seçer ve talimatı üretir.
+Görev seçimi, frenler ve izin zemini mekaniktir: `tools/sevk/README.md`. Seni bağlayanlar:
 
-**Görev beşi birden sağlanmadan açılmaz:** durumu `açık` · sahibi kadroda · önkoşulları karneyle
-kapalı · açık çatalın BEKLETİR listesinde DEĞİL (K-B birincil hattı) · uçuşta değil.
-
-**Karne şartı (K2):** kapı ancak tabloda `kapalı` + TAZE YEŞİL `karne` kaydı varsa kapalı
-SAYILIR (taze = son iş-zarfından sonra); karneyi işi yapan yazamaz. Karnesiz kapı Stop'tan geçmez.
+**Karne şartı (K2):** kapı ancak tabloda `kapalı` + TAZE YEŞİL karne varsa kapalı SAYILIR
+(taze = son iş-zarfından sonra). **Kendi işine karne yazamazsın.**
 
 **Devir metni yalnız işaretçidir** (`gorev · kutu · sozlesme · kural · ek-okuma`; tavan 800 B).
-Serbest metin, tavan aşımı, `memory` alanı ve sevkin açmadığı (rol, görev) ikilisi çağrı anında
-kesilir — iç içe alt-ajan da orada durur.
+Serbest metin, `memory` alanı ve sevkin açmadığı (rol, görev) ikilisi çağrı anında kesilir —
+iç içe alt-ajan da orada durur.
 
-**Frenler:** bütçe · ilerleme-yok · mutlak tur tavanı; sevkin kendi hatası koşuyu KAPATIR.
-Tamamı: `tools/sevk/README.md`.
+**Haber kanalı sana kapalıdır.** Dört olay vardır (koşu başladı · bitti · çatal bekliyor ·
+alarm); gövde yalnız tanımlı alanlardan kurulur ve süzgeçten geçer. Kanalı çağıran yalnız
+kancalardır — bir rol posta gönderemez, metnini de seçemez.
+
+**DUR** koşan görevi kesmez, en geç o görev bitince işler: yeni alt-ajan açılmaz, koşu kapanır.
+**Watchdog** sustuğunu haber verir, koşuyu DİRİLTMEZ — yeniden başlatma sahibindedir.
