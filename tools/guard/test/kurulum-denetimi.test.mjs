@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,8 +39,15 @@ function disGozKur(kok, { koltuk = true, brifing = true, skill = '---\ndescripti
   writeFileSync(join(kok, '.claude', 'skills', 'rol-disgoz', 'SKILL.md'), skill);
 }
 
-function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, disgoz = {}, ortam = true } = {}) {
+function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
+  // Kurulu bir KEEL projesi her zaman bir git deposudur (G0.1 klasör hazırlığı bunu garanti
+  // eder; tarih çapası, koruma-hattı ve geri-alma güvencesi buna dayanır). Fixture bunu
+  // yansıtmazsa 4c kapısı gerçek dünyada hiç görülmeyecek bir hâl üzerinden sınanmış olur.
+  if (gitKaydi) {
+    assert.equal(spawnSync('git', ['init', '-q', kok], { encoding: 'utf8' }).status, 0, 'test kurulumu: git init');
+    if (uzak) spawnSync('git', ['-C', kok, 'remote', 'add', 'origin', uzak], { encoding: 'utf8' });
+  }
   mkdirSync(join(kok, '02_kanon'), { recursive: true });
   mkdirSync(join(kok, '00_genesis'), { recursive: true });
   mkdirSync(join(kok, '03_roller', slug), { recursive: true });
@@ -303,4 +310,68 @@ test('ortam denetimi ikilisi kopyalanmamış → KIRMIZI', () => {
   const r = kos(kurulum({ ortam: false }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /ortam-kontrol\.sh/);
+});
+
+// F1-2b: kurulum GİRİŞİNİN çıkış kapısı. Giriş adımı (G0.1) atlanmış ya da geri alınmışsa
+// proje hâlâ KEEL deposuna bağlıdır ve sahip kendi deposuna gönderdiğinde KEEL'in bütün
+// geçmişi de gider (D-03). Tek yönlü bir kaza; çekilmeden ÖNCE yakalanmak zorunda.
+// Kapı FAIL-CLOSED'dır: "ölçemedim" ile "bağ yok" ayrı hükümlerdir (hasım turu 2026-07-29).
+
+test('uzak adres yok → geçer', () => {
+  const r = kos(kurulum());
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /geçti.*KEEL bağı yok/);
+});
+
+test('sahibin kendi uzak adresi → geçer', () => {
+  const r = kos(kurulum({ uzak: 'https://github.com/batu/market-uygulamam.git' }));
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /geçti.*KEEL bağı yok/);
+});
+
+test('proje hâlâ KEEL deposuna bağlı → KIRMIZI, çekilme YOK', () => {
+  const r = kos(kurulum({ uzak: 'https://github.com/batuhanozgun/keel.git' }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /hâlâ KEEL deposuna bağlı/);
+  assert.match(r.stdout, /git remote remove/, 'sahibe çare cümlesi verilir');
+});
+
+test('büyük harfli KEEL adresi de yakalanır (harf-duyarsızlık testsizdi)', () => {
+  const r = kos(kurulum({ uzak: 'https://github.com/BatuhanOzgun/KEEL.git' }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /hâlâ KEEL deposuna bağlı/);
+});
+
+test('ad benzeri ayrı depo (batuhanozgun/keel-oyun) → KIRMIZI DEĞİL (sağdan çapalı desen)', () => {
+  const r = kos(kurulum({ uzak: 'https://github.com/batuhanozgun/keel-oyun.git' }));
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /geçti.*KEEL bağı yok/);
+});
+
+test('projenin git kaydı hiç yok → KIRMIZI (ölçemedim ≠ bağ yok)', () => {
+  const r = kos(kurulum({ gitKaydi: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /git kaydı yok/);
+});
+
+test('git kaydı bozuk (okunamıyor) → KIRMIZI, sessiz yeşil yok', () => {
+  const kok = kurulum({ uzak: 'https://github.com/batuhanozgun/keel.git' });
+  // `.git/HEAD` düşerse `git remote -v` rc≠0 verir; eski hâlde bu "geçti" oluyordu.
+  rmSync(join(kok, '.git', 'HEAD'));
+  const r = kos(kok);
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /ÖLÇÜLEMEDİ/);
+});
+
+test('git PATH\'te yokken → KIRMIZI (giriş betiğiyle aynı hüküm)', () => {
+  const kok = kurulum({ uzak: 'https://github.com/batuhanozgun/keel.git' });
+  // git'SİZ bir PATH: betiğin kullandığı öteki araçlar bağlanır, yalnız git dışarıda kalır.
+  const gitsiz = mkdtempSync(join(tmpdir(), 'gitsiz-'));
+  for (const arac of ['grep', 'wc', 'tr', 'basename', 'head', 'bash', 'cat', 'sed']) {
+    const kaynak = spawnSync('command', ['-v', arac], { shell: true, encoding: 'utf8' }).stdout.trim();
+    if (kaynak) symlinkSync(kaynak, join(gitsiz, arac));
+  }
+  const r = spawnSync(join(gitsiz, 'bash'), [BETIK, kok], { encoding: 'utf8', env: { ...process.env, PATH: gitsiz } });
+  assert.equal(r.status, 2, r.stdout + r.stderr);
+  assert.match(r.stdout, /git bulunamadı/);
 });

@@ -102,16 +102,32 @@ rehin almaz; kancanın ölümünü bekçinin kablo-denetimi KIRMIZI basar. Vault
 (00_pano yoksa) kanca susar. Rol damgasını yalnız OKUR; temizlik SessionStart'ta.
 node yoksa süzme atlanır (blok=bilinmiyor), meta satırı yine düşer.
 
-Açılış kancası (`acilis.sh`, SessionStart startup+clear): DÖRT koşullu bilgi satırı; hiçbiri
+Açılış kancası (`acilis.sh`, SessionStart startup+clear): BEŞ koşullu bilgi satırı; hiçbiri
 her oturumda çıkmaz, koşul yoksa susar — (1) kuyrukta AÇIK madde varsa `Sende bekleyen N madde
 (en eskisi X gündür)`; (2) `03_roller/disgoz/` varsa ve brifingin içindeki `Tarih:` satırı 7
 günden eskiyse (ya da brifing/tarih yoksa) `... dış göz brifingi ... "durumu anlat"
 diyebilirsin` — bu YUMUŞAK hatırlatmadır, kapanış kilidi değil (kilit bekçidedir ve git
 tarihine bakar); (3) `00_pano/SABAH.md` varsa gece dönemine köprü (E5); (4) `ortam-kontrol.sh
---satir` — ZORUNLU bir dış araç (node/git) eksikse tek satır; seçimli eksikte SUSAR (F1-2a).
+--satir` — ZORUNLU bir dış araç (node/git) eksikse tek satır; seçimli eksikte SUSAR (F1-2a);
+(5) `.kurulum-tamam` YOK **ve** `00_genesis/GENESIS_DURUM.md`nin durum satırı şablonun kendi
+`kurulum başlamadı.` cümlesi DEĞİLSE `Kurulum yarım kalmış …` (F1-2f) — satır bekleyen adımın
+ADINI taşımaz; sahibin sözlüğünde olmayan etiket bu yüzeye giremez.
 Salt-okurdur, hiçbir dosyaya yazmaz; fail-open (dosya yoksa/bozuksa sessiz exit 0).
 Yaş BİLGİdir — uyarı/eskalasyon YOKTUR (sahip kararı, 2026-07-24). `--resume` oturumlarında
 çalışmaz (rol-temizliğiyle aynı matcher kümesi; bilinçli).
+
+Kurulum girişi (`klasor-hazirligi.sh`, GENESIS G0.1 — F1-2b): indirilen KEEL klasörünü sahibin
+PROJE klasörü yapar. `--rapor` (varsayılan) SALT-OKUR sınıflar: **BAGLI** (`.git` var + uzak
+adreslerden biri KEEL dağıtım deposunu gösteriyor — eşleşme sağdan çapalı) · **DEPOSUZ**
+(`.git` yok) · **KENDI** (uzak adres KEEL'i göstermiyor → dokunulmaz). `--uygula` sırası
+değişmez: yedeği yan klasöre al (`<ad>-KEEL-yedek`, `.git` dâhil) → **doğrula** (dosya sayısı +
+`GENESIS.md` boyu + `.git`) → `rm -rf <kök>/.git` → `git init`. **Bu, KEEL'in tek geri alınamaz
+kurulum işlemidir**; dört emniyet kemeri önce koşar (KEEL izleri var mı · `tools/guard/.keel-kaynak`
+[dağıtılmaz; varsa burası KEEL'in kendi kopyasıdır] · kurulum başlamış/bitmiş mi · git var mı).
+Ölçüm FAIL-CLOSED'dır: git patlarsa "bağ yok" denmez, çıkış 2 verilir. Çıkış kodları: 0 gerek
+yok/tamam · 1 gerekli ya da yapılamadı · 2 denetim koşamadı. Bağın koparıldığını çekilme anında
+`kurulum-denetimi.sh` 4c yeniden ölçer (çift hat). İLAN EDİLMİŞ SINIR: ölçülen şey uzak
+ADRESTİR, geçmiş değil — ayna/çatal depodan kurulumda KEEL geçmişi klasörde kalır ve görülmez.
 
 İş bölümü (çift hat):
 1. Ön hat = bu kanca (araç katmanı, anında).

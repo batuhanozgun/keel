@@ -38,7 +38,7 @@ Her şeyi anlamış olmak **değil** — *ilk dilimi güvenle koşturacak kadar*
 Her adımı bitirince `00_genesis/GENESIS_DURUM.md`yi yerinde yeniden yaz (aşağıda "Durumsuz-güvenlik").
 
 ### G0 · Yönlendirme + ağırlık kadranı
-0.0. **Ortam kontrolü — konuşma başlamadan, kopya kontrolünden de önce.** `bash tools/guard/ortam-kontrol.sh` koş ve çıktısını sahibe **olduğu gibi** oku (yeniden yazma; dört cevap kalıptır).
+0.0. **Ortam kontrolü — konuşma başlamadan, her şeyden önce.** `bash tools/guard/ortam-kontrol.sh` koş ve çıktısını sahibe **olduğu gibi** oku (yeniden yazma; dört cevap kalıptır).
    - **Her şey yerindeyse SORU SORMA.** Tek cümleyle geç ("ortam tamam, başlıyoruz") ve devam et. Cevabı belli olan şeyi onaya sunmak sahte çataldır.
    - **Ölçmek ve açıklamak için de izin isteme** — ölçüm salt-okurdur, hiçbir şeye dokunmaz. Onay yalnız sahibin bilgisayarına **fiilen bir şey kurulacağı** anda anlamlıdır; o an da kuran sahibin kendisidir: KEEL kurulum yapmaz, nereden alınacağını söyler.
    - **Zorunlu eksikse (çıkış kodu 1) KURULUMA BAŞLAMA.** Sahibe eksiği, sebebini ve nereden geleceğini söyle; kurduktan sonra aynı komutu yeniden koş. Zorunlu eksikken aşağıdaki 0. maddeye geçmek, ilk yazma denemesinde duracak bir kurulum başlatmaktır.
@@ -46,7 +46,13 @@ Her adımı bitirince `00_genesis/GENESIS_DURUM.md`yi yerinde yeniden yaz (aşa�
    - Araç **var ama çalışmıyorsa** rapor bunu ayrıca yazar (`VAR AMA ÇALIŞMIYOR`) — Mac'te en sık sebebi Xcode komut satırı araçlarının kurulu olmamasıdır; çözüm "yeniden kur" değil, raporun söylediği komuttur.
    - **Seçimli eksik kuruluma engel DEĞİLDİR.** Tek cümleyle söyle ("şu özellik kapalı çalışacak") ve devam et; sahibi karara zorlama.
    - Bu adımın çıktısı `00_genesis/GENESIS_DURUM.md`ye yazılmaz; ortam bir KEEL kaydı değil, makinenin hâlidir ve değişebilir. Kurulu projede aynı denetim her oturum açılışında tek satır olarak koşar (`tools/guard/acilis.sh`).
-0. **Kopya kontrolü (guard).** Kökte `.template-source` varsa, kopya-guard'ı henüz temizlenmemiş demektir (CLAUDE.md normalde halleder; bu ikinci savunma hattı). Körlemesine başlama: kullanıcıya sor — *"Burası yeni projen için açtığın taze klasör mü, yoksa KEEL'in orijinali mi?"* **Yeni projeyse** (klasör adı/git remote da KEEL orijinali gibi durmuyorsa) `.template-source`'u **sil** ve G0.1'e geç. **Orijinalse ya da emin değilsen DUR:** "önce boş bir proje klasörüne kopyala, orada beni aç" de — kuruluma başlama, silme.
+0.1. **Klasör hazırlığı — ortam kontrolünden hemen sonra, konuşma başlamadan.** `bash tools/guard/klasor-hazirligi.sh --rapor` koş ve çıktısını sahibe **olduğu gibi** oku.
+   - **Çıkış 0 = hazırlık gerekmiyor.** Tek cümleyle geç, SORU SORMA.
+   - **Çıkış 1 = hazırlık gerekli.** Raporda ne yapılacağı üç madde hâlinde yazılıdır; hemen `bash tools/guard/klasor-hazirligi.sh --uygula` koş ve son `SONUÇ:` satırını sahibe **tek cümle** olarak söyle. **Bu bir onay sorusu DEĞİLDİR:** sahip KEEL'i kurmak için indirdi, tek yol budur ve geri dönüşü (yedek) raporun içinde yazılıdır — onaya sunmak sahte çataldır.
+   - **`--uygula` de 1 döndürdüyse ekrandaki kapanışı OKU; iki ayrı hâl vardır.** ① *"Klasöre DOKUNULMADI"* → her şey indirildiği gibi duruyor; sebebi (yedeğe yer yok, üst klasöre yazma izni yok gibi) ve ekrandaki tek cümlelik çareyi sahibe söyle. ② *"DİKKAT: … ESKİ değişiklik geçmişi zaten kaldırıldı"* → klasör YARIM hâlde; ekranda yedeğin tam yolu ve kurtarma cümlesi yazılıdır, ikisini de sahibe olduğu gibi söyle. **Her iki hâlde de kuruluma başlama.**
+   - **Çıkış 2 = denetimin KENDİSİ koşamadı:** burası bir KEEL klasörü değil · proje zaten kurulu · git yok. Bu "hazırlık gerekmiyor" DEĞİLDİR; sessiz geçme, kuruluma başlama.
+   - Kurulumun **tek geri alınamaz** işi buradadır (KEEL bağının koparılması) ve betik onu yalnız **doğrulanmış bir yedekten sonra** yapar. Yedeğin yerini sahibe söyle: o klasör sahibindir, KEEL bir daha ona dokunmaz.
+   - **Eski yol kalktı:** "önce boş bir klasöre kopyala" adımı ve kökteki kopya-işareti dosyası artık YOK. Ayrımı makine yapar — sahibe, cevabını bilemeyeceği bir soru sorulmaz.
 1. Kullanıcıya planı anlat: "İşletim disiplinini kurmak için şu adımlardan geçeceğiz (G0–G5). Sorman varsa şimdi giderelim."
 1.5. **Sahibin adını sor (parametrik).** Kararları kimin adına mühürleyeceğini öğren. `git config user.name`'den bir tahmin öner ve **onaylat** — sessiz çekme güvenilmez: *"Kararları senin adına mühürleyeceğim; adın **<tahmin>** mi, yoksa başka bir ad mı kullanayım?"* Onaylanan adı `GENESIS_DURUM.md`'ye damgala (yalnız adı yaz). Bundan sonra ürettiğin **her yerde** bu adı kullan: `<İsim>_NOTLARI.md`, "<İsim> açılış/kapanış mührü", "<İsim> sayfası", "<İsim>-dili", "<İsim>'in tek ezberi" vb. Hiçbir şablon-örneği ad çıktıya sızmaz.
 1.7. **Mülakat biçimi:** bu adımdan itibaren sahiple her konuşma `00_genesis/MULAKAT_KALIBI.md`
@@ -56,7 +62,7 @@ Her adımı bitirince `00_genesis/GENESIS_DURUM.md`yi yerinde yeniden yaz (aşa�
 2. **Ağırlık kadranı** — ölçek/risk sor: *kaç kişi kullanacak? neyin yanlış olması en pahalı? mevzuat/uyum var mı? tek seferlik mi, uzun ömürlü mü?* Cevaba göre ritüel yoğunluğunu kalibre et (şık listesi verirken "ya da kendi cümlelerinle anlat" kapısını aç):
    - **Küçük / düşük-risk:** görüş turunu atla, rolleri birleştir (ör. yazılımcı+koordinatör), kutu ritüeli = yalnız açılış+kapanış mührü, bekçi = sadece tavan+şema.
    - **Büyük / yüksek-risk (ör. ERP):** tam ritüel (görüş turu, faz kapıları, bağımsız doğrulama).
-2.5. **Git hazır mı.** Hedef klasörde git deposu yoksa `git init`. (Kendi çıktını mühürlerken commit'leyeceksin; F5 olay-gömülü hijyen GENESIS'e de uygulanır.)
+2.5. **Git kaydı G0.1'de açıldı** — burada tekrar `git init` YOK (iki kez init, ilkinin izini sessizce siler). Yalnız doğrula: `git rev-parse --git-dir` bir yol basıyor mu. (Kendi çıktını mühürlerken commit'leyeceksin; F5 olay-gömülü hijyen GENESIS'e de uygulanır. İlk commit'te git kimliği [`user.name`/`user.email`] eksik diye hata alırsan bunu sahibe sade dille söyle ve komutu ona ver — bu KEEL'in değil git'in şartıdır, ortam kontrolü aracın varlığını ölçer, kimliğini değil.)
 3. **Mühür:** "Anladıysan başlayalım." — onaysız G1'e geçme.
 
 ### G1 · Kabaca-harita + tanıma

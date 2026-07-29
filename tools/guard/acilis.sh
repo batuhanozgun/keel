@@ -1,12 +1,13 @@
 #!/bin/bash
 # acilis — oturum-açılış kancası (SessionStart): sahibe kısa bilgi satırları, HER BİRİ koşullu
-# (hiçbiri her oturumda çıkmaz; dördü birden çıkması olağandışı bir gündür).
+# (hiçbiri her oturumda çıkmaz; beşi birden çıkması olağandışı bir gündür).
 # (1) V2 Öbek-2 (sahip yüzeyi): kapanışta sorulan soru sonraki oturumda buharlaşıyordu (ölçüldü);
 #     kuyruk kalıcı, hatırlatma AÇILIŞTA + PANODA.
 # (2) Dış göz (D-20 parça 2): brifing uzun süredir tazelenmediyse tek satır hatırlatma —
 #     "uzun sessizlikten sonraki ilk açılış" anı. Eşik 7 gün.
 # (3) Sabah yüzeyi (E5): gece bir dönem olduysa üç bloğa köprü.
 # (4) Ortam (F1-2a): ZORUNLU bir araç (node/git) yoksa tek satır — SEÇİMLİ eksik burada SUSAR.
+# (5) Yarım kurulum (F1-2f): kurulum başlamış ama bitmemişse nerede kalındığını söyler.
 # Sahip seçimi (2026-07-24): ISRAR YOK — yaş BİLGİdir, uyarı değil; eskalasyon/dırdır
 # bilinçli kapsam dışı. Satırlar ünlem/KIRMIZI taşımaz, hiçbir akışı kilitlemez.
 # FAIL-OPEN: okunamayan/olmayan dosyada sessizce geçer (exit 0); açılışı hiçbir koşulda kilitlemez.
@@ -95,5 +96,33 @@ fi
 # Betiğin kendisi yoksa/patlarsa satır hiç doğmaz — açılış hiçbir koşulda kilitlenmez.
 ORTAM="$KOK/tools/guard/ortam-kontrol.sh"
 [ -r "$ORTAM" ] && bash "$ORTAM" --satir 2>/dev/null || true
+
+# ── (5) Yarım kalan kurulum (F1-2f) — başlamış ama bitmemiş kurulumun tek işaretçisi ───────
+# Gerekçe: kurulum yarıda kalırsa hiçbir yüzey bunu söylemiyordu. Sahip ertesi gün klasörü
+# açar; pano yok, kokpit boş, sistem "kurulu değil" diye görünür ama nerede kalındığı
+# yalnız 00_genesis/GENESIS_DURUM.md içinde yazılıdır ve oraya kimse bakmaz.
+# Koşul İKİ parçalı: kurulum işareti YOK **ve** kurulum durumu "başlamadı" DEĞİL.
+# Şablonun kendi kökünde satır DOĞMAZ (durum dosyası orada "kurulum başlamadı" der) —
+# kurulmamışı kurulmuş-yarım sanmak yanlış alarmdır.
+# Durum satırı okunamıyor/bozuksa satır BASILIR (sessiz geçmek yerine haber vermek): kurulum
+# işareti yokken durum dosyasının bozuk olması zaten anormaldir.
+# Satır BEKLEYEN ADIMIN ADINI TAŞIMAZ (hasım turu 2026-07-29): "G2 · Rol türetme + çapraz-
+# kontrol" sahibin sözlüğünde olmayan bir etikettir ve sahibin yapacağı şeyi değiştirmez —
+# nereye gideceğini söylemek yeterli. Etiketi basmaya çalışan ilk sürüm üç ayrı kusur
+# doğurmuştu (boş bölümde sonraki başlığı adım sanmak · CRLF'in cümleye sızması · jargon).
+# Nerede kalındığını GENESIS zaten kendi açılışında bu dosyadan okur.
+GDURUM="$KOK/00_genesis/GENESIS_DURUM.md"
+if [ ! -e "$KOK/.kurulum-tamam" ] && [ -r "$GDURUM" ]; then
+  awk '
+    # Susturma ÇAPALI: yalnız şablonun KENDİ cümlesi susturur. Alt-dize araması
+    # ("başlamadı" geçen her satır) "G3 başlamadı." gibi bir cümlede yanlış yerde susuyordu.
+    BEGIN { baslamadi = 0 }
+    /^\*\*Durum:\*\*[[:space:]]*kurulum başlamadı\.?[[:space:]]*$/ { baslamadi = 1 }
+    END {
+      if (baslamadi == 1) exit 0
+      printf "ℹ️ Kurulum yarım kalmış — 00_genesis klasöründe oturum açıp kaldığın yerden devam edebilirsin.\n"
+    }
+  ' "$GDURUM" 2>/dev/null || true
+fi
 
 exit 0

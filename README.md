@@ -40,14 +40,13 @@ bash tools/guard/ortam-kontrol.sh
 
 ## Kurulum — adım adım
 
-KEEL bir **şablondur**: onu olduğu yerde çalıştırmazsın; önce **yeni ve boş bir proje klasörüne** kopyalarsın.
+KEEL bir **şablondur**: indirdiğin klasör, kurulumdan sonra **senin projenin klasörü** olur.
 
-1. **Boş bir proje klasörü aç ve içine kopyala.** Projen için (adını sen ver — ör. `market-uygulamam`) boş bir klasör aç; KEEL'in içindeki **her şeyi** o klasöre kopyala.
-   > En temizi: KEEL'i GitHub'dan **"Download ZIP"** ile indirip aç — geçmişsiz, tertemiz gelir.
+1. **İndir.** GitHub'dan **"Download ZIP"** ile indirip aç, ya da `git clone` ile çek. Klasöre projenin adını ver (ör. `market-uygulamam`). Elle bir şey kopyalaman, taşıman ya da silmen **gerekmez**.
 2. **Claude Code'u aç.** O klasörü Claude Code'da aç ve **"selam"** yaz.
-3. **"Yeni projem" de.** Claude sana "burası yeni/boş projen mi, yoksa KEEL'in orijinali mi?" diye sorar. **"Yeni projem"** dediğinde kurulum işaretini kendisi temizler ve **GENESIS** başlar: sana sorular sorar, ölçek/riski ölçer, ekibi ve panoyu kurar.
+3. **Bırak başlasın.** KEEL önce ihtiyaç duyduğu araçları ölçer (yukarıdaki liste), sonra klasörü hazırlar, sonra **GENESIS** başlar: sana sorular sorar, ölçek/riski ölçer, ekibi ve panoyu kurar.
 
-Gizli bir dosya arayıp silmen **gerekmez** — Claude bunu senin onayınla kendisi halleder.
+**"Klasörü hazırlamak" ne demek?** `git clone` ile çektiysen klasör hâlâ KEEL'in deposuna bağlıdır. KEEL o bağı koparır ki (a) senin çalışman KEEL'in deposuna karışmasın, (b) KEEL'in geçmişi senin projene yapışıp sen kendi deponu paylaşınca onunla birlikte gitmesin. Bağı koparmadan **önce** indirdiğin hâlin tam bir kopyasını yan klasöre alır (`<proje>-KEEL-yedek`) ve sana nereye koyduğunu söyler — hiçbir şey kaybolmaz. ZIP ile indirdiysen koparılacak bağ yoktur; yalnız projen için boş bir değişiklik geçmişi açılır.
 
 Kurulum boyunca her önemli adımda **senin onayını (mühür)** ister. Acele etmez, seni sürüklemez.
 
@@ -98,10 +97,9 @@ keel/
 ├── LICENSE              ← telif ve kullanım koşulları
 ├── CLAUDE.md            ← ilk oturumu yönlendiren giriş ("kurulu mu?")
 ├── GENESIS.md           ← GENESIS'in sabit kurulum planı (G0–G5)
-├── .template-source     ← kopya-guard'ı (kurulumda Claude, onayınla otomatik siler)
 ├── .claude/             ← koruma kablosu (kanca + sor-izin) · yazamayan doğrulayıcı ajan · rol becerileri (kurulumda doğar)
 ├── 00_genesis/          ← GENESIS koltuğu + yarım-kurulum toparlama çapası
-├── tools/guard/         ← koruma kancası (file-guard) + rol töreni (rol-ac) + kapanış kancası (kapanis) + korunan-yollar
+├── tools/guard/         ← koruma kancası (file-guard) + rol töreni (rol-ac) + kapanış kancası (kapanis) + ortam/klasör hazırlığı + korunan-yollar
 └── tools/kokpit/        ← salt-okunur izleme panosu + format sözleşmesi + testler
 ```
 

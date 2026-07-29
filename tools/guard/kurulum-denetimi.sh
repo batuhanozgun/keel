@@ -93,6 +93,35 @@ if [ -f "$KOK/tools/guard/ortam-kontrol.sh" ] && [ -f "$KOK/tools/guard/ortam-ka
 else
   kirmizi "tools/guard/ortam-kontrol.sh ya da ortam-kalemleri.txt yok — ortam denetimi sessizce ölü (F1-2a)"
 fi
+# 4c · KEEL bağı koparılmış mı (F1-2b / G0.1 — kurulum girişinin ÇIKIŞ kapısı). Kurulu projenin
+#      hiçbir uzak adresi KEEL dağıtım deposunu göstermemeli: gösterirse sahip kendi deposuna
+#      gönderdiğinde KEEL'in bütün geçmişi de gider (D-03) ve `git pull` şablonu sahibin
+#      çalışmasının üstüne yazabilir. Giriş adımı atlanmış/geri alınmışsa çekilme kilitlenir.
+#      Desen `klasor-hazirligi.sh`teki KEEL_DEPO ile aynıdır; testi ikisini birbirine bağlar.
+#      FAIL-CLOSED (hasım turu 2026-07-29): "ölçemedim" ile "bağ yok" AYNI ŞEY DEĞİLDİR.
+#      İlk hâli `|| true` ile her hatayı boş dizeye çeviriyordu; git yokken, `.git` bozukken ve
+#      `.git` hiç yokken üçünde de "geçti" basıyordu — dosyanın kendi 6. satırındaki
+#      "sessiz yeşil yok" ilanının tersi. Artık dört ayrı hâl var, üçü KIRMIZI.
+KEEL_DEPO='batuhanozgun/keel'
+if [ ! -e "$KOK/.git" ]; then
+  kirmizi "projenin git kaydı yok (.git) — KEEL bağı ölçülemez ve KEEL'in geri-alma güvencesi zaten yok (G0.1 klasör hazırlığı koşmamış)"
+elif ! command -v git >/dev/null 2>&1; then
+  kirmizi "KEEL bağı ÖLÇÜLEMEDİ: git bulunamadı — fail-closed"
+else
+  UZAKLAR=""; RC=0
+  UZAKLAR="$(git -C "$KOK" remote -v 2>/dev/null)" || RC=$?
+  if [ "$RC" -ne 0 ]; then
+    kirmizi "KEEL bağı ÖLÇÜLEMEDİ: git kaydı okunamadı (git remote -v rc=$RC) — fail-closed"
+  else
+    #    Eşleşme SAĞDAN ÇAPALI — `batuhanozgun/keel-oyun` gibi ayrı bir depo KEEL sayılmaz
+    #    (alt-dize hâli kurulmuş projeye KALICI yanlış KIRMIZI basıyordu).
+    case "$(printf '%s' "$UZAKLAR" | tr 'A-Z' 'a-z')" in
+      *"$KEEL_DEPO".git*|*"$KEEL_DEPO"/*|*"$KEEL_DEPO"' '*|*"$KEEL_DEPO")
+        kirmizi "proje hâlâ KEEL deposuna bağlı ($KEEL_DEPO) — sahibin deposuna gönderim KEEL'in geçmişini de taşır. Çare: uzak adresi kaldır (git remote remove <ad>) ya da kendi deponun adresiyle değiştir" ;;
+      *) gecti "KEEL bağı yok (uzak adres kontrolü)" ;;
+    esac
+  fi
+fi
 
 # 5 · Bekçi: mevcut + sözdizimi + kadranın zorunlu kategorileri İLAN edilmiş
 #     (ilan `# kategoriler:` satırıdır — GENESIS tarifi zorunlu kılar; beyanın İÇERİĞİNİ

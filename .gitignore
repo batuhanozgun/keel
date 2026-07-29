@@ -6,6 +6,11 @@
 # kurulum işaretini uçuramasın). Bu yüzden burada yok.
 
 .claude/settings.local.json
+# KEEL'in KENDİ kopyalarının işareti (F1-2b) — DAĞITILMAMASI şart: bir clone'da ya da ZIP'te
+# bulunursa kurulum girişi her yerde durur. İzlenmediği için sahibin indirdiği hiçbir kopyada
+# yoktur; bakımcı kendi makinesinde elle koyar. (Silinen eski kopya-işaretinin tersi: o ÜRÜNLE
+# geliyordu ve iki hâli ayırt edemediği için sahibe cevaplayamayacağı bir soru sordurtuyordu.)
+tools/guard/.keel-kaynak
 # rol töreni damgası — oturum-durumu, izlenmez (bekçi koruma-hattı yanlış-KIRMIZI basmasın;
 # damga-güvencesi bekçi değil: file-guard damga-dikişi + SessionStart temizliği)
 tools/guard/.aktif-rol

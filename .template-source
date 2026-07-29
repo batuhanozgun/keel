@@ -1,4 +1,0 @@
-Bu dosya, dağıtılan KAYNAK şablonun işaretidir.
-Varlığı = "buraya kurulum yapma; önce boş bir proje klasörüne kopyala".
-Yeni bir projeye kopyaladıktan SONRA bu dosyayı sil; GENESIS o zaman kuruluma başlar.
-Bu dosyayı silmeden GENESIS çalışmayı reddeder (CLAUDE.md ve GENESIS.md G0 guard'ı).

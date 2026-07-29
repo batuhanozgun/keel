@@ -145,3 +145,87 @@ test('SALT-OKUR: kanca brifingi bayt-bayt değiştirmez', () => {
   kos(kok);
   assert.equal(readFileSync(join(kok, '03_roller', 'disgoz', 'BRIFING.md'), 'utf8'), icerik);
 });
+
+// --- Yarım kalan kurulum (F1-2f) ----------------------------------------------------
+// Koşul İKİ parçalı: kurulum işareti YOK **ve** durum "başlamadı" DEĞİL. Hiç başlamamış
+// kurulumu "yarım" sanmak yanlış alarmdır; şablonun kendi kökünde satır DOĞMAMALIDIR.
+
+function durumKur(kok, icerik) {
+  mkdirSync(join(kok, '00_genesis'), { recursive: true });
+  writeFileSync(join(kok, '00_genesis', 'GENESIS_DURUM.md'), icerik);
+}
+const durum = (durumSatiri, adim = 'G2 · Rol türetme + çapraz-kontrol', baslik = 'Bekleyen adım') =>
+  `<!-- yazar: genesis -->\n# GENESIS DURUM\n\n**Durum:** ${durumSatiri}\n\n## Tamamlanan adımlar\nG0, G1\n\n## ${baslik}\n${adim}\n`;
+
+test('kurulum hiç başlamadı (şablonun kendi kökü): satır DOĞMAZ', () => {
+  const kok = kurulum();
+  durumKur(kok, durum('kurulum başlamadı.', 'G0 · Yönlendirme + ağırlık kadranı'));
+  assert.equal(kos(kok).stdout.trim(), '');
+});
+
+test('yarım kurulum: tek bilgi satırı, sade cümle', () => {
+  const kok = kurulum();
+  durumKur(kok, durum('G2 sürüyor.'));
+  const r = kos(kok);
+  const satirlar = r.stdout.trim().split('\n');
+  assert.equal(satirlar.length, 1, 'tek satır (ısrar yok)');
+  assert.match(r.stdout, /Kurulum yarım kalmış — 00_genesis klasöründe oturum açıp kaldığın yerden devam edebilirsin\./);
+  assert.ok(!/KIRMIZI|SARI|UYARI|!/.test(r.stdout), 'bilgi satırı uyarı değildir');
+});
+
+// Hasım turu 2026-07-29: ilk sürüm "bekleyen adım" etiketini de basıyordu. Sahibin sözlüğünde
+// olmayan hiçbir etiket bu satıra giremez — jargon yasağı bu satırda da geçerli.
+test('sahip satırı ham GENESIS etiketi taşımaz (jargon yasağı)', () => {
+  const kok = kurulum();
+  durumKur(kok, durum('G0 sürüyor.', 'G0 · Yönlendirme + ağırlık kadranı'));
+  const r = kos(kok);
+  assert.ok(!/G0|kadran|bekleyen adım:/.test(r.stdout), `etiket sızdı: ${r.stdout}`);
+});
+
+test('boş "Bekleyen adım" bölümü: sonraki başlık cümleye SIZMAZ', () => {
+  const kok = kurulum();
+  durumKur(
+    kok,
+    '<!-- yazar: genesis -->\n# GENESIS DURUM\n\n**Durum:** G4 tamamlandı.\n\n## Bekleyen adım\n\n## Format spec (G3\'te doldurulur)\n(henüz yok)\n'
+  );
+  const r = kos(kok);
+  assert.ok(!r.stdout.includes('Format spec'), `markdown başlığı sahibe basıldı: ${r.stdout}`);
+  assert.match(r.stdout, /Kurulum yarım kalmış/);
+});
+
+test('CRLF satır sonlu durum dosyası: susturma yine çalışır (sahte "yarım" alarmı yok)', () => {
+  const kok = kurulum();
+  durumKur(kok, durum('kurulum başlamadı.', 'G0 · Yönlendirme').replace(/\n/g, '\r\n'));
+  assert.equal(kos(kok).stdout.trim(), '');
+});
+
+test('"G3 başlamadı." gibi bir cümle satırı SUSTURMAZ (çapalı eşleşme)', () => {
+  const kok = kurulum();
+  durumKur(kok, durum('G3 başlamadı; G2 sürüyor.'));
+  assert.match(kos(kok).stdout, /Kurulum yarım kalmış/);
+});
+
+test('kurulum bitmiş (.kurulum-tamam var): durum ne derse desin satır DOĞMAZ', () => {
+  const kok = kurulum();
+  durumKur(kok, durum('kurulum TAMAM.', 'yok'));
+  writeFileSync(join(kok, '.kurulum-tamam'), '2026-07-29 · sahip mührü\n');
+  assert.equal(kos(kok).stdout.trim(), '');
+});
+
+test('durum dosyası hiç yoksa: sessiz (KEEL klasörü olmayabilir)', () => {
+  assert.equal(kos(kurulum()).stdout.trim(), '');
+});
+
+test('durum satırı bozuk/eksikse: SESSİZ GEÇİLMEZ — satır basılır', () => {
+  const kok = kurulum();
+  durumKur(kok, '# GENESIS DURUM\n\nburada bir durum satırı yok\n\n## Bekleyen adım\nG3 · Kanon\n');
+  assert.match(kos(kok).stdout, /Kurulum yarım kalmış/);
+});
+
+test('SALT-OKUR: kanca durum dosyasını bayt-bayt değiştirmez', () => {
+  const kok = kurulum();
+  const icerik = durum('G4 sürüyor.');
+  durumKur(kok, icerik);
+  kos(kok);
+  assert.equal(readFileSync(join(kok, '00_genesis', 'GENESIS_DURUM.md'), 'utf8'), icerik);
+});
