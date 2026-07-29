@@ -6,9 +6,9 @@
 #
 # Sağladıkları:
 #   node_bul                → NODE_BIN'i doldurur; bulunamazsa 1 döner (GUI oturumunda PATH dardır)
-#   kosu_oku <kök>          → .kosu-acik'ı okur: KOSU_ID · KOSU_KUTU · KOSU_TUR · KOSU_KIP
-#                             0 = koşu açık ve gösterge sağlam · 1 = koşu YOK · 2 = gösterge BOZUK
-#                             (2 fail-closed'dur: "okunamıyor" ile "koşu yok" AYNI ŞEY DEĞİLDİR)
+#   donem_oku <kök>          → .donem-acik'ı okur: DONEM_ID · DONEM_KUTU · DONEM_TUR · DONEM_KIP
+#                             0 = dönem açık ve gösterge sağlam · 1 = dönem YOK · 2 = gösterge BOZUK
+#                             (2 fail-closed'dur: "okunamıyor" ile "dönem yok" AYNI ŞEY DEĞİLDİR)
 #   gunluge_yaz <kök>       → stdin'deki tek satır JSON'u zarf-ekle.sh ile günlüğe append eder
 #   json_kur                → J_/JN_ önekli env değişkenlerinden güvenli JSON kurar
 #   kanal_oku <kök>         → kanal.conf'u AYRIŞTIRIR (source ETMEZ); KANAL_* doldurur
@@ -18,12 +18,12 @@ export LC_ALL=C.UTF-8
 ORTAK_DIZIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Kaynak alınmak SIFIRLAMAZ (yaşanmış kırılma, E4): zarf-bicim-kapisi.sh göstergeyi kendi
-# okuyup sonra kitaplığı alıyordu; düz atama onun KOSU_KUTU değerini siliyor ve risk taraması
+# okuyup sonra kitaplığı alıyordu; düz atama onun DONEM_KUTU değerini siliyor ve risk taraması
 # sessizce "kaba dal"a düşüyordu. Kitaplık yalnız TANIMLAR, değer EZMEZ.
 NODE_BIN="${NODE_BIN:-}"
-KOSU_ID="${KOSU_ID:-}"; KOSU_KUTU="${KOSU_KUTU:-}"; KOSU_TUR="${KOSU_TUR:-}"
-KOSU_KIP="${KOSU_KIP:-}"; KOSU_SINIF="${KOSU_SINIF:-}"; KOSU_DAMGA="${KOSU_DAMGA:-}"
-KOSU_HATA="${KOSU_HATA:-}"
+DONEM_ID="${DONEM_ID:-}"; DONEM_KUTU="${DONEM_KUTU:-}"; DONEM_TUR="${DONEM_TUR:-}"
+DONEM_KIP="${DONEM_KIP:-}"; DONEM_SINIF="${DONEM_SINIF:-}"; DONEM_DAMGA="${DONEM_DAMGA:-}"
+DONEM_HATA="${DONEM_HATA:-}"
 
 node_bul() {
   [ -n "$NODE_BIN" ] && return 0
@@ -36,57 +36,57 @@ node_bul() {
   [ -n "$NODE_BIN" ]
 }
 
-# Koşu göstergesi — DÖRT alan (E4): kosu-id · kutu-dizini · tür · kip.
+# Dönem göstergesi — DÖRT alan (E4): donem-id · kutu-dizini · tür · kip.
 # Geri uyum (E1/E3 kitleri): 2. ya da 3. alan ISO damga biçimindeyse eski biçimdir; eksik alanlar
-# varsayılana düşer ve bu SESSİZ olmaz (KOSU_HATA doldurulur, çağıran bulgu düşürür).
-kosu_oku() {
+# varsayılana düşer ve bu SESSİZ olmaz (DONEM_HATA doldurulur, çağıran bulgu düşürür).
+donem_oku() {
   local KOK="${1:-.}" YOL SATIR
-  YOL="$KOK/tools/sevk/.kosu-acik"
-  KOSU_ID=""; KOSU_KUTU=""; KOSU_TUR=""; KOSU_KIP=""; KOSU_HATA=""
+  YOL="$KOK/tools/sevk/.donem-acik"
+  DONEM_ID=""; DONEM_KUTU=""; DONEM_TUR=""; DONEM_KIP=""; DONEM_HATA=""
   [ -e "$YOL" ] || return 1
   if [ ! -f "$YOL" ]; then
-    KOSU_HATA="gösterge dosya değil (dizin/başka tür): tools/sevk/.kosu-acik"
+    DONEM_HATA="gösterge dosya değil (dizin/başka tür): tools/sevk/.donem-acik"
     return 2
   fi
   SATIR="$(head -n1 "$YOL" 2>/dev/null || true)"
-  KOSU_ID="$(printf '%s' "$SATIR" | cut -f1)"
-  KOSU_KUTU="$(printf '%s' "$SATIR" | cut -f2)"
-  KOSU_TUR="$(printf '%s' "$SATIR" | cut -f3)"
-  KOSU_KIP="$(printf '%s' "$SATIR" | cut -f4)"
-  KOSU_SINIF="$(printf '%s' "$SATIR" | cut -f5)"
-  KOSU_DAMGA="$(sed -n '2p' "$YOL" 2>/dev/null | cut -f2 || true)"
-  if [ -z "$KOSU_ID" ]; then
-    KOSU_HATA="gösterge boş: ilk satırda koşu kimliği yok"
+  DONEM_ID="$(printf '%s' "$SATIR" | cut -f1)"
+  DONEM_KUTU="$(printf '%s' "$SATIR" | cut -f2)"
+  DONEM_TUR="$(printf '%s' "$SATIR" | cut -f3)"
+  DONEM_KIP="$(printf '%s' "$SATIR" | cut -f4)"
+  DONEM_SINIF="$(printf '%s' "$SATIR" | cut -f5)"
+  DONEM_DAMGA="$(sed -n '2p' "$YOL" 2>/dev/null | cut -f2 || true)"
+  if [ -z "$DONEM_ID" ]; then
+    DONEM_HATA="gösterge boş: ilk satırda dönem kimliği yok"
     return 2
   fi
-  case "$KOSU_KUTU" in
-    *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) KOSU_KUTU=""; KOSU_TUR=""; KOSU_KIP=""; KOSU_HATA="eski 2-alan gösterge biçimi (kutu/tür/kip yok)" ;;
+  case "$DONEM_KUTU" in
+    *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) DONEM_KUTU=""; DONEM_TUR=""; DONEM_KIP=""; DONEM_HATA="eski 2-alan gösterge biçimi (kutu/tür/kip yok)" ;;
   esac
-  case "$KOSU_TUR" in
-    *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) KOSU_TUR=""; KOSU_KIP=""; KOSU_HATA="eski 3-alan gösterge biçimi (tür/kip yok)" ;;
+  case "$DONEM_TUR" in
+    *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) DONEM_TUR=""; DONEM_KIP=""; DONEM_HATA="eski 3-alan gösterge biçimi (tür/kip yok)" ;;
   esac
-  [ -n "$KOSU_TUR" ] || KOSU_TUR="yapim"
-  [ -n "$KOSU_KIP" ] || KOSU_KIP="interaktif"
-  case "$KOSU_TUR" in
+  [ -n "$DONEM_TUR" ] || DONEM_TUR="yapim"
+  [ -n "$DONEM_KIP" ] || DONEM_KIP="interaktif"
+  case "$DONEM_TUR" in
     kurulum|yapim|kapanis) : ;;
-    *) KOSU_HATA="tanınmayan koşu türü: $KOSU_TUR"; return 2 ;;
+    *) DONEM_HATA="tanınmayan dönem türü: $DONEM_TUR"; return 2 ;;
   esac
-  case "$KOSU_KIP" in
+  case "$DONEM_KIP" in
     bassiz|interaktif) : ;;
-    *) KOSU_HATA="tanınmayan koşu kipi: $KOSU_KIP"; return 2 ;;
+    *) DONEM_HATA="tanınmayan dönem kipi: $DONEM_KIP"; return 2 ;;
   esac
-  # Sınıf (E4, hasım bulgusu): kanon "gerçek-kutu koşusunda T6 damgası + watchdog şart" diyordu
+  # Sınıf (E4, hasım bulgusu): kanon "gerçek-kutu döneminde T6 damgası + watchdog şart" diyordu
   # ama kodda ne şart ne AYRIM vardı. Beşinci alan o ayrımı taşır; eski göstergede yoksa
   # güvenli taraf GERÇEK'tir (fail-closed: muafiyet açıkça istenmedikçe verilmez).
-  [ -n "$KOSU_SINIF" ] || KOSU_SINIF="gercek"
-  case "$KOSU_SINIF" in
+  [ -n "$DONEM_SINIF" ] || DONEM_SINIF="gercek"
+  case "$DONEM_SINIF" in
     gercek|tatbikat) : ;;
-    *) KOSU_HATA="tanınmayan koşu sınıfı: $KOSU_SINIF"; return 2 ;;
+    *) DONEM_HATA="tanınmayan dönem sınıfı: $DONEM_SINIF"; return 2 ;;
   esac
   return 0
 }
 
-# Gerçek-kutu koşusunun ek iki şartı (OTONOM_KOSU §10; tatbikat koşuları MUAF — E4/E5
+# Gerçek-kutu döneminin ek iki şartı (OTONOM_DONEM §10; tatbikat dönemleri MUAF — E4/E5
 # tatbikatları döngüsel bağımlılığa girmesin diye tasarımın bilinçli istisnası).
 # Çıktı: eksiklerin listesi (boşsa şart karşılanmış).
 # İŞARET DEĞİL CANLILIK (E5): "dosya var" ile "iş fiilen koşuyor" AYRI şeylerdir. E4'ün en
@@ -175,7 +175,7 @@ kanal_oku() { # $1: kök
   return 0
 }
 
-# Haber gönderimi — TEK çağrı noktası (E5). Çağıranı ASLA öldürmez: koşu içi gönderim
+# Haber gönderimi — TEK çağrı noktası (E5). Çağıranı ASLA öldürmez: dönem içi gönderim
 # fail-OPEN'dır (tasarı §3.3 — geceyi bir yönlendirici arızasına rehin vermeyiz), ama izsiz
 # değildir: haber.sh kendi sonucunu günlüğe yazar. Dönüş kodu bilgi amaçlıdır.
 haber_at() {
@@ -193,7 +193,7 @@ gunluge_yaz() {
 
 # JSON kurucu: alanlar J_ (dize) ve JN_ (sayı) önekli env değişkenlerinden gelir.
 # Kabukta JSON kaçışı güvenli değildir; bozuk satır BÜTÜN gözleri köreltir (günlük tek-nokta
-# veri katmanı). Boş değerli alan atlanır; "kosu" yoksa null yazılır (şema zorunluluğu).
+# veri katmanı). Boş değerli alan atlanır; "donem" yoksa null yazılır (şema zorunluluğu).
 json_kur() {
   node_bul || return 1
   "$NODE_BIN" --input-type=module -e '
@@ -203,7 +203,7 @@ for (const [k, v] of Object.entries(process.env)) {
   if (!k.startsWith("J_")) continue;
   if (v !== "") cik[k.slice(2)] = String(v).replace(/\s+/g, " ").slice(0, 600);
 }
-if (!("kosu" in cik)) cik.kosu = null;
+if (!("donem" in cik)) cik.donem = null;
 console.log(JSON.stringify(cik));
 '
 }

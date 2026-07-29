@@ -2,8 +2,8 @@
 # file-guard — araç-kancası (PreToolUse): korunan yollara + (rol kafesi) yazamaz-rol oturumlarında her yola YAZMA araçlarını (Edit/MultiEdit/Write/NotebookEdit) mekanik keser.
 # E2 önleme katmanı (2026-07-27, tasarı: docs/superpowers/plans/2026-07-27-e2-onleme-tasarisi.md):
 #   Hat-1 içerik süzgeci (yazım-öncesi ENGEL; icerik-suzgeci.sh ortak betik) + Bash yazım dikişi ·
-#   Hat-2 dışa-giden SOR (her kipte) + MCP dikişi (koşu-AÇIK iken SOR) ·
-#   Hat-3 worktree sanal-kök değerlendirmesi + koşu-içi git-obje dikişi (SOR-GIT/ENGEL-WT).
+#   Hat-2 dışa-giden SOR (her kipte) + MCP dikişi (dönem-AÇIK iken SOR) ·
+#   Hat-3 worktree sanal-kök değerlendirmesi + dönem-içi git-obje dikişi (SOR-GIT/ENGEL-WT).
 # Koruma YAZMAYA karşıdır — okuma/komut araçlarına karışılmaz (Faz-1 demo dersi); ÜÇ BELGELİ İSTİSNA (dikişler): (1) rol damgasına (.aktif-rol) dokunan Bash komutu sahibe SORULUR (damganın git-izi yok, bekçi göremez — plan kararı 2); (2) kurulum işaretine (.kurulum-tamam) dokunan Bash komutu, işaret MEVCUTKEN sahibe SORULUR (işaret silinirse koruma kurulum-moduna düşer — soğuk-denetim bulgusu E2, 2026-07-16; işaret yokken sorulmaz ki GENESIS doğumu sürtünmesiz kalsın; ayrıca işaret git-İZLİdir, silinme/kirlilik bekçi porcelain hattında da yakalanır); (3) kilitli-tarih çapasına (.taban-ref) dokunan Bash komutu, kurulum BİTMİŞKEN sahibe SORULUR (çapayı ilerletmek kilitli-ihlal sinyalini söndürür — "ilerletme sahip-onaylı" güvencesinin mekanik kapısı; V2 Öbek-1 düzeltmesi, hasım bulgusu wf_e35b1e11, 2026-07-23).
 # Matcher GENİŞ (*), daraltma bu script'in içinde (anayasa m.5).
 # Girdi: stdin'de Claude Code araç JSON'u. Çıkış sözleşmesi:
@@ -27,7 +27,7 @@ ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}
 # tetikleyici token taşıyorsa node'a iner. Hasım bulgusu (perf): E2'nin ilk sürümü HER Bash'i
 # node'a indiriyordu (~330 ms/çağrı); oysa dikişler yalnız aşağıdaki tokenlarda ateşler.
 # Token TAŞIMAYAN Bash (ls/grep/cat/echo-yazımsız/pwd/find/node/python-yazımsız) node görmeden geçer.
-# Token listesi dikiş kapsamının ÜST-kümesidir (kaçak yok, yalnız gereksiz node koşusu elenir).
+# Token listesi dikiş kapsamının ÜST-kümesidir (kaçak yok, yalnız gereksiz node çalıştırması elenir).
 case "$INPUT" in
   *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*|*'"mcp__'*) : ;;
   *'"Bash"'*|*'"tool_name": "Bash"'*)
@@ -36,7 +36,7 @@ case "$INPUT" in
     # deliğidir (bu yüzden çıplak: "cp" baştaki cp'yi de yakalar — hasım bulgusu). Gate dikiş
     # tetikleyicilerinin TAM üst-kümesidir (markerlar + dışa-giden + git-obje + yazım fiilleri).
     case "$INPUT" in
-      *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.kosu-acik'*|*'.dur'*) : ;;
+      *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.donem-acik'*|*'.dur'*) : ;;
       # E5 kanal betikleri: ön-eleme listesi dikiş kapsamının ÜST-kümesi olmak zorundadır —
       # buraya eklenmezse aşağıdaki kanal dikişi HİÇ koşmaz (yaşanmış: dikiş yazıldı, gate
       # elemişti; sessiz delik). "Az eşleşme koruma deliğidir" kuralının canlı örneği.
@@ -51,7 +51,7 @@ esac
 # ---- E2 Hat-1: içerik süzgeci (yazım-öncesi; en güçlü hüküm önce, yol kararlarından bağımsız) ----
 # Yazıma giden İÇERİK kişisel-veri desenlerine taranır (TCKN/IBAN/kart + işaret listesi);
 # eşleşme = ENGEL ("önleme bulgusu"). Bash'te yalnız yazım-kalıplı komut taranır (karar süzgeçte).
-# HER KİPTE keser (koşu şartına bağlı değil — V3 vakası el-sürüşlü dönemde yaşandı; tasarı §8).
+# HER KİPTE keser (dönem şartına bağlı değil — V3 vakası el-sürüşlü dönemde yaşandı; tasarı §8).
 # Yazma araçları + Bash → --arac-json; mcp__ → --mcp-json (tool_input'un tüm dize değerleri
 # taranır; MCP kanalı da içerik-fail-closed olur — hasım bulgusu: "her kipte keser" beyanı MCP'yi
 # de kapsamalı). Bash/mcp süzgeç ÇALIŞAMAZSA (rc≠0, çoğu kez node-yok) fail-open (komut serbest,
@@ -97,7 +97,7 @@ if [ -z "$NODE_BIN" ]; then
   case "$INPUT" in
     *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*)
       engel "node bulunamadı — kanca karar veremiyor; GÜVENLİ taraf: yalnız BU YAZMA işlemi engellendi (okuma ve komutlar serbest). Çözüm: node kur (kokpit de istiyor). Bakım: tools/guard/README.md" ;;
-    *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.kosu-acik'*|*'.dur'*)
+    *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.donem-acik'*|*'.dur'*)
       engel "node bulunamadı — koruma damgası/işaretine dokunan komut güvenli tarafta engellendi (fail-closed; pre-E2 damga koruması). Çözüm: node kur." ;;
     *) exit 0 ;;
   esac
@@ -130,24 +130,24 @@ let j;
 try { j = JSON.parse(readFileSync(0, "utf8")); } catch { console.log("HATA\tstdin JSON cozulemedi"); process.exit(0); }
 
 const ti = j.tool_input || {};
-const kosuAcik = existsSync(resolve(ROOT, "tools/sevk/.kosu-acik"));
+const donemAcik = existsSync(resolve(ROOT, "tools/sevk/.donem-acik"));
 
-// MCP dikisi (E2 Hat-2; E0 §9.1 kor-kanal bulgusu): kosu-ACIK iken mcp__* cagrisi sahibe
-// SORULUR — kutu disina is cikarabilen, dosya izi birakmayan kanal kosuda sahip kapisindadir
-// (bassiz kosuda ask = red + iz; guvence artik harnessin degil bizim). El-suruslu kullanimda
-// (kosu yok) MCP serbesttir — bugunku davranis degismez.
+// MCP dikisi (E2 Hat-2; E0 §9.1 kor-kanal bulgusu): donem-ACIK iken mcp__* cagrisi sahibe
+// SORULUR — kutu disina is cikarabilen, dosya izi birakmayan kanal donemde sahip kapisindadir
+// (bassiz donemde ask = red + iz; guvence artik harnessin degil bizim). El-suruslu kullanimda
+// (donem yok) MCP serbesttir — bugunku davranis degismez.
 if (String(j.tool_name || "").startsWith("mcp__")) {
-  if (kosuAcik) { console.log("SOR-MCP\t" + String(j.tool_name)); process.exit(0); }
+  if (donemAcik) { console.log("SOR-MCP\t" + String(j.tool_name)); process.exit(0); }
   console.log("GEC"); process.exit(0);
 }
 
-// KUYRUK DİKİŞİ (E3 hasim bulgusu; YALNIZ kosu-ACIK): otonom kosuda hicbir rol sahibin
-// kuyruguna (00_pano/SENDE_BEKLEYEN.md) YAZAMAZ. Gerekcesi OTONOM_KOSU §6.1: "cevap yalniz
-// sahibin acik cevabiyla CEVAPLANDI olur; baska hicbir olay durumu degistiremez" — kosunun
+// KUYRUK DİKİŞİ (E3 hasim bulgusu; YALNIZ donem-ACIK): otonom donemde hicbir rol sahibin
+// kuyruguna (00_pano/SENDE_BEKLEYEN.md) YAZAMAZ. Gerekcesi OTONOM_DONEM §6.1: "cevap yalniz
+// sahibin acik cevabiyla CEVAPLANDI olur; baska hicbir olay durumu degistiremez" — donemin
 // kendi eliyle "[x] cevap: evet" yazabilmesi o kilidi mekanik olarak DELIYORDU. Mesru yazici
 // kanca surecindeki tools/sevk/catal-kuyruk.sh betigidir ve o bu engelden gecmez. EL-SURUSLU
 // kullanimda dikis YOK: D-21 akisi ("cevabi alan rol kapanis isareti koyar") aynen surer.
-if (kosuAcik && /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(String(j.tool_name || ""))) {
+if (donemAcik && /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(String(j.tool_name || ""))) {
   const hedefYol = String(ti.file_path || ti.notebook_path || "").replace(/\\/g, "/");
   if (/(^|\/)00_pano\/SENDE_BEKLEYEN\.md$/.test(hedefYol)) {
     console.log("ENGEL-KUYRUK\t00_pano/SENDE_BEKLEYEN.md"); process.exit(0);
@@ -188,20 +188,20 @@ if ((j.tool_name || "") === "Bash") {
   // korunan-yollar [SERT] oldugundan silinme bekcinin porcelain hattinda KIRMIZI basar.
   // Isaret yokken serbest (GENESIS dogumu sürtünmesiz).
   if (komut.includes(".kurulum") && existsSync(resolve(ROOT, ".kurulum-tamam"))) { console.log("SOR-ISARET\t.kurulum-tamam"); process.exit(0); }
-  // Kosu-dikisi (E1 hasim bulgusu A3): kosu-ACIK gostergesine (.kosu-acik) dokunan Bash komutu
+  // Kosu-dikisi (E1 hasim bulgusu A3): donem-ACIK gostergesine (.donem-acik) dokunan Bash komutu
   // sahibe SORULUR — dosya git-izsiz (.gitignore) oldugundan bekci porcelain hatti onu GOREMEZ;
   // tek guvencesi bu dikis + [SERT] arac-katmani. Tek bir rm komutu SubagentStop kapisini
-  // sessiz sondururdu; simdi o rm sahibe soru olur. /kosu toreninin kendi yazimi da buraya takilir ve
+  // sessiz sondururdu; simdi o rm sahibe soru olur. /donem toreninin kendi yazimi da buraya takilir ve
   // sahip onayiyla gecer (rol-toreni damga-dikisi emsali — G3.3c "bu NORMALdir"). Metin-es
   // sinir damga-dikisiyle aynidir (bilinen sinir).
-  if (komut.includes(".kosu-acik")) { console.log("SOR-KOSU\ttools/sevk/.kosu-acik"); process.exit(0); }
+  if (komut.includes(".donem-acik")) { console.log("SOR-DONEM\ttools/sevk/.donem-acik"); process.exit(0); }
   // DUR-dikisi (E4 hasim bulgusu): `.dur` sahibin acil frenidir ve .gitignore icindedir — bekcinin
   // porcelain hatti onu GOREMEZ. Kosu-gostergesiyle ayni sinif: ona dokunan Bash komutu SORULUR
-  // (kosu icinde modelin freni sessizce silmesini engeller; el-suruslu oturumda da sorulur —
-  // dosya zaten yalnizca kosu baglaminda anlamlidir).
-  if (komut.includes(".dur")) { console.log("SOR-KOSU\ttools/sevk/.dur"); process.exit(0); }
+  // (donem icinde modelin freni sessizce silmesini engeller; el-suruslu oturumda da sorulur —
+  // dosya zaten yalnizca donem baglaminda anlamlidir).
+  if (komut.includes(".dur")) { console.log("SOR-DONEM\ttools/sevk/.dur"); process.exit(0); }
   // Kanal-dikisi (E5): haber.sh ve nabiz.sh disa POSTA gonderir. Mesru cagiranlari yalnizca
-  // kancalardir (kosu-ac · sevk · SubagentStop kapisi · launchd) ve kanca sureci arac
+  // kancalardir (donem-ac · sevk · SubagentStop kapisi · launchd) ve kanca sureci arac
   // katmanindan GECMEZ — yani bu dikis onlari hic gormez, hicbir mesru yolu kesmez.
   // Bir AJANIN bu betikleri cagirmasi ise "modelin yazdigi metni disari cikarma" yolunu acardi:
   // serbest-metin yasagi tam da bu yuzden arayuze gomulu (haber.sh icinde govde argumani YOKTUR).
@@ -238,8 +238,8 @@ if ((j.tool_name || "") === "Bash") {
     }
     return tok[i] || "";
   };
-  // Git-obje dikisi (YALNIZ kosu-ACIK; E0 kalem-5: worktree ortak nesne deposu — add bile sizdirir):
-  if (kosuAcik) {
+  // Git-obje dikisi (YALNIZ donem-ACIK; E0 kalem-5: worktree ortak nesne deposu — add bile sizdirir):
+  if (donemAcik) {
     const gitObje = bolutler.some((s) => { const c = komutAdi(s); return c.ad === "git" && /^(add|commit|stash)$/.test(gitAlt(c.kuyruk)); });
     if (gitObje) {
       const wtBaglam = komut.includes(".claude/worktrees") || String(j.cwd || "").includes(".claude/worktrees");
@@ -330,7 +330,7 @@ if (sert) {
     // Cekirdekli istisna: kurulum surerken yalniz tools/guard/ + .claude/ + tools/sevk/ sert
     // kalir; onun icinde de korunan-yollar.txt yazilabilir (GENESIS veri doldurur).
     // tools/sevk cekirdege E1 hasim bulgusu A5 ile girdi: sevk betikleri SABLONLA SABIT gelir,
-    // GENESIS sevk alanina yazmaz (OTONOM_KOSU kurulumu elle/ayri is) — kuran ajan koruma/sevk
+    // GENESIS sevk alanina yazmaz (OTONOM_DONEM kurulumu elle/ayri is) — kuran ajan koruma/sevk
     // kodunu ve damgalar/ tatbikat damgalarini kurulum penceresinde yeniden yazamasin.
     const cekirdekte = altinda("tools/guard") || altinda(".claude") || altinda("tools/sevk");
     const listeDosyasi = hedef === kanonik(resolve(KOKE, "tools/guard/korunan-yollar.txt"));
@@ -401,39 +401,39 @@ case "$DURUM" in
     exit 0
     ;;
   ENGEL-KANAL)
-    printf 'file-guard ENGEL: haber kanalı ajan eliyle çağrılamaz (%s).\nBu betikler sahibin adına DIŞARI posta gönderir; meşru çağıranları yalnız kancalardır (/kosu töreni · sevk · SubagentStop kapısı · launchd watchdog) ve onlar araç katmanından geçmez.\nSerbest metnin dışarı çıkmaması bu tasarımın çekirdek güvencesidir: gövde yalnız tanımlı alanlardan kurulur ve gönderim öncesi içerik süzgecinden geçer (OTONOM_KOSU §7 · §12).\n' "$DETAY" >&2
+    printf 'file-guard ENGEL: haber kanalı ajan eliyle çağrılamaz (%s).\nBu betikler sahibin adına DIŞARI posta gönderir; meşru çağıranları yalnız kancalardır (/donem töreni · sevk · SubagentStop kapısı · launchd watchdog) ve onlar araç katmanından geçmez.\nSerbest metnin dışarı çıkmaması bu tasarımın çekirdek güvencesidir: gövde yalnız tanımlı alanlardan kurulur ve gönderim öncesi içerik süzgecinden geçer (OTONOM_DONEM §7 · §12).\n' "$DETAY" >&2
     exit 2
     ;;
-  SOR-KOSU)
-    GEREKCE="Bu kabuk komutu koşu-AÇIK göstergesine (tools/sevk/.kosu-acik) dokunuyor. Gösterge otonom koşunun anahtarıdır: silinirse SubagentStop biçim kapısı sessizce kapanır. Meşru yolu /kosu töreni ve sevk kapanışıdır; elle müdahale sahip kararı ister." \
+  SOR-DONEM)
+    GEREKCE="Bu kabuk komutu dönem-AÇIK göstergesine (tools/sevk/.donem-acik) dokunuyor. Gösterge otonom dönemin anahtarıdır: silinirse SubagentStop biçim kapısı sessizce kapanır. Meşru yolu /donem töreni ve sevk kapanışıdır; elle müdahale sahip kararı ister." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;
   ENGEL-KUYRUK)
-    engel "otonom koşuda sahibin kuyruğuna ($DETAY) yazım YASAK — «cevap yalnız sahibin açık cevabıyla CEVAPLANDI olur; başka hiçbir olay durumu değiştiremez» (OTONOM_KOSU §6.1). Koşunun kendi eliyle cevap işaretlemesi bu kilidi delerdi. Meşru yazıcı sevk kancasıdır (tools/sevk/catal-kuyruk.sh); el-sürüşlü oturumda bu engel YOKTUR."
+    engel "otonom dönemde sahibin kuyruğuna ($DETAY) yazım YASAK — «cevap yalnız sahibin açık cevabıyla CEVAPLANDI olur; başka hiçbir olay durumu değiştiremez» (OTONOM_DONEM §6.1). Dönemin kendi eliyle cevap işaretlemesi bu kilidi delerdi. Meşru yazıcı sevk kancasıdır (tools/sevk/catal-kuyruk.sh); el-sürüşlü oturumda bu engel YOKTUR."
     ;;
   SOR-MCP)
-    GEREKCE="Otonom koşu AÇIKKEN MCP araç çağrısı ($DETAY) sahip kapısındadır: kutu dışına iş çıkarabilen, dosya izi bırakmayan kanal (E2 dikişi; başsız koşuda bu soru red + iz olur)." \
+    GEREKCE="Otonom dönem AÇIKKEN MCP araç çağrısı ($DETAY) sahip kapısındadır: kutu dışına iş çıkarabilen, dosya izi bırakmayan kanal (E2 dikişi; başsız dönemde bu soru red + iz olur)." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;
   SOR-GIT)
-    GEREKCE="Otonom koşu AÇIKKEN obje üreten git komutu (add/commit/stash) doğrulayıcı yeşili ister — commit-öncesi kapı (OTONOM_KOSU §3/§7). Karne-şartı mekaniği E4'e dek bu sahip sorusudur; başsız koşuda red + iz." \
+    GEREKCE="Otonom dönem AÇIKKEN obje üreten git komutu (add/commit/stash) doğrulayıcı yeşili ister — commit-öncesi kapı (OTONOM_DONEM §3/§7). Karne-şartı mekaniği E4'e dek bu sahip sorusudur; başsız dönemde red + iz." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;
   SOR-DISA)
-    GEREKCE="Bu komut makineden DIŞARI çıkan sınıftadır (push/gönderim/paylaşım) — dışa giden her şey sahip kararıdır (D-03; E2 Hat-2). Başsız koşuda bu soru red + iz olur." \
+    GEREKCE="Bu komut makineden DIŞARI çıkan sınıftadır (push/gönderim/paylaşım) — dışa giden her şey sahip kararıdır (D-03; E2 Hat-2). Başsız dönemde bu soru red + iz olur." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;
   SOR-YAZIM)
-    GEREKCE="Yazım-kalıplı kabuk komutu korumalı yolu ($DETAY) anıyor — hedef mi kaynak mı metinden ayrılamaz, sahip kararı ister (E2 beşinci dikiş). Dosya yazımı için meşru yol yazma araçlarıdır (Edit/Write); Bash yazımı otonom koşuda zaten bulgudur (OTONOM_KOSU §7)." \
+    GEREKCE="Yazım-kalıplı kabuk komutu korumalı yolu ($DETAY) anıyor — hedef mi kaynak mı metinden ayrılamaz, sahip kararı ister (E2 beşinci dikiş). Dosya yazımı için meşru yol yazma araçlarıdır (Edit/Write); Bash yazımı otonom dönemde zaten bulgudur (OTONOM_DONEM §7)." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;
   ENGEL-WT)
-    engel "otonom koşuda worktree bağlamında obje üreten git komutu (add/commit/stash) YASAK — worktree ana depoyla AYNI nesne veritabanını paylaşır, atılan obje worktree silinse de kalır (E0 ölçümü). Kanıt yalnız dosya:satır ile verilir (OTONOM_KOSU §7); taşıma sevkin işidir, dosya-kopyasıyla."
+    engel "otonom dönemde worktree bağlamında obje üreten git komutu (add/commit/stash) YASAK — worktree ana depoyla AYNI nesne veritabanını paylaşır, atılan obje worktree silinse de kalır (E0 ölçümü). Kanıt yalnız dosya:satır ile verilir (OTONOM_DONEM §7); taşıma sevkin işidir, dosya-kopyasıyla."
     ;;
   HATA) engel "$DETAY (fail-closed)" ;;
   *) engel "çözümleyici beklenmeyen karar döndürdü: $KARAR (fail-closed)" ;;

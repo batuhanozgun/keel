@@ -450,26 +450,26 @@ test('E2 Hat-2 dışa-giden komut-konumu: gömülü kelime yakalanmaz (alt-dize 
   }
 });
 
-test('E2 MCP dikişi: koşu-AÇIK iken mcp__ çağrısı sorulur; koşu yokken serbest (el-sürüşlü değişmez)', () => {
+test('E2 MCP dikişi: dönem-AÇIK iken mcp__ çağrısı sorulur; dönem yokken serbest (el-sürüşlü değişmez)', () => {
   const kok = kurulum();
   const cagri = { tool_name: 'mcp__ornek__gonder', tool_input: { x: 'y' } };
   const kapali = kos(kok, cagri);
   assert.equal(kapali.status, 0);
   assert.equal(kapali.stdout.trim(), '');
   mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
-  writeFileSync(join(kok, 'tools', 'sevk', '.kosu-acik'), 'KOSU-1\tkutu\t2026-07-27T10:00:00Z\n');
+  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'DONEM-1\tkutu\t2026-07-27T10:00:00Z\n');
   const acik = kos(kok, cagri);
   assert.equal(acik.status, 0);
   assert.match(askJson(acik).permissionDecisionReason, /MCP/);
 });
 
-test('E2 git-obje dikişi: koşu-AÇIK iken commit sorulur; worktree bağlamında ENGEL; koşu yokken serbest', () => {
+test('E2 git-obje dikişi: dönem-AÇIK iken commit sorulur; worktree bağlamında ENGEL; dönem yokken serbest', () => {
   const kok = kurulum();
   const commit = { tool_name: 'Bash', tool_input: { command: 'git commit -m x' } };
   assert.equal(kos(kok, commit).status, 0);
-  assert.equal(kos(kok, commit).stdout.trim(), '', 'koşu yokken dikiş yok');
+  assert.equal(kos(kok, commit).stdout.trim(), '', 'dönem yokken dikiş yok');
   mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
-  writeFileSync(join(kok, 'tools', 'sevk', '.kosu-acik'), 'KOSU-1\tkutu\t2026-07-27T10:00:00Z\n');
+  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'DONEM-1\tkutu\t2026-07-27T10:00:00Z\n');
   const soru = kos(kok, commit);
   assert.match(askJson(soru).permissionDecisionReason, /doğrulayıcı yeşili/);
   const wtKomut = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git -C .claude/worktrees/ag-1 add .' } });
@@ -544,7 +544,7 @@ test('E2 settings kablosu: dışa-giden ask kuralları şablon ayarında duruyor
   }
 });
 
-// --- E2 hasım incelemesi düzeltmeleri (2026-07-27; koşu wf_1fea1dba) ---
+// --- E2 hasım incelemesi düzeltmeleri (2026-07-27; dönem wf_1fea1dba) ---
 
 test('E2 hasım/dışa-giden: git -C push, mutlak yol, çok-satır, npm publish HEPSİ SOR-DISA', () => {
   const kok = kurulum();
@@ -574,10 +574,10 @@ test('E2 hasım/dışa-giden negatif: git log, npm test, ssh-içeren-yol GEC', (
   }
 });
 
-test('E2 hasım/git-obje: koşu-AÇIK git -C commit worktree bağlamında ENGEL, dışında SOR-GIT', () => {
+test('E2 hasım/git-obje: dönem-AÇIK git -C commit worktree bağlamında ENGEL, dışında SOR-GIT', () => {
   const kok = kurulum();
   mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
-  writeFileSync(join(kok, 'tools', 'sevk', '.kosu-acik'), 'K\tkutu\t2026-07-27T10:00:00Z\n');
+  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'K\tkutu\t2026-07-27T10:00:00Z\n');
   const wt = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git -C .claude/worktrees/ag-1 commit -m x' } });
   assert.equal(wt.status, 2);
   assert.match(wt.stderr, /nesne veritabanını paylaşır/);
@@ -638,7 +638,7 @@ test('E2 hasım/MCP içerik: mcp__ tool_input TCKN taşıyorsa her kipte ENGEL (
   assert.equal(r.status, 2);
   assert.match(r.stderr, /önleme bulgusu \(tckn\)/);
   assert.ok(!r.stderr.includes(tckn), 'MCP engel metni değeri sızdırmamalı');
-  // temiz MCP koşu-KAPALI serbest
+  // temiz MCP dönem-KAPALI serbest
   assert.equal(kos(kok, { tool_name: 'mcp__x__send', tool_input: { body: 'selam' } }).status, 0);
 });
 

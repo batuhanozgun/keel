@@ -45,11 +45,27 @@ async function tempVault({ saglikIsiklar = 'AKIŞ=YEŞİL', damga = stamp(new Da
   const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-durum-'));
   await fs.mkdir(path.join(kok, '00_pano'), { recursive: true });
   await fs.writeFile(path.join(kok, '00_pano', 'SAGLIK.md'),
-    '# SAĞLIK\nson koşu: ' + damga + ' (koşu #3)\n\n**Işıklar:** ' + saglikIsiklar + '\n');
+    '# SAĞLIK\nson denetim: ' + damga + ' (denetim #3)\n\n**Işıklar:** ' + saglikIsiklar + '\n');
   await fs.writeFile(path.join(kok, '00_pano', 'PANO.md'),
     '# Pano\n- **Aktif kutu:** KT-001\n- **SIRADAKİ OTURUM:** ' + siradaki + '\n');
   return kok;
 }
+
+// Dil paketi geri uyumu (2026-07-29): kanonik yazım "son denetim: … (denetim #N)" oldu, ama
+// kokpit kodu üç kopyada ortaktır (D-02) ve üçüncüsü Loopinance aynasıdır — o vault ESKİ yazımı
+// kullanır ve oraya yazılmaz (D-05). Eski yazımın okunmaya devam ettiği burada sabitlenir.
+test('geri uyum: ESKİ yazım ("son koşu: … (koşu #N)") hâlâ okunur — Loopinance aynası kırılmaz', async () => {
+  const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-eskidil-'));
+  await fs.mkdir(path.join(kok, '00_pano'), { recursive: true });
+  await fs.writeFile(path.join(kok, '00_pano', 'SAGLIK.md'),
+    '# SAĞLIK\nson koşu: ' + stamp(new Date()) + ' (koşu #7)\n\n**Işıklar:** AKIŞ=YEŞİL\n');
+  await fs.writeFile(path.join(kok, '00_pano', 'PANO.md'),
+    '# Pano\n- **Aktif kutu:** KT-001\n- **SIRADAKİ OTURUM:** uygulayici — iş\n');
+  const s = await buildState(kok);
+  assert.equal(s.saglik.runNo, 7, 'eski yazımlı damga okunamadı');
+  assert.equal(s.saglik.stale, false);
+  assert.ok(!s.warnings.some((w) => /tazelik damgası bulunamadı/.test(w)), 'eski yazım uyarı üretmemeli');
+});
 
 test('B1: hiç ÖLÇÜLMÜŞ ışık yokken (hepsi VERİ-YOK) sistem geneli YEŞİL değil VERI-YOK (dürüst gri)', async () => {
   const kok = await tempVault({ saglikIsiklar: 'AKIŞ=VERİ-YOK · DOSYA=VERİ-YOK' });

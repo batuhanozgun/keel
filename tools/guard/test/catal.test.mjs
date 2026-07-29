@@ -1,7 +1,7 @@
 // catal.test.mjs — E3: soru kanalı (karar alanı · çatal kuyruğu · biçim kapısının E3 hattı).
 // Sözleşme: docs/superpowers/plans/2026-07-27-e3-soru-kanali-tasarisi.md
 //   §2 karar alanı · §3 denetçi dönüşü · §4 kapının beş adımı · §5 kuyruk mekaniği.
-// Hepsi koşu-AÇIK şartının ARDINDADIR: el-sürüşlü günlük döngüde bu kapılar yok hükmündedir.
+// Hepsi dönem-AÇIK şartının ARDINDADIR: el-sürüşlü günlük döngüde bu kapılar yok hükmündedir.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -29,7 +29,7 @@ function kararAlaniMetni({ profil = true } = {}) {
     '- Kapsam tercihi: bu özellik şimdi mi, sonra mı.');
 }
 
-function kurulum({ kosu = true, kadro = ['po', 'catal-denetcisi'], profil = true, kararAlani = true } = {}) {
+function kurulum({ donem = true, kadro = ['po', 'catal-denetcisi'], profil = true, kararAlani = true } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'catal-test-'));
   mkdirSync(join(kok, '00_pano'), { recursive: true });
   mkdirSync(join(kok, '02_kanon'), { recursive: true });
@@ -41,7 +41,7 @@ function kurulum({ kosu = true, kadro = ['po', 'catal-denetcisi'], profil = true
     chmodSync(join(kok, 'tools', 'sevk', b), 0o755);
   }
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '# test ajanı\n');
-  if (kosu) writeFileSync(join(kok, 'tools', 'sevk', '.kosu-acik'), 'KOSU-TEST\tKT-001\t2026-07-27T10:00:00Z\n');
+  if (donem) writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'DONEM-TEST\tKT-001\t2026-07-27T10:00:00Z\n');
   writeFileSync(join(kok, '00_pano', 'PANO.md'), '# pano\n');
   writeFileSync(join(kok, '01_kutular', 'KT-001', 'KUTU.md'), '# KUTU\n');
   if (kararAlani) writeFileSync(KARAR(kok), kararAlaniMetni({ profil }));
@@ -78,7 +78,7 @@ function catalKaydi(kok, { gorev = 'G-12', ceviri = 'Puanlar ekstrede ayrı sat�
                            etki = 'Görünürse her ay tek bakışta görürsün; görünmezse ekstre sade kalır. Geri dönüşü: tek ayar.',
                            bekletir = 'G-14 ve G-15 bu cevaba bağlı', ajan = 'po' } = {}) {
   appendFileSync(GUNLUK(kok), JSON.stringify({
-    surum: 1, ts: '2026-07-27T10:05:00Z', kosu: 'KOSU-TEST', tip: 'zarf', ajan, gorev,
+    surum: 1, ts: '2026-07-27T10:05:00Z', donem: 'DONEM-TEST', tip: 'zarf', ajan, gorev,
     alanlar: { biten: `${gorev} — x · kanıt: 00_pano/PANO.md:1`, catal: 'dolu', ceviri, etki, bekletir,
                degerlendirmediklerim: 'yok', siradaki: 'kapalı', turetme_izi: 'yok', geri_cekilen: 'yok', izin_engeli: null },
     dikis: 'atlandi', ham: '...',
@@ -497,18 +497,18 @@ test('kapı/denetçi: BEKLETİR kilidinden muaf (hüküm iş değildir)', () => 
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════════
-// 6 · Sınır davranışları: koşu kapalı · döngü emniyeti · el-sürüşlü etkisizlik
+// 6 · Sınır davranışları: dönem kapalı · döngü emniyeti · el-sürüşlü etkisizlik
 // ══════════════════════════════════════════════════════════════════════════════════════════
 
-test('koşu KAPALIYKEN E3 kapılarının hiçbiri çalışmaz (el-sürüşlü döngü etkilenmez)', () => {
-  const kok = kurulum({ kosu: false, profil: false });
+test('dönem KAPALIYKEN E3 kapılarının hiçbiri çalışmaz (el-sürüşlü döngü etkilenmez)', () => {
+  const kok = kurulum({ donem: false, profil: false });
   kuyrukYaz(kok, ['- [ ] 2026-07-27 · po · ÇATAL Ç-01 · "x" · bekletir: G-14 · kaynak: zarf-günlüğü satır 2']);
   for (const g of [donus('po', zarf({ biten: 'G-14 — x · kanıt: 00_pano/PANO.md:1' })),
                    donus('po', catalliZarf('K-07 alanı açılsın mı?')),
                    donus('catal-denetcisi', denetciZarfi({ hukum: 'GEÇTİ' }))]) {
-    assert.equal(kapi(kok, g).status, 0, 'koşu kapalıyken kapı sessiz geçmeli');
+    assert.equal(kapi(kok, g).status, 0, 'dönem kapalıyken kapı sessiz geçmeli');
   }
-  assert.equal(gunluk(kok).length, 0, 'koşu kapalıyken günlüğe satır düşmemeli');
+  assert.equal(gunluk(kok).length, 0, 'dönem kapalıyken günlüğe satır düşmemeli');
 });
 
 test('döngü emniyeti: stop_hook_active=true iken E3 dalları ENGELLEMEZ, iz düşer', () => {
@@ -650,7 +650,7 @@ test('hasım-7: kuyruk maddesi tek satır ve makul boyda (SENDE_BEKLEYEN tavanı
 
 test('kalibrasyon-2: çatal denetçisi çatal-iz şüphesinden MUAF (işi zaten çatal değerlendirmek)', () => {
   // T3a canlı: denetçinin transkriptinde doğal olarak "ÇATAL" geçiyor; muafiyet olmadan her
-  // denetçi koşusu catal-iz-suphesi üretiyordu. Üretici rolde denetim AYNEN sürer (altta).
+  // denetçi çağrısı catal-iz-suphesi üretiyordu. Üretici rolde denetim AYNEN sürer (altta).
   const kok = kurulum();
   writeFileSync(GUNLUK(kok), ''); catalKaydi(kok);
   const trans = join(kok, 'transkript-denetci.jsonl');
@@ -671,13 +671,13 @@ test('kalibrasyon-2: çatal denetçisi çatal-iz şüphesinden MUAF (işi zaten 
   assert.match(ureticiR.stderr, /catal-degerlendirme izi/);
 });
 
-test('hasım-8: koşu-AÇIK iken kuyruğa yazım ENGEL — CEVAPLANDI koşunun kendi eliyle üretilemez', () => {
-  // §6.1 kilidi mekanik karşılığını burada bulur: koşu içinde bir rol "[x] cevap: evet" yazamaz.
-  // El-sürüşlü oturumda (koşu kapalı) D-21 akışı AYNEN sürer — rol kapanış işaretini koyabilir.
+test('hasım-8: dönem-AÇIK iken kuyruğa yazım ENGEL — CEVAPLANDI dönemin kendi eliyle üretilemez', () => {
+  // §6.1 kilidi mekanik karşılığını burada bulur: dönem içinde bir rol "[x] cevap: evet" yazamaz.
+  // El-sürüşlü oturumda (dönem kapalı) D-21 akışı AYNEN sürer — rol kapanış işaretini koyabilir.
   const kok = kurulum();
   writeFileSync(KUYRUK(kok), '# SENDE BEKLEYEN\n');
-  const gir = (kosuAcikMi) => {
-    if (!kosuAcikMi) rmSync(join(kok, 'tools', 'sevk', '.kosu-acik'), { force: true });
+  const gir = (donemAcikMi) => {
+    if (!donemAcikMi) rmSync(join(kok, 'tools', 'sevk', '.donem-acik'), { force: true });
     return spawnSync('bash', [join(kok, 'tools', 'guard', 'file-guard.sh')], {
       encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: kok },
       input: JSON.stringify({ tool_name: 'Edit', tool_input: { file_path: join(kok, '00_pano', 'SENDE_BEKLEYEN.md'), new_string: 'cevap: evet' } }),
@@ -689,7 +689,7 @@ test('hasım-8: koşu-AÇIK iken kuyruğa yazım ENGEL — CEVAPLANDI koşunun k
   }
   writeFileSync(join(kok, '.kurulum-tamam'), 'kuruldu\n');
   const acik = gir(true);
-  assert.equal(acik.status, 2, 'koşu-AÇIK iken kuyruğa yazım engellenmeli');
+  assert.equal(acik.status, 2, 'dönem-AÇIK iken kuyruğa yazım engellenmeli');
   assert.match(acik.stderr, /sahibin kuyruğuna/);
   const kapali = gir(false);
   assert.equal(kapali.status, 0, 'el-sürüşlü oturumda engel OLMAMALI (D-21 akışı sürer)');

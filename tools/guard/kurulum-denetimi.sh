@@ -178,7 +178,7 @@ fi
 
 # 8 · İşletim yüzeyi: pano bağlanmış + ilk kutu kurulmuş (G4.5, G3.4 ve G4'ten SONRA koşar —
 #     soğuk-denetim bulgusu C1: bu yüzeyler yokken "çekilme serbest" denemez. SAGLIK.md bilerek
-#     ARANMAZ: onu bekçi yazar ve G5.3d son koşusundan önce meşru olarak olmayabilir.)
+#     ARANMAZ: onu bekçi yazar ve G5.3d son denetiminden önce meşru olarak olmayabilir.)
 if [ -f "$KOK/00_pano/PANO.md" ]; then
   gecti "00_pano/PANO.md yerinde"
 else

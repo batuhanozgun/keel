@@ -1,5 +1,5 @@
 // kurulu-sim.test.mjs — EL_KITABI kalıbının kurulu-boy ölçümü, YENİDEN-ÜRETİLEBİLİR (WF-2/WF-3).
-// "Sığıyor" çıplak beyanla bitti (2026-07-21): sayı her koşuda kalıptan yeniden üretilir ve
+// "Sığıyor" çıplak beyanla bitti (2026-07-21): sayı her test çalıştırmasında kalıptan yeniden üretilir ve
 // TAP diagnostiğine basılır; marj 500B altına inen şablon eki bu testi KIRMIZI yapar —
 // tavan sorusu sahibe gitmeden ek giremez (kalıp yorum-bloğundaki "Şablon-eki freni").
 // Dolgu seti GERÇEK kurulumdan (tatbikat-v2, 2026-07-15) birebir — asgari-dolgu hilesine

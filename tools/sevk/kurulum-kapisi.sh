@@ -1,7 +1,7 @@
 #!/bin/bash
 # kurulum-kapisi — kutu kurulumunun MEKANİK denetimi (E4; tasarım §5.2'nin makine tarafı).
 # GENESIS'in G4.5 kapısıyla KARIŞTIRILMAZ: o, şablon aktarımını denetler (bir kez, kurulumda);
-# bu, BİR KUTUNUN otonom koşuya hazır olup olmadığını denetler (her kutu açılışında).
+# bu, BİR KUTUNUN otonom döneme hazır olup olmadığını denetler (her kutu açılışında).
 #
 # Kullanım: kurulum-kapisi.sh <kutu-dizin-adı> [<kök>]
 # Çıkış: 0 = mekanik kalemler YEŞİL · 1 = eksik var (stdout satır satır gerekçe)
@@ -52,14 +52,14 @@ const blok = (baslik) => {
 
 // Durus sozlesmesi: dort satir DOLU (bos deger ya da «alan» isareti gecmez).
 const durus = blok("Duruş sözleşmesi");
-if (durus === null) cik.push("EKSIK\tdurus sozlesmesi blogu yok (## Duruş sözleşmesi) — bitti tanimi yazilmamis kutu otonom kosuya giremez (K-H)");
+if (durus === null) cik.push("EKSIK\tdurus sozlesmesi blogu yok (## Duruş sözleşmesi) — bitti tanimi yazilmamis kutu otonom doneme giremez (K-H)");
 else {
   for (const ad of ["BİTİŞ HÂLİ", "KANIT", "KISIT", "BÜTÇE"]) {
     const s = durus.split("\n").find((x) => new RegExp("^\\s*" + ad + "\\s*:").test(x));
     if (!s) { cik.push("EKSIK\tdurus sozlesmesi satiri yok: " + ad); continue; }
     const deger = s.replace(new RegExp("^\\s*" + ad + "\\s*:"), "").trim();
     if (!deger || deger.includes("«")) { cik.push("EKSIK\tdurus sozlesmesi satiri bos/doldurulmamis: " + ad); continue; }
-    if (ad === "BÜTÇE" && !/\d/.test(deger)) { cik.push("EKSIK\tBÜTÇE satirinda sayi yok — kosu basina kac alt-ajan kosusu acilabilir yazilmali (K-G)"); continue; }
+    if (ad === "BÜTÇE" && !/\d/.test(deger)) { cik.push("EKSIK\tBÜTÇE satirinda sayi yok — donem basina kac alt-ajan cagrisi acilabilir yazilmali (K-G)"); continue; }
     cik.push("GECTI\tdurus: " + ad);
   }
 }
@@ -74,7 +74,7 @@ for (const s of satirlar) {
 }
 if (!kapilar.length) cik.push("EKSIK\tkapi tablosu okunamadi (G-NN satiri yok)");
 const risk = blok("Bağımlılık ve risk");
-if (risk === null) cik.push("EKSIK\tbagimlilik/risk blogu yok (## Bağımlılık ve risk) — sevk bagimlilik okuyamaz (OTONOM_KOSU §3)");
+if (risk === null) cik.push("EKSIK\tbagimlilik/risk blogu yok (## Bağımlılık ve risk) — sevk bagimlilik okuyamaz (OTONOM_DONEM §3)");
 else {
   const kayitli = new Set();
   for (const s of risk.split("\n")) {
@@ -119,10 +119,10 @@ EOF_RAPOR
 
 # ── Kural evi (otonom kipin kural dosyası kurulmuş mu) ─────────────────────────────────────
 # Sevkin devir metni bu dosyayı işaretçi olarak gösterir; yoksa rol kuralı okuyamaz.
-if [ -f "$KOK/02_kanon/OTONOM_KOSU.md" ]; then
-  gecti "otonom kural evi yerinde (02_kanon/OTONOM_KOSU.md)"
+if [ -f "$KOK/02_kanon/OTONOM_DONEM.md" ]; then
+  gecti "otonom kural evi yerinde (02_kanon/OTONOM_DONEM.md)"
 else
-  eksik "02_kanon/OTONOM_KOSU.md yok — otonom kipin kural evi kurulmamış (kalıp: 00_genesis/OTONOM_KOSU_KALIBI.md, elle kopyalanır)"
+  eksik "02_kanon/OTONOM_DONEM.md yok — otonom kipin kural evi kurulmamış (kalıp: 00_genesis/OTONOM_DONEM_KALIBI.md, elle kopyalanır)"
 fi
 
 # ── K6 · sahibin karar alanı (D-25 ③ proje katmanı) ────────────────────────────────────────
@@ -159,5 +159,5 @@ if [ "$SORUN" -eq 0 ]; then
   printf 'SONUÇ: MEKANİK KALEMLER YEŞİL — yargı kalemleri kurulum denetçisinin (izlenebilirlik matrisi · çapa içeriği · lokma boyu · risk gözden geçirme)\n'
   exit 0
 fi
-printf 'SONUÇ: EKSİK — kutu bu hâliyle otonom koşuya giremez (tasarım §5.2)\n'
+printf 'SONUÇ: EKSİK — kutu bu hâliyle otonom döneme giremez (tasarım §5.2)\n'
 exit 1

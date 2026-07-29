@@ -71,7 +71,7 @@ function renderTopbar() {
   var g = s.sistemGenel || 'VERI-YOK';
   chip.className = 'sys-pill ' + lightClass(g);
   chip.textContent = s.stale ? 'sistem: kırmızı · tazelik' : ('sistem: ' + (g === 'VERI-YOK' ? 'veri yok' : g.toLocaleLowerCase('tr')));
-  $('stamp').textContent = s.lastRun ? ('sağlık koşusu ' + s.lastRun + ' · #' + (s.runNo == null ? '?' : s.runNo)) : 'damga yok';
+  $('stamp').textContent = s.lastRun ? ('sağlık denetimi ' + s.lastRun + ' · #' + (s.runNo == null ? '?' : s.runNo)) : 'damga yok';
   $('updated').textContent = 'güncel ' + new Date().toLocaleTimeString('tr-TR');
 
   var rib = $('ribbon');
@@ -127,7 +127,7 @@ function renderPano() {
   });
   lb += '</div>';
   if (s.red != null) lb += '<div class="counts">kırmızı kalem <b>' + s.red + '</b> · sarı kalem <b>' + s.yellow + '</b></div>';
-  if (s.driftAfterRun && s.items && s.items.length) lb += '<div class="drift-note">bu kalemler son koşudan (' + esc(s.lastRun || '') + '); o zamandan beri dosyalar değişti, bir kısmı çözülmüş olabilir.</div>';
+  if (s.driftAfterRun && s.items && s.items.length) lb += '<div class="drift-note">bu kalemler son denetimden (' + esc(s.lastRun || '') + '); o zamandan beri dosyalar değişti, bir kısmı çözülmüş olabilir.</div>';
   if (s.items && s.items.length) {
     s.items.forEach(function (it) {
       var c = it.level === 'KIRMIZI' ? 'red' : (it.level === 'SARI' ? 'amber' : 'gray');

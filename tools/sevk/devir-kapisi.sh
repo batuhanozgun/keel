@@ -4,20 +4,20 @@
 # fiilen açan ana-oturum modelidir. Bu kapı o halkayı iki yerden denetler:
 #   (1) ŞEMA — devir metni YALNIZ işaretçi taşır (13 no'lu raporun 2. sızıntı yaması)
 #   (2) TALİMAT↔FİİL — (rol, görev) ikilisi günlükteki AÇIK bir sevk-kararıyla eşleşmeli
-#       ⇒ sevkin hiç açmadığı koşu ile İÇ İÇE alt-ajan (E0 yan bulgu 2) aynı kapıda durur
+#       ⇒ sevkin hiç açmadığı dönem ile İÇ İÇE alt-ajan (E0 yan bulgu 2) aynı kapıda durur
 #   (3) memory sızıntısı — zorunlu unutmanın ölüm noktası (tasarım §2.3)
 #
-# YALNIZ koşu-AÇIK iken çalışır: el-sürüşlü oturumda alt-ajan çağrısı HİÇ etkilenmez.
+# YALNIZ dönem-AÇIK iken çalışır: el-sürüşlü oturumda alt-ajan çağrısı HİÇ etkilenmez.
 # Çıkış: exit 2 = ENGEL (stderr gerekçe modele ulaşır) · exit 0 = serbest.
-# FAIL-CLOSED: koşu açıkken girdi/node çözülemezse ENGEL (denetimsiz devir yok).
+# FAIL-CLOSED: dönem açıkken girdi/node çözülemezse ENGEL (denetimsiz devir yok).
 set -uo pipefail
 export LC_ALL=C.UTF-8
 
 DIZIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KOK="${CLAUDE_PROJECT_DIR:-$(cd "$DIZIN/../.." && pwd)}"
 
-# En ucuz eleme: koşu yoksa bu kanca yok hükmünde.
-[ -e "$DIZIN/.kosu-acik" ] || exit 0
+# En ucuz eleme: dönem yoksa bu kanca yok hükmünde.
+[ -e "$DIZIN/.donem-acik" ] || exit 0
 
 engel() { printf 'devir-kapisi ENGEL: %s\n' "$1" >&2; exit 2; }
 
@@ -28,30 +28,30 @@ engel() { printf 'devir-kapisi ENGEL: %s\n' "$1" >&2; exit 2; }
 trap 'engel "devir kapısı kendi içinde durdu (satır $LINENO) — fail-closed"' ERR
 
 GIRDI="$(cat 2>/dev/null || true)"
-KOSU_RC=0; kosu_oku "$KOK" || KOSU_RC=$?
-[ "$KOSU_RC" != "2" ] || engel "koşu göstergesi bozuk: ${KOSU_HATA} — devir eşleştirmesi yapılamıyor (fail-closed)"
-[ "$KOSU_RC" = "0" ] || exit 0
+DONEM_RC=0; donem_oku "$KOK" || DONEM_RC=$?
+[ "$DONEM_RC" != "2" ] || engel "dönem göstergesi bozuk: ${DONEM_HATA} — devir eşleştirmesi yapılamıyor (fail-closed)"
+[ "$DONEM_RC" = "0" ] || exit 0
 
 # ── DUR · HAT-1: FRENLEME (E5) ────────────────────────────────────────────────────────────
 # Tasarım §7.3 "DUR yoklaması SubagentStop kancasındadır (birincil)" diyordu; mekaniği yazarken
-# düzeltildi (tasarı §4). SubagentStop koşuyu DURDURAMAZ — çıkışı yalnız alt-ajanın dönüşüne
+# düzeltildi (tasarı §4). SubagentStop dönemi DURDURAMAZ — çıkışı yalnız alt-ajanın dönüşüne
 # etki eder. DUR ile Stop arasındaki gerçek boşluk şudur: alt-ajan döndükten sonra ana model,
 # Stop'a hiç varmadan YENİ bir alt-ajan açabilir. İşin yayılmasını fiilen durduran tek nokta
 # çağrının önündeki bu kapıdır. (Hat-2 = SubagentStop teyit+haber · Hat-3 = sevkin kapatması.)
 # Beyan: DUR koşmakta olan alt-ajanı KESMEZ — en geç o görev bittiğinde işler.
 if [ -e "$DIZIN/.dur" ]; then
   DUR_SEBEP="$(head -n1 "$DIZIN/.dur" 2>/dev/null || true)"
-  engel "DUR işareti var (tools/sevk/.dur): ${DUR_SEBEP:-sebep yazılmamış}. Yeni alt-ajan AÇILMAZ; uçuştaki görev bitince koşu kapanır. Sahibin freni ancak yine sahibin eliyle kalkar."
+  engel "DUR işareti var (tools/sevk/.dur): ${DUR_SEBEP:-sebep yazılmamış}. Yeni alt-ajan AÇILMAZ; uçuştaki görev bitince dönem kapanır. Sahibin freni ancak yine sahibin eliyle kalkar."
 fi
 
 node_bul || engel "node bulunamadı — devir şeması denetlenemiyor (fail-closed)"
 
-KARAR="$(printf '%s' "$GIRDI" | D_KOK="$KOK" D_KOSU="$KOSU_ID" "$NODE_BIN" --input-type=module -e '
+KARAR="$(printf '%s' "$GIRDI" | D_KOK="$KOK" D_DONEM="$DONEM_ID" "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const KOK = process.env.D_KOK || ".";
-const KOSU = process.env.D_KOSU || "";
+const DONEM = process.env.D_DONEM || "";
 const bitir = (kod, sebep) => { console.log(kod + "\t" + (sebep || "")); process.exit(0); };
 
 let g = {};
@@ -66,10 +66,10 @@ const metin = String(ti.prompt || "");
 
 // (3) memory sizintisi — cagrinin HERHANGI bir yerinde
 if (/\bmemory\b/i.test(JSON.stringify(ti))) {
-  bitir("ENGEL", "alt-ajan cagrisinda memory alani gecemez — roller arasi zorunlu unutma bu tasarimin en eski korunani (OTONOM_KOSU §1). Devir metni yalniz isaretci tasir.");
+  bitir("ENGEL", "alt-ajan cagrisinda memory alani gecemez — roller arasi zorunlu unutma bu tasarimin en eski korunani (OTONOM_DONEM §1). Devir metni yalniz isaretci tasir.");
 }
 
-if (!rol) bitir("ENGEL", "subagent_type bos — otonom kosuda her gorev KAYITLI bir koltugun kosusudur");
+if (!rol) bitir("ENGEL", "subagent_type bos — otonom donemde her gorev KAYITLI bir koltugun cagrisidir");
 if (!/^[a-z0-9_-]+$/.test(rol)) bitir("ENGEL", "subagent_type slug bicimli degil: " + rol);
 
 // (1) SEMA — her bos-olmayan satir "<anahtar>: <deger>" ve anahtar beyaz listede.
@@ -113,21 +113,21 @@ for (const [ad, deger] of Object.entries(alanlar)) {
 // (2) TALIMAT-FIIL — acik sevk-karari eslesmesi
 const gy = join(KOK, "00_pano", "zarf-gunlugu.jsonl");
 if (!existsSync(gy)) {
-  bitir("ENGEL", "zarf gunlugu yok — sevk karari dogrulanamiyor; kosu icinde alt-ajan yalniz sevk talimatiyla acilir (fail-closed)");
+  bitir("ENGEL", "zarf gunlugu yok — sevk karari dogrulanamiyor; donem icinde alt-ajan yalniz sevk talimatiyla acilir (fail-closed)");
 }
 // ACIK karar = verilmis ama HENUZ TUKETILMEMIS karar (hasim bulgusu: tasari "AÇIK bir
 // sevk-karar" diyordu, kod yalnizca "bir kere eslesti mi" diye bakiyordu — donusu gelmis bir
 // gorev sinirsiz kez yeniden acilabiliyordu ve butce freni gercek alt-ajan sayisini kacirtiyordu).
 // Tuketim IKI kanaldan sayilir, MAX alinir (cift sayim yok): (a) zarf kaydi BİTEN goreviyle;
 // (b) hukum kaydi (karne / catal-suzgec) hukmun KONUSU olan kapiyla — hukum koltuklarinin
-// BİTEN gorevi kendi kosusunu anlatir, sevkin actigi gorevi degil.
+// BİTEN gorevi kendi cagrisini anlatir, sevkin actigi gorevi degil.
 let hicVar = false;
 const gorulen = [];
 const karar = {}, zarfS = {}, hukumS = {};
 for (const l of readFileSync(gy, "utf8").split("\n")) {
   if (!l.trim()) continue;
   let j; try { j = JSON.parse(l); } catch { continue; }
-  if (j.kosu !== KOSU) continue;
+  if (j.donem !== DONEM) continue;
   if (j.tip === "sevk-karar") {
     hicVar = true; gorulen.push(String(j.rol) + "/" + String(j.gorev));
     const a = String(j.rol) + " " + String(j.gorev); karar[a] = (karar[a] || 0) + 1;
@@ -140,9 +140,9 @@ for (const l of readFileSync(gy, "utf8").split("\n")) {
 const bu = rol + " " + gorev;
 const tuketim = Math.max(zarfS[bu] || 0, hukumS[bu] || 0);
 if (!((karar[bu] || 0) > tuketim)) {
-  bitir("ENGEL", (karar[bu] ? "sevk karari TUKETILMIS: (" : "sevkin acmadigi kosu: (") + rol + " · " + gorev + ")" +
-    (hicVar ? " — bu kosudaki sevk kararlari: " + gorulen.slice(-4).join(", ") : " — bu kosuda henuz hic sevk karari yok") +
-    ". Otonom kosuda alt-ajani SEVK secer; ic ice alt-ajan, talimat disi cagri ve bitmis gorevin yeniden acilmasi bu kapida durur (tasarim §2.2).");
+  bitir("ENGEL", (karar[bu] ? "sevk karari TUKETILMIS: (" : "sevkin acmadigi donem: (") + rol + " · " + gorev + ")" +
+    (hicVar ? " — bu donemdeki sevk kararlari: " + gorulen.slice(-4).join(", ") : " — bu donemde henuz hic sevk karari yok") +
+    ". Otonom donemde alt-ajani SEVK secer; ic ice alt-ajan, talimat disi cagri ve bitmis gorevin yeniden acilmasi bu kapida durur (tasarim §2.2).");
 }
 bitir("GEC", rol + " · " + gorev + " · " + bayt + "B");
 ')" || engel "devir çözümleyicisi koşamadı (fail-closed)"
@@ -152,12 +152,12 @@ SEBEP="${KARAR#*$'\t'}"
 
 if [ "$DURUM" = "ENGEL" ]; then
   # İz: sapma sessiz kalmaz (dış göz ve doğrulayıcı bu cinsi okur).
-  J_tip=bulgu J_kosu="$KOSU_ID" J_cins=dikis-sapma J_detay="$SEBEP" \
+  J_tip=bulgu J_donem="$DONEM_ID" J_cins=dikis-sapma J_detay="$SEBEP" \
     json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
   engel "$SEBEP"
 fi
 
 # Geçen devir de izlidir (talimat↔fiil eşleşmesinin pozitif kanıtı — T4d günlükten sayılır).
-J_tip=devir J_kosu="$KOSU_ID" J_sonuc=gecti J_detay="$SEBEP" \
+J_tip=devir J_donem="$DONEM_ID" J_sonuc=gecti J_detay="$SEBEP" \
   json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
 exit 0

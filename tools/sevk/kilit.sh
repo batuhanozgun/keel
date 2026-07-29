@@ -2,7 +2,7 @@
 # kilit — sevk ailesinin ortak dosya kilidi kitaplığı (E3, 2026-07-28).
 # Doğuş: E1'de zarf-ekle.sh kendi kilidini yazdı; E3'te catal-kuyruk.sh --ekle KİLİTSİZ çıktı ve
 # eşzamanlı SubagentStop'ta üç ayrı soru aynı Ç-01 numarasını aldı (hasım bulgusu, 4 paralel
-# koşuyla yeniden üretildi). İkinci bir kopya yazmak yerine kitaplık çıkarıldı — D-02 dersi:
+# dönemle yeniden üretildi). İkinci bir kopya yazmak yerine kitaplık çıkarıldı — D-02 dersi:
 # bayt-bayt kopya = sürüklenme.
 #
 # Kullanım (kaynak olarak alınır, koşturulmaz):

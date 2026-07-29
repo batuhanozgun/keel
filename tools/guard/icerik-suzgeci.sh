@@ -13,7 +13,7 @@
 # üretilir): kapı redi alan ajan koruma betiğini OKUYOR (E1 ölçümü) — betikteki örnek değer
 # desen-tabanlı gözleri kirletir, engel metnindeki değer transkripte sızardı.
 # Bilinen sınır: desen-kaçırma (değişkende saklama, base64, parça birleştirme) süzgeçten kaçar —
-# üç hattın İLKİdir (OTONOM_KOSU §7: otonom koşuda Bash'le dosya yazımı zaten bulgudur).
+# üç hattın İLKİdir (OTONOM_DONEM §7: otonom dönemde Bash'le dosya yazımı zaten bulgudur).
 set -euo pipefail
 export LC_ALL=C.UTF-8
 

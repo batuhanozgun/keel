@@ -45,7 +45,7 @@ const BLOK_IKI = [
   '**SENDE BEKLEYEN:** 2 madde',
   '1. Tavan sorusu: EL_KITABI 16KB kalsın mı? · muhatap: sahip',
   '2. Push kararı: gönderelim mi?',
-  '**SIRADAKİ:** tatbikat koşusu.',
+  '**SIRADAKİ:** prova.',
   '3. bu satır SIRADAKİ sonrası — maddeye GİRMEMELİ',
 ].join('\n');
 
@@ -185,7 +185,7 @@ test('damga yaşı: bekçi taze damga yazınca damga_yasi_dk ≤ 1 (plan kararı
   writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), [
     '#!/bin/bash',
     'D="$(cd "$(dirname "$0")/../.." && pwd)"',
-    'printf "# SAGLIK\\n\\nson koşu: %s (koşu #7)\\n" "$(date \'+%Y-%m-%d %H:%M\')" > "$D/00_pano/SAGLIK.md"',
+    'printf "# SAGLIK\\n\\nson denetim: %s (denetim #7)\\n" "$(date \'+%Y-%m-%d %H:%M\')" > "$D/00_pano/SAGLIK.md"',
     'exit 0',
   ].join('\n'));
   chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
@@ -203,10 +203,21 @@ test('damga yaşı: SAGLIK yok → damga_yasi_dk null', () => {
 
 test('damga yaşı: bekçisiz eski damga → büyük yaş (bayatlık olay anında kaydedilir)', () => {
   const kok = kurulum();
-  writeFileSync(join(kok, '00_pano', 'SAGLIK.md'), '# SAĞLIK\n\nson koşu: 2026-01-01 00:00 (koşu #3)\n');
+  writeFileSync(join(kok, '00_pano', 'SAGLIK.md'), '# SAĞLIK\n\nson denetim: 2026-01-01 00:00 (denetim #3)\n');
   kos(kok, stdinJson(kok));
   const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
   assert.ok(j.damga_yasi_dk > 1000, 'aylar önceki damga büyük yaş vermeli');
+});
+
+// Dil paketi geri uyumu (2026-07-29): damga satırının kanonik yazımı "son denetim:" oldu.
+// Eski KEEL sürümüyle kurulmuş bir projenin bekçisi hâlâ eski yazımı üretebilir; okunmazsa
+// damga-yaşı ölçümü sessizce null düşer (fail-open olduğu için kimse fark etmez).
+test('geri uyum: ESKİ damga yazımı ("son koşu:") hâlâ okunur — eski kurulumda ölçüm kaybolmaz', () => {
+  const kok = kurulum();
+  writeFileSync(join(kok, '00_pano', 'SAGLIK.md'), '# SAĞLIK\n\nson koşu: 2026-01-01 00:00 (koşu #3)\n');
+  kos(kok, stdinJson(kok));
+  const j = JSON.parse(readFileSync(gunluk(kok), 'utf8').trim());
+  assert.ok(j.damga_yasi_dk > 1000, 'eski yazımlı damga okunamadı — ölçüm sessizce null düştü');
 });
 
 // ─── V2 Öbek-2 · SENDE BEKLEYEN süzmesi + kalıcı kuyruk ───────────────────────
@@ -296,7 +307,7 @@ test('kuyruk bekçiden ÖNCE yazılır (PANO sayacı taze olsun — sıra kanıt
   const t = transkriptMesaj(kok, BLOK_IKI);
   kos(kok, stdinJson(kok, { transcript_path: t }));
   assert.equal(readFileSync(join(kok, 'tools', 'bekci', 'sayi.izi'), 'utf8').trim(), '2',
-    'bekçi kendi koşusunda bu oturumun maddelerini görmeli');
+    'bekçi kendi denetiminde bu oturumun maddelerini görmeli');
 });
 
 test('transcript yok: blok="bilinmiyor" (yanlış SARI üretilmez — fail-open)', () => {
@@ -350,13 +361,13 @@ test('porcelain: iş dosyasına kabukla yazım → "fark" (dikişin asıl işi)'
 
 test('porcelain: KANCANIN KENDİ yazımları "fark" ÜRETMEZ (kuyruk + bekçi + günlük) — yanlış-SARI freni', () => {
   // Bekçi PANO/SAGLIK yazar, kanca kuyruğa madde ekler ve jsonl'e satır düşer;
-  // özet kancanın kendi yazımlarından ÖNCE alınmazsa bu koşu "fark" basardı.
+  // özet kancanın kendi yazımlarından ÖNCE alınmazsa bu kapanış "fark" basardı.
   const bekciIcerik = [
     '#!/bin/bash',
     'D="$(cd "$(dirname "$0")/../.." && pwd)"',
     'mkdir -p "$D/00_pano"',
-    'printf "# PANO\\nson koşu: %s\\n" "$(date)" > "$D/00_pano/PANO.md"',
-    'printf "# SAĞLIK\\nson koşu: %s\\n" "$(date)" > "$D/00_pano/SAGLIK.md"',
+    'printf "# PANO\\nson denetim: %s\\n" "$(date)" > "$D/00_pano/PANO.md"',
+    'printf "# SAĞLIK\\nson denetim: %s\\n" "$(date)" > "$D/00_pano/SAGLIK.md"',
     'exit 0',
   ].join('\n');
   const kok = gitKok({ bekciIcerik });

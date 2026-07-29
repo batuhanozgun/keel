@@ -1,6 +1,6 @@
 // sevk.test.mjs — E1: zarf günlüğü append-aracı + SubagentStop biçim kapısı.
 // Sözleşme: docs/superpowers/plans/2026-07-27-e1-durus-zarf-tasarisi.md (§2 şema · §4 kapı).
-// Kapı yalnız koşu-AÇIK + beyaz-listeli dönüşlerde çalışır; hayalet (E0 §6.1) günlüğe GİRMEZ.
+// Kapı yalnız dönem-AÇIK + beyaz-listeli dönüşlerde çalışır; hayalet (E0 §6.1) günlüğe GİRMEZ.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync, spawn } from 'node:child_process';
@@ -15,7 +15,7 @@ const EKLE = (kok) => join(kok, 'tools', 'sevk', 'zarf-ekle.sh');
 const KAPI = (kok) => join(kok, 'tools', 'sevk', 'zarf-bicim-kapisi.sh');
 const GUNLUK = (kok) => join(kok, '00_pano', 'zarf-gunlugu.jsonl');
 
-function kurulum({ kosu = true, kadro = ['e1test'] } = {}) {
+function kurulum({ donem = true, kadro = ['e1test'] } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'sevk-test-'));
   mkdirSync(join(kok, '00_pano'), { recursive: true });
   mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
@@ -25,11 +25,11 @@ function kurulum({ kosu = true, kadro = ['e1test'] } = {}) {
     chmodSync(join(kok, 'tools', 'sevk', b), 0o755);
   }
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '# test ajanı\n');
-  const marker = join(kok, 'tools', 'sevk', '.kosu-acik');
-  if (kosu === true) writeFileSync(marker, 'KOSU-TEST\t2026-07-27T10:00:00Z\n');
-  else if (kosu === 'dizin') mkdirSync(marker);
-  else if (kosu === 'bos') writeFileSync(marker, '\n');
-  else if (typeof kosu === 'string') writeFileSync(marker, kosu);
+  const marker = join(kok, 'tools', 'sevk', '.donem-acik');
+  if (donem === true) writeFileSync(marker, 'DONEM-TEST\t2026-07-27T10:00:00Z\n');
+  else if (donem === 'dizin') mkdirSync(marker);
+  else if (donem === 'bos') writeFileSync(marker, '\n');
+  else if (typeof donem === 'string') writeFileSync(marker, donem);
   writeFileSync(join(kok, '00_pano', 'PANO.md'), '# pano\n');
   return kok;
 }
@@ -49,7 +49,7 @@ const gunlukSatirlari = (kok) =>
     : [];
 
 const gecerli = (ek = {}) =>
-  JSON.stringify({ surum: 1, ts: '2026-07-27T10:00:00Z', tip: 'bulgu', kosu: 'KOSU-TEST', ...ek });
+  JSON.stringify({ surum: 1, ts: '2026-07-27T10:00:00Z', tip: 'bulgu', donem: 'DONEM-TEST', ...ek });
 
 // ---------- zarf-ekle: şema + kilit ----------
 
@@ -60,18 +60,18 @@ test('zarf-ekle: geçerli satır günlüğe düşer (normalize, tek satır)', ()
   const satirlar = gunlukSatirlari(kok);
   assert.equal(satirlar.length, 1);
   assert.equal(satirlar[0].tip, 'bulgu');
-  assert.equal(satirlar[0].kosu, 'KOSU-TEST');
+  assert.equal(satirlar[0].donem, 'DONEM-TEST');
 });
 
-test('zarf-ekle: geçersiz JSON / bilinmeyen tip / yanlış sürüm / kosu eksik / çok satır → exit 1, satır düşmez', () => {
+test('zarf-ekle: geçersiz JSON / bilinmeyen tip / yanlış sürüm / donem eksik / çok satır → exit 1, satır düşmez', () => {
   const kok = kurulum();
   const vakalar = [
     ['bozuk{', 'gecerli JSON degil'],
-    [JSON.stringify({ surum: 1, ts: '2026-07-27T10:00:00Z', tip: 'uydurma', kosu: null }), 'bilinmeyen'],
-    [JSON.stringify({ surum: 2, ts: '2026-07-27T10:00:00Z', tip: 'bulgu', kosu: null }), 'surum'],
-    [JSON.stringify({ surum: 1, ts: '2026-07-27T10:00:00Z', tip: 'bulgu' }), 'kosu'],
+    [JSON.stringify({ surum: 1, ts: '2026-07-27T10:00:00Z', tip: 'uydurma', donem: null }), 'bilinmeyen'],
+    [JSON.stringify({ surum: 2, ts: '2026-07-27T10:00:00Z', tip: 'bulgu', donem: null }), 'surum'],
+    [JSON.stringify({ surum: 1, ts: '2026-07-27T10:00:00Z', tip: 'bulgu' }), 'donem'],
     [gecerli() + '\n' + gecerli(), 'tek satir degil'],
-    [JSON.stringify({ surum: 1, ts: 'dun', tip: 'bulgu', kosu: null }), 'ts'],
+    [JSON.stringify({ surum: 1, ts: 'dun', tip: 'bulgu', donem: null }), 'ts'],
   ];
   for (const [girdi, beklenen] of vakalar) {
     const r = kosEkle(kok, girdi);
@@ -102,7 +102,7 @@ test('zarf-ekle: eşzamanlı-bitiş yarışı — 20 paralel append, satır büt
   assert.equal(gorulen.size, 20, 'her yazarın satırı ayrı ve tam');
 });
 
-// ---------- kapı: koşu şartı + beyaz liste ----------
+// ---------- kapı: dönem şartı + beyaz liste ----------
 
 const zarfMetni = ({ gorev = 'G-07', kanit = '00_pano/PANO.md:1', catal = 'yok', deger = 'yok', siradaki = 'kapalı', turetme = 'yok', geri = 'yok', izin = null, altlar = true } = {}) => {
   const s = [`BİTEN: ${gorev} — iş bitti · kanıt: ${kanit}`, `ÇATAL: ${catal}`];
@@ -133,8 +133,8 @@ const girdi = (kok, { tip = 'e1test', zarf = zarfMetni(), sha = false, transkrip
   last_assistant_message: zarf, stop_hook_active: sha,
 });
 
-test('kapı: koşu-AÇIK yokken sessiz geçer, günlük doğmaz (el-sürüşlü kullanım etkilenmez)', () => {
-  const kok = kurulum({ kosu: false });
+test('kapı: dönem-AÇIK yokken sessiz geçer, günlük doğmaz (el-sürüşlü kullanım etkilenmez)', () => {
+  const kok = kurulum({ donem: false });
   const r = kosKapi(kok, girdi(kok, { zarf: 'zarf falan yok' }));
   assert.equal(r.status, 0, r.stderr);
   assert.equal(r.stderr, '');
@@ -167,12 +167,12 @@ test('kapı: tam zarf geçer; günlüğe zarf + biçim-geçti satırları düşe
   assert.equal(bicim.sonuc, 'gecti');
 });
 
-test('kapı: zarf hiç yok → exit 2 + OTONOM_KOSU işaretçili gerekçe; biçim-red izi düşer', () => {
+test('kapı: zarf hiç yok → exit 2 + OTONOM_DONEM işaretçili gerekçe; biçim-red izi düşer', () => {
   const kok = kurulum();
   const r = kosKapi(kok, girdi(kok, { zarf: 'iş bitti, rapor: her şey yolunda' }));
   assert.equal(r.status, 2);
   assert.match(r.stderr, /donus zarfi yok/);
-  assert.match(r.stderr, /OTONOM_KOSU/);
+  assert.match(r.stderr, /OTONOM_DONEM/);
   const s = gunlukSatirlari(kok);
   assert.equal(s.filter((x) => x.tip === 'bicim' && x.sonuc === 'red').length, 1);
 });
@@ -243,7 +243,7 @@ test('kapı: izin-engeli çift-kaynak çaprazı — izi var + beyanı yok → ex
   assert.ok(kayit.kaynak.includes('kanca'));
 });
 
-test('kapı: GERİ-ÇEKİLEN transkript-izi — koşu içinde ÇATAL izi + zarf yok/yok → exit 2 (dar desen)', () => {
+test('kapı: GERİ-ÇEKİLEN transkript-izi — dönem içinde ÇATAL izi + zarf yok/yok → exit 2 (dar desen)', () => {
   const kok = kurulum();
   const t = transkript(kok, ['Bu bir ÇATAL olabilir mi diye düşündüm, sahibe sormalı mıyım?', 'vazgeçtim, türetilebilir', zarfMetni()]);
   const r = kosKapi(kok, girdi(kok, { transkriptYolu: t }));
@@ -267,20 +267,20 @@ test('kapı: izin desenleri yalnız araç-hatası satırlarında — koruma beti
 });
 
 test('kapı: bozuk gösterge fail-closed — dizin ya da boş kimlik exit 2, SHA dalında sessiz (A12)', () => {
-  const dizinli = kurulum({ kosu: 'dizin' });
+  const dizinli = kurulum({ donem: 'dizin' });
   const r1 = kosKapi(dizinli, girdi(dizinli));
   assert.equal(r1.status, 2);
   assert.match(r1.stderr, /dosya değil/);
-  const bos = kurulum({ kosu: 'bos' });
+  const bos = kurulum({ donem: 'bos' });
   const r2 = kosKapi(bos, girdi(bos));
   assert.equal(r2.status, 2);
-  assert.match(r2.stderr, /koşu kimliği yok|boş/);
+  assert.match(r2.stderr, /dönem kimliği yok|boş/);
   const r3 = kosKapi(bos, girdi(bos, { sha: true }));
   assert.equal(r3.status, 0, 'döngü emniyeti bozuk-marker dalında da tutmalı');
 });
 
-test('kapı: risk taraması koşunun kutusuna hedefli — komşu kutunun riskli G-07si yanlış red üretmez (A7)', () => {
-  const kok = kurulum({ kosu: 'KOSU-TEST\tKT-901-aktif\t2026-07-27T10:00:00Z\n' });
+test('kapı: risk taraması dönemin kutusuna hedefli — komşu kutunun riskli G-07si yanlış red üretmez (A7)', () => {
+  const kok = kurulum({ donem: 'DONEM-TEST\tKT-901-aktif\t2026-07-27T10:00:00Z\n' });
   mkdirSync(join(kok, '01_kutular', 'KT-100-eski'), { recursive: true });
   writeFileSync(join(kok, '01_kutular', 'KT-100-eski', 'KUTU.md'),
     '# eski\n\n## Bağımlılık ve risk\nG-07: onkosul=yok · risk=riskli — eski kutunun sır işi\n');
@@ -384,7 +384,7 @@ test('kapı: talimat↔fiil dikişi — sevk-karar varken yabancı görev sapma 
 
 // ---------- kablo (şablon gerçeği) ----------
 
-test('kablo: settings.json SubagentStop girdisi + korunan-yollar tools/sevk [SERT] + OTONOM_KOSU [SORULUR] + .gitignore .kosu-acik', () => {
+test('kablo: settings.json SubagentStop girdisi + korunan-yollar tools/sevk [SERT] + OTONOM_DONEM [SORULUR] + .gitignore .donem-acik', () => {
   const ayar = JSON.parse(readFileSync(join(KOK_REPO, '.claude', 'settings.json'), 'utf8'));
   // Zayıf dosya-adı regex'i yetmez (hasım A13): komutun TAM yolu + type:command doğrulanır —
   // yanlış dizine bağlanmış aynı-adlı komut şablondan her kuruluma kopyalanırdı.
@@ -404,13 +404,13 @@ test('kablo: settings.json SubagentStop girdisi + korunan-yollar tools/sevk [SER
     bolumler[bolum].push(satir);
   }
   assert.ok(bolumler['[SERT]'].includes('tools/sevk/'), 'tools/sevk/ [SERT] olmalı');
-  assert.ok(bolumler['[SORULUR]'].includes('02_kanon/OTONOM_KOSU.md'), 'OTONOM_KOSU [SORULUR] olmalı');
+  assert.ok(bolumler['[SORULUR]'].includes('02_kanon/OTONOM_DONEM.md'), 'OTONOM_DONEM [SORULUR] olmalı');
   assert.ok(bolumler['[SERT]'].includes('00_pano/zarf-gunlugu.jsonl'), 'zarf günlüğü [SERT] olmalı (A4)');
-  assert.match(readFileSync(join(KOK_REPO, '.gitignore'), 'utf8'), /tools\/sevk\/\.kosu-acik/);
+  assert.match(readFileSync(join(KOK_REPO, '.gitignore'), 'utf8'), /tools\/sevk\/\.donem-acik/);
   assert.ok(existsSync(join(KOK_REPO, 'tools', 'sevk', 'damgalar', 'T0')), 'T0 damgası düşmüş olmalı');
 });
 
-// ---------- file-guard E1 dikişleri (koşu-dikişi + kurulum çekirdeği + günlük [SERT]) ----------
+// ---------- file-guard E1 dikişleri (dönem-dikişi + kurulum çekirdeği + günlük [SERT]) ----------
 
 const GUARD = join(KOK_REPO, 'tools', 'guard', 'file-guard.sh');
 
@@ -429,12 +429,12 @@ function guardKurulum({ kurulumTamam = true } = {}) {
 const kosGuard = (kok, girdi) =>
   spawnSync('bash', [GUARD], { encoding: 'utf8', input: JSON.stringify(girdi), env: { ...process.env, CLAUDE_PROJECT_DIR: kok } });
 
-test('file-guard koşu-dikişi: .kosu-acik dokunan Bash komutu sahibe SORULUR (A3)', () => {
+test('file-guard dönem-dikişi: .donem-acik dokunan Bash komutu sahibe SORULUR (A3)', () => {
   const kok = guardKurulum();
-  const r = kosGuard(kok, { tool_name: 'Bash', tool_input: { command: 'rm -f tools/sevk/.kosu-acik' } });
+  const r = kosGuard(kok, { tool_name: 'Bash', tool_input: { command: 'rm -f tools/sevk/.donem-acik' } });
   assert.equal(r.status, 0);
   assert.match(r.stdout, /"permissionDecision":"ask"/, 'SOR beklenirdi: ' + r.stdout + r.stderr);
-  assert.match(r.stdout, /kosu-acik/);
+  assert.match(r.stdout, /donem-acik/);
 });
 
 test('file-guard kurulum çekirdeği: kurulum sürerken tools/sevk yazımı ENGEL (A5); günlük [SERT] (A4)', () => {

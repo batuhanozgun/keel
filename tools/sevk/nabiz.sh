@@ -3,27 +3,27 @@
 #
 # NEDEN AYRI SÜREÇ: bu betiğin tek işi "yapı sustu" demektir; sustuğu an Claude çalışmıyordur.
 # Bir parçanın ölümünü raporlayacak şey o parçanın kendisi olamaz — kancanın ölümünü kanca
-# yakalayamaz. Okuduğu açılış damgasını da sevk değil `/kosu` düşürür (çift hat).
+# yakalayamaz. Okuduğu açılış damgasını da sevk değil `/donem` düşürür (çift hat).
 #
-# DİRİLTMEZ (D-25 ①): haber verir, koşuyu kendisi başlatmaz. Dirilten otomasyon, sahibin
+# DİRİLTMEZ (D-25 ①): haber verir, dönemi kendisi başlatmaz. Dirilten otomasyon, sahibin
 # kilidini kaldıran gizli bir 3. basamaktır.
 #
 # Dört iş, sırayla:
 #   1) İKİ DURUM alarmı — (a) nabız durdu · (b) hiç doğmadı
 #   2) Uzaktan DUR — IMAP'te yalnız BAŞLIK araması (gövde OKUNMAZ)
-#   3) Bayat koşuda uyanık-tutma savının temizliği
-#   4) Kendi koşu izini bırakma (canlılık denetiminin okuduğu damga)
+#   3) Bayat dönemde uyanık-tutma savının temizliği
+#   4) Kendi dönem izini bırakma (canlılık denetiminin okuduğu damga)
 #
-# Koşu AÇIK değilse hiçbir şey yapmaz (sıradan günler etkilenmez).
+# Dönem AÇIK değilse hiçbir şey yapmaz (sıradan günler etkilenmez).
 set -uo pipefail
 export LC_ALL=C.UTF-8
 
 DIZIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KOK="${CLAUDE_PROJECT_DIR:-$(cd "$DIZIN/../.." && pwd)}"
-GOSTERGE="$DIZIN/.kosu-acik"
+GOSTERGE="$DIZIN/.donem-acik"
 NABIZ_DAMGA="$DIZIN/.nabiz-son"
 
-# Canlılık damgası HER turda basılır — koşu olsun olmasın. Kurulum denetimi bunu okur:
+# Canlılık damgası HER turda basılır — dönem olsun olmasın. Kurulum denetimi bunu okur:
 # "işaret dosyası var" ile "iş fiilen koşuyor" ayrı şeylerdir (E4'ün ölü-kural dersi).
 date -u '+%Y-%m-%dT%H:%M:%SZ' > "$NABIZ_DAMGA" 2>/dev/null || true
 
@@ -31,17 +31,17 @@ date -u '+%Y-%m-%dT%H:%M:%SZ' > "$NABIZ_DAMGA" 2>/dev/null || true
 # shellcheck source=/dev/null
 . "$DIZIN/ortak.sh"
 
-KOSU_RC=0; kosu_oku "$KOK" || KOSU_RC=$?
+DONEM_RC=0; donem_oku "$KOK" || DONEM_RC=$?
 
 # ── 3 · Uyanık-tutma savının temizliği ────────────────────────────────────────────────────
-# Koşu kapandıysa (ya da gösterge bozuksa) savı bırak: sızan bir sav Mac'i hiç uyutmaz,
+# Dönem kapandıysa (ya da gösterge bozuksa) savı bırak: sızan bir sav Mac'i hiç uyutmaz,
 # bu da ayrı bir arızadır. Savın PID'i göstergenin 3. satırındadır.
 sav_birak() {
   local P="${1:-}"
   case "$P" in ''|*[!0-9]*) return 0 ;; esac
   kill "$P" 2>/dev/null || true
 }
-if [ "$KOSU_RC" != "0" ]; then
+if [ "$DONEM_RC" != "0" ]; then
   [ -f "$DIZIN/.caffeinate-pid" ] && { sav_birak "$(head -n1 "$DIZIN/.caffeinate-pid" 2>/dev/null)"; rm -f "$DIZIN/.caffeinate-pid"; }
   exit 0
 fi
@@ -52,14 +52,14 @@ ESIK_DK="${KANAL_SESSIZLIK_ESIK_DK:-30}"
 node_bul || exit 0
 
 # ── 1 · İki durum ─────────────────────────────────────────────────────────────────────────
-# Günlükten BU koşunun kayıtları okunur: en yeni kaydın yaşı + açılıştan başka kayıt var mı.
+# Günlükten BU dönemin kayıtları okunur: en yeni kaydın yaşı + açılıştan başka kayıt var mı.
 # Çıktı: <durum>\t<yas_dk>\t<kayit_sayisi>   (durum: SESSIZ_A | SESSIZ_B | CANLI | OKUNAMADI)
-OLCUM="$(N_KOK="$KOK" N_KOSU="$KOSU_ID" N_DAMGA="${KOSU_DAMGA:-}" N_ESIK="$ESIK_DK" \
+OLCUM="$(N_KOK="$KOK" N_DONEM="$DONEM_ID" N_DAMGA="${DONEM_DAMGA:-}" N_ESIK="$ESIK_DK" \
   "$NODE_BIN" --input-type=module -e '
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 const KOK = process.env.N_KOK || ".";
-const KOSU = process.env.N_KOSU || "";
+const DONEM = process.env.N_DONEM || "";
 const ESIK = Number(process.env.N_ESIK || 30);
 const bitir = (d, y, n) => { console.log([d, y, n].join("\t")); process.exit(0); };
 
@@ -72,9 +72,9 @@ for (const satir of ham.split("\n")) {
   if (!satir.trim()) continue;
   let j;
   try { j = JSON.parse(satir); } catch { continue; }
-  if (String(j.kosu || "") !== KOSU) continue;
+  if (String(j.donem || "") !== DONEM) continue;
   sayi++;
-  if (j.tip === "kosu-acilis") acilisSayisi++;
+  if (j.tip === "donem-acilis") acilisSayisi++;
   const t = Date.parse(j.ts || "");
   if (Number.isFinite(t) && t > enYeni) enYeni = t;
 }
@@ -88,7 +88,7 @@ if (!enYeni) bitir("OKUNAMADI", "", String(sayi));
 
 const yasDk = Math.floor((Date.now() - enYeni) / 60000);
 if (yasDk < ESIK) bitir("CANLI", String(yasDk), String(sayi));
-// (b) HIC DOGMADI: koşu acik ama acilistan baska kayit yok — sevk daha ilk adimda oldu.
+// (b) HIC DOGMADI: dönem acik ama acilistan baska kayit yok — sevk daha ilk adimda oldu.
 if (sayi <= acilisSayisi) bitir("SESSIZ_B", String(yasDk), String(sayi));
 // (a) NABIZ DURDU: kayitlar var ama esik asildi.
 bitir("SESSIZ_A", String(yasDk), String(sayi));
@@ -101,22 +101,22 @@ KAYIT="$(printf '%s' "$OLCUM" | cut -f3)"
 case "$DURUM" in
   SESSIZ_A|SESSIZ_B)
     if [ "$DURUM" = "SESSIZ_B" ]; then
-      DETAY="Koşu AÇIK görünüyor ama açılıştan bu yana HİÇ nabız gelmemiş: sevk daha ilk adımda ölmüş olabilir (kablo-söküm cinsi).
-Koşu: $KOSU_ID · kutu: $KOSU_KUTU · açılış yaşı: $YAS_DK dk · eşik: $ESIK_DK dk
+      DETAY="Dönem AÇIK görünüyor ama açılıştan bu yana HİÇ nabız gelmemiş: sevk daha ilk adımda ölmüş olabilir (kablo-söküm cinsi).
+Dönem: $DONEM_ID · kutu: $DONEM_KUTU · açılış yaşı: $YAS_DK dk · eşik: $ESIK_DK dk
 Yapı diriltilmedi — yeniden başlatma senin kararın. Bak: 00_pano/SABAH.md ve 00_pano/zarf-gunlugu.jsonl"
     else
-      DETAY="Koşu AÇIK ama $YAS_DK dakikadır hiçbir hareket yok (eşik: $ESIK_DK dk). Yapı susmuş olabilir.
-Koşu: $KOSU_ID · kutu: $KOSU_KUTU · bu koşuda $KAYIT kayıt var.
+      DETAY="Dönem AÇIK ama $YAS_DK dakikadır hiçbir hareket yok (eşik: $ESIK_DK dk). Yapı susmuş olabilir.
+Dönem: $DONEM_ID · kutu: $DONEM_KUTU · bu dönemde $KAYIT kayıt var.
 Yapı diriltilmedi — yeniden başlatma senin kararın. Durdurmak istersen: bu adrese \"${KANAL_DUR_KONU:-KEEL DUR}\" konulu posta at."
     fi
     # Alarm ÖNCE günlüğe, sonra postaya: kanal kırıksa bile olayın izi kalmalı (postanın
     # gitmemesi, alarmın olmadığı anlamına gelmez — sabah yüzeyi bu kaydı okur).
-    J_tip=alarm J_kosu="$KOSU_ID" J_kutu="$KOSU_KUTU" J_cins=sessizlik J_durum="$DURUM" \
+    J_tip=alarm J_donem="$DONEM_ID" J_kutu="$DONEM_KUTU" J_cins=sessizlik J_durum="$DURUM" \
       J_sebep="nabiz yasi ${YAS_DK}dk (esik ${ESIK_DK}dk)" json_kur 2>/dev/null \
       | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
-    # Tekilleştirme haber.sh'ın kendi freninde (--anahtar): koşu başına BİR sessizlik alarmı.
+    # Tekilleştirme haber.sh'ın kendi freninde (--anahtar): dönem başına BİR sessizlik alarmı.
     CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins sessizlik --anahtar "$DURUM" \
-      --kosu "$KOSU_ID" --kutu "$KOSU_KUTU" --detay "$DETAY" || true
+      --donem "$DONEM_ID" --kutu "$DONEM_KUTU" --detay "$DETAY" || true
     ;;
 esac
 
@@ -144,7 +144,7 @@ if [ ! -e "$DIZIN/.dur" ] && [ -n "${KANAL_IMAP_SUNUCU:-}" ] && [ -n "${KANAL_HE
         *"$KANAL_ALICI"*)
           POSTA_TARIH="$(printf '%s' "$BASLIK" | sed -n 's/^[Dd]ate: //p' | head -n1)"
           printf 'uzaktan · posta · %s\n' "${POSTA_TARIH:-tarih okunamadı}" > "$DIZIN/.dur"
-          J_tip=dur-alindi J_kosu="$KOSU_ID" J_kutu="$KOSU_KUTU" J_kaynak="posta" \
+          J_tip=dur-alindi J_donem="$DONEM_ID" J_kutu="$DONEM_KUTU" J_kaynak="posta" \
             J_sebep="uzaktan DUR postasi alindi (konu esleşti, gonderen dogrulandi)" \
             json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
           break

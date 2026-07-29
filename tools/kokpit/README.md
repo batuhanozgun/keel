@@ -52,7 +52,7 @@ Ortam değişkeni override'ı da var: `KOKPIT_VAULT`, `KOKPIT_PORT`.
   pano kısa süre içinde güncellenir. Üstte "güncellendi" saati görünür.
 - **Tazelik.** Üstteki sistem ışığı kırmızıysa ve "tazelik" yazıyorsa: bekçi bir gündür
   koşmamış demektir — ışıklar yeşil görünse bile sistem kırmızı sayılır (senin tek ezberin).
-- Bir rol dosyayı bekçi koşusundan sonra değiştirdiyse pano "ışıklar güncel olmayabilir"
+- Bir rol dosyayı bekçi denetiminden sonra değiştirdiyse pano "ışıklar güncel olmayabilir"
   diye sarı uyarı gösterir. Bu, sapmayı erken görmen için.
 
 ## Yapı

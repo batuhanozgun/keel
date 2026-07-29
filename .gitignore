@@ -9,9 +9,9 @@
 # rol töreni damgası — oturum-durumu, izlenmez (bekçi koruma-hattı yanlış-KIRMIZI basmasın;
 # damga-güvencesi bekçi değil: file-guard damga-dikişi + SessionStart temizliği)
 tools/guard/.aktif-rol
-# koşu-AÇIK göstergesi (E1) — koşu-durumu, izlenmez (.aktif-rol emsali; yazarı /kosu, sileni sevk)
-tools/sevk/.kosu-acik
-# DUR işareti (E4) — koşu-durumu; sevkin okuduğu tek satır, izlenmez (koşu-göstergesi emsali)
+# dönem-AÇIK göstergesi (E1) — dönem-durumu, izlenmez (.aktif-rol emsali; yazarı /donem, sileni sevk)
+tools/sevk/.donem-acik
+# DUR işareti (E4) — dönem-durumu; sevkin okuduğu tek satır, izlenmez (dönem-göstergesi emsali)
 tools/sevk/.dur
 # watchdog kaydı (E5'te doğar) — makineye özel kurulum izi, depoya girmez
 tools/sevk/watchdog-kurulu
@@ -19,15 +19,15 @@ tools/sevk/watchdog-kurulu
 # veridir ve hiçbir depoya girmez. Şablonda yalnız kanal.conf.ornek yaşar; kurulu kutuda
 # sahip onu kopyalayıp doldurur. (Parola bu dosyada DEĞİL, Keychain'dedir.)
 tools/sevk/kanal.conf
-# haber kanalının koşu-içi sayacı (gönderim tavanı + olay tekilleştirmesi) — koşu-durumu
+# haber kanalının dönem-içi sayacı (gönderim tavanı + olay tekilleştirmesi) — dönem-durumu
 tools/sevk/.haber-durum
 # watchdog canlılık damgası + hata günlüğü + uyanık-tutma savının PID'i (E5) — makine durumu
 tools/sevk/.nabiz-son
 tools/sevk/.nabiz-hata.log
 tools/sevk/.caffeinate-pid
-# sabah yüzeyi (E5) — her koşunun kendi çıktısı, yerinde yeniden yazılır
+# sabah yüzeyi (E5) — her dönemin kendi çıktısı, yerinde yeniden yazılır
 00_pano/SABAH.md
-# kurulum kapısının mekanik raporu (E4) — her kurulum koşusunda sevk yeniden üretir
+# kurulum kapısının mekanik raporu (E4) — her kurulum oturumunda sevk yeniden üretir
 00_pano/kurulum-kapisi.txt
 # harness worktree'leri (E2) — atılabilir/geçici git worktree'leri; izlenmez ki bekçi porcelain
 # hattı meşru bir riskli-görev worktree'sini [SERT] .claude/ kirliliği sanıp KIRMIZI basmasın

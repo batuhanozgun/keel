@@ -3,7 +3,7 @@
 // Soy: danışman koltuğunda 2026-07-20 provasıyla kanıtlanan sürüm; mercekler burada projeye-
 // bağımsız GENELDİR (proje-özel hedef/bağlam args ile gelir, mercek metnine gömülmez).
 // Tetik İNSANDADIR: bu dosyayı .claude/skills/hasim-inceleme/SKILL.md çağırır (disable-model-invocation).
-// Salt-okunurluk güvencesi talimat+kanıt katmanıdır: koşu sonrası `git status --porcelain`
+// Salt-okunurluk güvencesi talimat+kanıt katmanıdır: inceleme sonrası `git status --porcelain`
 // karşılaştırması SKILL adımıdır (bilinen sınır — ajan kilidi değil; Golden-09 dersi).
 // Prova dersi: args kanalı bazı ortamlarda JSON-metin ulaşır → çift-biçim okuma aşağıda.
 export const meta = {
@@ -17,7 +17,7 @@ export const meta = {
 
 const ham = (typeof args === 'string') ? JSON.parse(args) : args
 const targets = (ham && ham.targets) || []
-if (targets.length === 0) log('UYARI: hedef listesi boş ulaştı — koşu anlamsızdır; SKILL adım 2 hedef paketi onaylatmalıydı')
+if (targets.length === 0) log('UYARI: hedef listesi boş ulaştı — inceleme anlamsızdır; SKILL adım 2 hedef paketi onaylatmalıydı')
 const hedefMetni = JSON.stringify(targets, null, 1)
 
 const ORTAK = `KEEL hasım incelemesinde SALT-OKUNUR bir incelemecisin.
@@ -34,7 +34,7 @@ Kurallar:
 const MERCEKLER = [
   { ad: 'dogruluk', gorev: 'Kural/karar tutarlılığı: paketin dokunduğu kural-metinleri (EL_KITABI, ROL sözleşmeleri, kanon kararları, bekçi/kanca yorum-tarifleri) kendi içinde ve dokunulmayan komşu kurallarla çelişiyor mu; «alan» disiplini bozulmuş mu; "Ders:" satırları silinmiş mi; iddia edilen davranış ile yazılan metin örtüşüyor mu.' },
   { ad: 'kabuk', gorev: 'Kabuk-script sağlamlığı (paket .sh/test dosyasına dokunuyorsa): macOS bash 3.2 uyumu (declare -A yasak) · LC_ALL/Türkçe harf birebirliği (grep -i yasağı) · nullglob/boş-glob · tırnaklama · ERR-trap sınırı (fonksiyon içi korumasız $() tuzağı) · `ls -d` tuzağı · dar PATH varsayımı. Paket kabuk dosyası içermiyorsa bunu doğrula ve boş liste dön.' },
-  { ad: 'test', gorev: 'Test kapsamı ve gerçekliği: değişen her davranışın testi ya da kanıt koşusu var mı; yeni/değişen test, kural olmasa da geçer miydi; kanıt diye sunulan sayılar gerçek koşudan mı türetilmiş.' },
+  { ad: 'test', gorev: 'Test kapsamı ve gerçekliği: değişen her davranışın testi ya da kanıt çalıştırması var mı; yeni/değişen test, kural olmasa da geçer miydi; kanıt diye sunulan sayılar gerçek dönemden mı türetilmiş.' },
   { ad: 'gerileme', gorev: 'Gerileme riski: değişiklik komşu davranışları (diğer denetim kategorileri, kanca/tören akışı, tavan-şema-sözleşme iddiaları) değiştiriyor mu; sayısal iddiaları (boy/tavan/marj/sayaç) kendin yeniden hesaplamayı dene; yanlış-pozitif ve yanlış-negatif üretme ihtimalini ayrı ayrı tart.' },
   { ad: 'sizinti', gorev: 'Sır ve kişisel-veri sızıntısı: pakete anahtar/şifre/token, kişisel veri ya da dışarı çıkmaması gereken iç bilgi sızmış mı; dışa dönük yüzeyler (README, rapor, commit mesajı) kişisel-veri süzgecinden arınık mı.' },
 ]

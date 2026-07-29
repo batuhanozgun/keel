@@ -1,6 +1,6 @@
 #!/bin/bash
-# haber — otonom koşunun TEK dışa-haber noktası (E5). Sahibe e-posta atar: dört olay
-# (kosu-basladi · kosu-bitti · catal-bekliyor · alarm). Tasarım §7.3 (kayıt `…/18`).
+# haber — otonom dönemin TEK dışa-haber noktası (E5). Sahibe e-posta atar: dört olay
+# (donem-basladi · donem-bitti · catal-bekliyor · alarm). Tasarım §7.3 (kayıt `…/18`).
 #
 # SERBEST-METİN YASAĞI MEKANİKTİR: bu betikte `--govde` diye bir argüman YOKTUR. Çağıran yalnız
 # olay adını ve o olayın TANIMLI alanlarını verir; gövdeyi buradaki şablon kurar. Kural metinde
@@ -18,7 +18,7 @@
 # Çıkış sözleşmesi (çağıran KARAR VERİR; bu betik kimseyi öldürmez):
 #   0 = gönderildi (ya da --prova)      3 = süzgeç durdurdu, sansürlü alarm gitti
 #   1 = yapılandırma/kurulum eksik      4 = gönderim başarısız (ağ/kimlik)
-#   5 = koşu başına gönderim tavanı doldu ya da bu olay zaten gönderilmiş
+#   5 = dönem başına gönderim tavanı doldu ya da bu olay zaten gönderilmiş
 set -uo pipefail
 export LC_ALL=C.UTF-8
 
@@ -27,7 +27,7 @@ KOK="${CLAUDE_PROJECT_DIR:-$(cd "$DIZIN/../.." && pwd)}"
 
 ALAN_TAVAN=1500      # alan başına bayt
 GOVDE_TAVAN=8192     # gövde toplamı
-KOSU_GONDERIM_TAVANI=10
+DONEM_GONDERIM_TAVANI=10
 
 hata() { printf 'haber: %s\n' "$1" >&2; exit "${2:-1}"; }
 
@@ -41,7 +41,7 @@ fi
 DUR_KONU_METNI="${KANAL_DUR_KONU:-KEEL DUR}"
 
 # ── 1 · Argümanlar (yalnız adlandırılmış; serbest gövde YOK) ──────────────────────────────
-OLAY=""; A_KOSU=""; A_KUTU=""; A_TUR=""; A_KIP=""; A_SINIF=""; A_UYKU=""
+OLAY=""; A_DONEM=""; A_KUTU=""; A_TUR=""; A_KIP=""; A_SINIF=""; A_UYKU=""
 A_BLOK1=""; A_BLOK2=""; A_BLOK3=""
 A_CATAL=""; A_CEVIRI=""; A_ETKI=""; A_BEKLETIR=""
 A_CINS=""; A_DETAY=""; A_ANAHTAR=""
@@ -50,7 +50,7 @@ PROVA=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --olay) OLAY="${2:-}"; shift 2 ;;
-    --kosu) A_KOSU="${2:-}"; shift 2 ;;
+    --donem) A_DONEM="${2:-}"; shift 2 ;;
     --kutu) A_KUTU="${2:-}"; shift 2 ;;
     --tur) A_TUR="${2:-}"; shift 2 ;;
     --kip) A_KIP="${2:-}"; shift 2 ;;
@@ -72,12 +72,12 @@ while [ $# -gt 0 ]; do
 done
 
 case "$OLAY" in
-  kosu-basladi|kosu-bitti|catal-bekliyor|alarm) : ;;
-  '') hata "--olay gerekli: kosu-basladi | kosu-bitti | catal-bekliyor | alarm" ;;
+  donem-basladi|donem-bitti|catal-bekliyor|alarm) : ;;
+  '') hata "--olay gerekli: donem-basladi | donem-bitti | catal-bekliyor | alarm" ;;
   *) hata "tanınmayan olay: $OLAY" ;;
 esac
 [ -n "$A_KUTU" ] || A_KUTU="(kutu adı yok)"
-[ -n "$A_KOSU" ] || A_KOSU="(koşu kimliği yok)"
+[ -n "$A_DONEM" ] || A_DONEM="(dönem kimliği yok)"
 if [ "$OLAY" = "alarm" ]; then
   case "$A_CINS" in
     sessizlik|sisme|kirmizi|kanal) : ;;
@@ -105,25 +105,25 @@ done
 # ── 2 · Konu + gövde: YALNIZ şablondan ────────────────────────────────────────────────────
 SIMDI="$(date '+%Y-%m-%d %H:%M')"
 case "$OLAY" in
-  kosu-basladi)
-    KONU="KEEL · $A_KUTU · koşu başladı"
-    GOVDE="$(printf 'Koşu açıldı: %s\nKutu: %s\nTür: %s · Kip: %s · Sınıf: %s\nZaman: %s\n\n%s\n\nBu koşu bittiğinde ya da bir çatal sana düştüğünde yeni bir e-posta gelecek.\nDurdurmak için bu adrese "%s" konulu bir posta at.\n' \
-      "$A_KOSU" "$A_KUTU" "${A_TUR:-?}" "${A_KIP:-?}" "${A_SINIF:-?}" "$SIMDI" "${A_UYKU:-}" "$DUR_KONU_METNI")"
+  donem-basladi)
+    KONU="KEEL · $A_KUTU · dönem başladı"
+    GOVDE="$(printf 'Dönem açıldı: %s\nKutu: %s\nTür: %s · Kip: %s · Sınıf: %s\nZaman: %s\n\n%s\n\nBu dönem bittiğinde ya da bir çatal sana düştüğünde yeni bir e-posta gelecek.\nDurdurmak için bu adrese "%s" konulu bir posta at.\n' \
+      "$A_DONEM" "$A_KUTU" "${A_TUR:-?}" "${A_KIP:-?}" "${A_SINIF:-?}" "$SIMDI" "${A_UYKU:-}" "$DUR_KONU_METNI")"
     ;;
-  kosu-bitti)
-    KONU="KEEL · $A_KUTU · koşu bitti"
-    GOVDE="$(printf 'Koşu: %s\nZaman: %s\n\nGECE NE OLDU\n%s\n\nSENDE BEKLEYEN\n%s\n\nŞİMDİ NE YAPIYOR\n%s\n' \
-      "$A_KOSU" "$SIMDI" "${A_BLOK1:-(kayıt yok)}" "${A_BLOK2:-(kayıt yok)}" "${A_BLOK3:-(kayıt yok)}")"
+  donem-bitti)
+    KONU="KEEL · $A_KUTU · dönem bitti"
+    GOVDE="$(printf 'Dönem: %s\nZaman: %s\n\nGECE NE OLDU\n%s\n\nSENDE BEKLEYEN\n%s\n\nŞİMDİ NE YAPIYOR\n%s\n' \
+      "$A_DONEM" "$SIMDI" "${A_BLOK1:-(kayıt yok)}" "${A_BLOK2:-(kayıt yok)}" "${A_BLOK3:-(kayıt yok)}")"
     ;;
   catal-bekliyor)
     KONU="KEEL · $A_KUTU · bir karar seni bekliyor (${A_CATAL:-Ç-??})"
-    GOVDE="$(printf 'Koşu: %s\nZaman: %s\nÇatal: %s\n\nSORU\n%s\n\nNE DEĞİŞİR\n%s\n\nBU CEVAP GELENE KADAR BEKLEYEN İŞLER\n%s\n\nCevabı bilgisayardan veriyorsun: 00_pano/SENDE_BEKLEYEN.md\n(Uzaktan cevap yolu bilerek yok — sahip sesi yalnız kayıtlı kanaldan taşınır.)\n' \
-      "$A_KOSU" "$SIMDI" "${A_CATAL:-?}" "${A_CEVIRI:-(çeviri yok)}" "${A_ETKI:-(etki yok)}" "${A_BEKLETIR:-(liste yok)}")"
+    GOVDE="$(printf 'Dönem: %s\nZaman: %s\nÇatal: %s\n\nSORU\n%s\n\nNE DEĞİŞİR\n%s\n\nBU CEVAP GELENE KADAR BEKLEYEN İŞLER\n%s\n\nCevabı bilgisayardan veriyorsun: 00_pano/SENDE_BEKLEYEN.md\n(Uzaktan cevap yolu bilerek yok — sahip sesi yalnız kayıtlı kanaldan taşınır.)\n' \
+      "$A_DONEM" "$SIMDI" "${A_CATAL:-?}" "${A_CEVIRI:-(çeviri yok)}" "${A_ETKI:-(etki yok)}" "${A_BEKLETIR:-(liste yok)}")"
     ;;
   alarm)
     KONU="KEEL · $A_KUTU · ALARM ($A_CINS)"
-    GOVDE="$(printf 'Koşu: %s\nZaman: %s\nAlarm cinsi: %s\n\n%s\n' \
-      "$A_KOSU" "$SIMDI" "$A_CINS" "${A_DETAY:-(ayrıntı yok)}")"
+    GOVDE="$(printf 'Dönem: %s\nZaman: %s\nAlarm cinsi: %s\n\n%s\n' \
+      "$A_DONEM" "$SIMDI" "$A_CINS" "${A_DETAY:-(ayrıntı yok)}")"
     ;;
 esac
 if [ "${#GOVDE}" -gt "$GOVDE_TAVAN" ]; then
@@ -151,25 +151,25 @@ if [ "$SUZ_KOD" -ne 0 ]; then
   fi
   # SABİT ŞABLON: eşleşen değer bir yana, ÖZGÜN METNİN KENDİSİ de taşınmaz.
   KONU="KEEL · $A_KUTU · gönderim durduruldu"
-  GOVDE="$(printf 'Koşu: %s\nZaman: %s\n\nGönderilecek metin önleme süzgecinde DURDU (%s).\nİçerik taşınmadı; bu ileti sabit şablondur.\nOlay: %s\n\nBilgisayara bak: 00_pano/zarf-gunlugu.jsonl\n' \
-    "$A_KOSU" "$SIMDI" "$SUZGEC_SINIF" "$OLAY")"
+  GOVDE="$(printf 'Dönem: %s\nZaman: %s\n\nGönderilecek metin önleme süzgecinde DURDU (%s).\nİçerik taşınmadı; bu ileti sabit şablondur.\nOlay: %s\n\nBilgisayara bak: 00_pano/zarf-gunlugu.jsonl\n' \
+    "$A_DONEM" "$SIMDI" "$SUZGEC_SINIF" "$OLAY")"
 fi
 
-# ── 4 · Boğulma freni: koşu başına tavan + olay tekilleştirmesi ───────────────────────────
+# ── 4 · Boğulma freni: dönem başına tavan + olay tekilleştirmesi ───────────────────────────
 # Gerekçe: Stop döngüsü ya da tekrarlayan alarm, frensiz bir kanalda yüzlerce e-postaya döner.
 # Gürültüye boğulan kanal haber işlevini kaybeder — kanalın kendi freni budur.
 DURUM="$DIZIN/.haber-durum"
 ANAHTAR="$OLAY${A_ANAHTAR:+:$A_ANAHTAR}${A_CINS:+:$A_CINS}"
 if [ "$PROVA" -eq 0 ]; then
-  if [ -f "$DURUM" ] && [ "$(head -n1 "$DURUM" 2>/dev/null)" = "$A_KOSU" ]; then
+  if [ -f "$DURUM" ] && [ "$(head -n1 "$DURUM" 2>/dev/null)" = "$A_DONEM" ]; then
     if tail -n +2 "$DURUM" 2>/dev/null | grep -qxF "$ANAHTAR"; then
-      hata "bu olay bu koşuda zaten gönderildi: $ANAHTAR" 5
+      hata "bu olay bu dönemde zaten gönderildi: $ANAHTAR" 5
     fi
-    if [ "$(( $(wc -l < "$DURUM" 2>/dev/null || echo 1) - 1 ))" -ge "$KOSU_GONDERIM_TAVANI" ]; then
-      hata "koşu başına gönderim tavanı doldu ($KOSU_GONDERIM_TAVANI) — kanal susturuldu" 5
+    if [ "$(( $(wc -l < "$DURUM" 2>/dev/null || echo 1) - 1 ))" -ge "$DONEM_GONDERIM_TAVANI" ]; then
+      hata "dönem başına gönderim tavanı doldu ($DONEM_GONDERIM_TAVANI) — kanal susturuldu" 5
     fi
   else
-    printf '%s\n' "$A_KOSU" > "$DURUM" 2>/dev/null || true
+    printf '%s\n' "$A_DONEM" > "$DURUM" 2>/dev/null || true
   fi
 fi
 
@@ -213,7 +213,7 @@ fi
 # ── 8 · Kayıt ─────────────────────────────────────────────────────────────────────────────
 if [ "$KOD" -eq 0 ] && [ -f "$DURUM" ]; then printf '%s\n' "$ANAHTAR" >> "$DURUM" 2>/dev/null || true; fi
 if [ -n "${NODE_BIN:-}" ] || node_bul 2>/dev/null; then
-  J_tip=haber J_kosu="$A_KOSU" J_kutu="$A_KUTU" J_olay="$OLAY" \
+  J_tip=haber J_donem="$A_DONEM" J_kutu="$A_KUTU" J_olay="$OLAY" \
     J_sonuc="$([ "$KOD" -eq 0 ] && printf 'gitti' || printf 'gitmedi')" \
     J_sansur="$([ "$SANSUR" -eq 1 ] && printf 'evet' || printf 'hayir')" \
     J_sebep="$([ "$KOD" -eq 0 ] && printf '' || printf '%s' "$SONUC")" \

@@ -3,7 +3,7 @@
 
 ## MEKANİK BLOK — yalnız bekci.sh yazar
 ```
-Son koşu: 2026-07-04 01:44 (koşu #3)
+Son denetim: 2026-07-04 01:44 (denetim #3)
 Işıklar: AKIŞ=YEŞİL · DOSYA=YEŞİL · DAVRANIŞ=VERİ-YOK
 Görevler: G-01=açık · G-02=açık · G-03=açık · G-04=açık · G-05=açık
 Bekleyen sorular: —

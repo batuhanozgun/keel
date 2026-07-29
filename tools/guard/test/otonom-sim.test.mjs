@@ -1,9 +1,9 @@
 // otonom-sim.test.mjs — E1 bayt ölçümleri (kurulu-sim emsali, tasarım §5.1 "KUTU bayt ölçümü").
-// İki fren: (1) OTONOM_KOSU kalıbının kurulu boyu tavanına sığar (sayı bu dosyada SABİT,
+// İki fren: (1) OTONOM_DONEM kalıbının kurulu boyu tavanına sığar (sayı bu dosyada SABİT,
 // kalıptaki beyanla eşleşmesi ayrıca denetlenir — hasım bulgusu 2026-07-28); (2) yeni KUTU bloklarının (duruş sözleşmesi + bağımlılık/risk, KT-003 ölçeği
 // 25 görev) bayt EKİ sınırlı kalır — KUTU sarı tavanı 10KB'dir ve yeni bloklar onu yemez.
 // KUTU tavan KIRMIZI'sının otonom statüsü (kapanış kilidi, duran kapı değil) bekçi tarifinde
-// ve OTONOM_KOSU §1'de beyanlıdır; bu test yalnız SAYIYI yeniden-üretilebilir kılar.
+// ve OTONOM_DONEM §1'de beyanlıdır; bu test yalnız SAYIYI yeniden-üretilebilir kılar.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -11,14 +11,14 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const BURASI = dirname(fileURLToPath(import.meta.url));
-const KALIP_YOLU = join(BURASI, '..', '..', '..', '00_genesis', 'OTONOM_KOSU_KALIBI.md');
+const KALIP_YOLU = join(BURASI, '..', '..', '..', '00_genesis', 'OTONOM_DONEM_KALIBI.md');
 const KUTU_SARI = 10 * 1024; // EL_KITABI F3 (değişmedi; buraya kopya değil çapa — sayı F3'te yaşar)
 
 // TAVAN SAYILARI BURADA SABİTTİR (hasım bulgusu 2026-07-28): eskiden test, tavanı ölçtüğü
 // dosyanın KENDİ yorum satırından okuyordu — metni büyüten kişi aynı düzenlemede sayıyı da
 // büyütünce hem tavan testi hem marj freni yeşil kalıyordu, yani fren fren değildi.
 // Artık tavanı değiştirmek İKİ ayrı dosyada bilinçli edim ister ve diff'te görünür.
-const TAVANLAR = { OTONOM_KOSU: 14336, KARAR_ALANI: 8192 };
+const TAVANLAR = { OTONOM_DONEM: 14464, KARAR_ALANI: 8192 };
 
 function kalipTavani(kalip, ad) {
   const m = kalip.match(/Tavan:\s*([\d.]+)\s*B/);
@@ -39,14 +39,14 @@ function kuruluSim(kalip, alanlar = { '«SAHİP»': 'Deneme' }) {
   return sim;
 }
 
-test('OTONOM_KOSU kurulu-sim: beyan edilen tavana sığar (marj raporlanır)', (t) => {
+test('OTONOM_DONEM kurulu-sim: beyan edilen tavana sığar (marj raporlanır)', (t) => {
   const kalip = readFileSync(KALIP_YOLU, 'utf8');
-  const TAVAN = kalipTavani(kalip, "OTONOM_KOSU");
+  const TAVAN = kalipTavani(kalip, "OTONOM_DONEM");
   const sim = kuruluSim(kalip);
   assert.ok(!sim.includes('«'), 'kurulu-sim içinde doldurulmamış «alan» kaldı');
   const B = Buffer.byteLength(sim, 'utf8');
   t.diagnostic(`otonom-sim: ${B}B · tavan: ${TAVAN}B · marj: ${TAVAN - B}B`);
-  assert.ok(B <= TAVAN, `OTONOM_KOSU kurulu boyu tavanı aşıyor: ${B}B > ${TAVAN}B`);
+  assert.ok(B <= TAVAN, `OTONOM_DONEM kurulu boyu tavanı aşıyor: ${B}B > ${TAVAN}B`);
 });
 
 // MARJ FRENİ (E3, 2026-07-27): kurulu-sim/EL_KITABI emsali. Tavanın kendisi bir TAHMİNDİR;
@@ -54,14 +54,14 @@ test('OTONOM_KOSU kurulu-sim: beyan edilen tavana sığar (marj raporlanır)', (
 // altına inen ek, tavan kararını YENİDEN aldırır (E1'in 12.288'i dört evreye 658B pay bırakmıştı
 // ve E3'te fark edildi; o gecikme bu frenin doğuş sebebidir).
 const OTONOM_MARJ_FRENI = 500;
-test('OTONOM_KOSU marj freni: tavana 500B kalmadan ek giremez', (t) => {
+test('OTONOM_DONEM marj freni: tavana 500B kalmadan ek giremez', (t) => {
   const kalip = readFileSync(KALIP_YOLU, 'utf8');
-  const TAVAN = kalipTavani(kalip, "OTONOM_KOSU");
+  const TAVAN = kalipTavani(kalip, "OTONOM_DONEM");
   const B = Buffer.byteLength(kuruluSim(kalip), 'utf8');
   const marj = TAVAN - B;
   t.diagnostic(`otonom-sim marj: ${marj}B (fren: ${OTONOM_MARJ_FRENI}B)`);
   assert.ok(marj >= OTONOM_MARJ_FRENI,
-    `OTONOM_KOSU marjı frenin altında: ${marj}B < ${OTONOM_MARJ_FRENI}B — metni sıkıştır ya da tavan kararını yeniden al (kalıp yorum bloğunda beyanla)`);
+    `OTONOM_DONEM marjı frenin altında: ${marj}B < ${OTONOM_MARJ_FRENI}B — metni sıkıştır ya da tavan kararını yeniden al (kalıp yorum bloğunda beyanla)`);
 });
 
 // KARAR ALANI kalıbı (E3): kendi tavanı + Bölüm A'nın bütünlüğü. Bölüm A KEEL-geneldir ve
@@ -95,7 +95,7 @@ function durusBlogu() {
     'BİTİŞ HÂLİ: ekstre ekranında kart hareketleri tarih·tutar·açıklama sütunlarıyla görünür; boş ayda "hareket yok" satırı çıkar; dışa aktarım düğmesi CSV indirir.',
     'KANIT:      npm test yeşil (tam özet satırı) + tarayıcıda /ekstre?ay=2026-06 ekran tarifi',
     'KISIT:      02_kanon/golden/ dokunulmaz; altın dosyalara gerçek kişisel veri girmez (İÇERİK cinsi); tools/ ve .claude/ [SERT]',
-    'BÜTÇE:      koşu başına en çok 3 alt-ajan koşusu · aynı görevde iki maxTurns dayanması = bölünmeli · toplam 12 koşu',
+    'BÜTÇE:      dönem başına en çok 3 alt-ajan çağrısı · aynı görevde iki maxTurns dayanması = bölünmeli · toplam 12 dönem',
     '',
   ].join('\n');
 }
@@ -114,7 +114,7 @@ function riskBlogu(gorevSayisi) {
 }
 const yeniBloklar = (n) => durusBlogu() + riskBlogu(n);
 
-// Tavan statüsü (ölçülmüş karar, bekçi tarifi + OTONOM_KOSU §3): duruş sözleşmesi tavana
+// Tavan statüsü (ölçülmüş karar, bekçi tarifi + OTONOM_DONEM §3): duruş sözleşmesi tavana
 // DAHİL (insan da okur) ve küçük kalmalı; risk bloğu MAKİNE-OKUR, tavan ölçümünden DÜŞÜLÜR —
 // ilk ölçüm 25 görevde ~2,9KB = sarı tavanın ~%29'u çıktı, dahil sayılsaydı tavanı yerdi.
 test('KUTU-sim (25 görev): duruş tavana dahil ve küçük; risk bloğu tavan-dışı (sayı raporlanır)', (t) => {

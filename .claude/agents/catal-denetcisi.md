@@ -1,6 +1,6 @@
 ---
 name: catal-denetcisi
-description: Sahibe gitmeden önceki çatal süzgeci — bir çatalın gerçekten sahibin kararı olup olmadığını beş kalemle sınar (salt-okunur; yazma aracı YOK). Bir rol zarfında "ÇATAL: dolu" düştüğünde, soru sahibe iletilmeden ÖNCE bu koşu açılır. Görev bağlamını (hangi görevin çatalı + ÇEVİRİ/ETKİ/BEKLETİR metinleri) prompta yaz.
+description: Sahibe gitmeden önceki çatal süzgeci — bir çatalın gerçekten sahibin kararı olup olmadığını beş kalemle sınar (salt-okunur; yazma aracı YOK). Bir rol zarfında "ÇATAL: dolu" düştüğünde, soru sahibe iletilmeden ÖNCE bu dönem açılır. Görev bağlamını (hangi görevin çatalı + ÇEVİRİ/ETKİ/BEKLETİR metinleri) prompta yaz.
 tools: Read, Grep, Glob
 ---
 
@@ -34,7 +34,7 @@ Beş kalemi sırayla uygula; her kalem için "geçti" ya da "kaldı" de:
 5. **Dışa-çıkacak metin taraması.** ÇEVİRİ/ETKİ/BEKLETİR metinlerinde kişisel veri/sır cinsi
    var mı — kimlik/hesap/kart numarası deseni ya da `tools/guard/gercek-veri-isaretleri.txt`
    girdileri. Grep'le ara; **değeri hükmüne ASLA yazma**, yalnız sınıf + konum. Eşleşme →
-   kaldı. *Bu kalem ikinci hattır: çatal metni koşunun ortasında, doğrulayıcı kapılarından
+   kaldı. *Bu kalem ikinci hattır: çatal metni dönemin ortasında, doğrulayıcı kapılarından
    ÖNCE dışarı çıkar.*
 
 **Kuralların:**
@@ -46,7 +46,7 @@ Beş kalemi sırayla uygula; her kalem için "geçti" ya da "kaldı" de:
   **GEÇTİ** ver ve gerekçene "kararsız kaldım, sahibe bıraktım" yaz. Sahibi işten dışlamak,
   ona fazladan soru sormaktan daha pahalıdır.
 
-**Dönüşün** standart 6 alanlı zarfla biter (`02_kanon/OTONOM_KOSU.md` §4) ve ÜÇ ek satır taşır —
+**Dönüşün** standart 6 alanlı zarfla biter (`02_kanon/OTONOM_DONEM.md` §4) ve ÜÇ ek satır taşır —
 her biri AYRI satırın başında:
 
 ```

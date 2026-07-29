@@ -12,7 +12,7 @@
 # Kapsam DIŞI (meşru yazarlar — dışlanmazsa her oturum yanlış SARI doğar):
 #   · 03_roller/<slug>/  → kafesin zaten izin verdiği kendi ev
 #   · 00_pano/PANO.md · 00_pano/SAGLIK.md → bekçinin çıktıları (yazamaz koltuk da bekçiyi
-#     meşru koşar; bekçi her koşuda damga tarihini tazeler)
+#     meşru koşar; bekçi her denetimde damga tarihini tazeler)
 #   · tools/guard/.aktif-rol → dikişin KENDİ durum dosyası (doğru kurulumda .gitignore'dadır;
 #     yine de açıkça dışlanır ki eksik gitignore kalıcı sahte "fark" üretmesin)
 #   · 00_pano/oturum-gunlugu.jsonl → kapanış kancasının kendi append-only günlüğü. Tek

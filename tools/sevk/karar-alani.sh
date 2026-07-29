@@ -1,7 +1,7 @@
 #!/bin/bash
 # karar-alani — "bu projede sahibe soru sorulabilir mi?" hazırlık denetçisi (E3).
 # Tek iş: 02_kanon/KARAR_ALANI.md var mı · Bölüm A (KEEL-genel soru çizgisi) bütün mü ·
-# Bölüm B (sahip profili) DOLU mu. Kaynağı: tasarım §10 E3 satırı — "T3'ün süzgeç koşusu
+# Bölüm B (sahip profili) DOLU mu. Kaynağı: tasarım §10 E3 satırı — "T3'ün süzgeç çalıştırması
 # profili fiilen kullanır, PROFİL BOŞKEN KIRMIZI" + §13 damga şartı.
 # Çıkış: 0 = hazır (stdout "HAZIR") · 1 = hazır değil (stdout "HAZIR DEĞİL · <sebep>").
 # FAIL-CLOSED: betiğin kendi hatası da "hazır değil"dir (sessiz yeşil yok) — çünkü bu betiğin

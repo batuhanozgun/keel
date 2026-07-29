@@ -67,7 +67,7 @@ if [ -d "$KOK/03_roller/disgoz" ]; then
 fi
 
 # ── (3) Sabah yüzeyi (E5) — gözetimsiz gecenin tek işaretçisi ─────────────────────────────
-# Gerekçe: D-21'in kapanış bloğu bir SOHBET yüzeyidir; gece koşusunun sonunda sohbet YOKTUR.
+# Gerekçe: D-21'in kapanış bloğu bir SOHBET yüzeyidir; gece döneminin sonunda sohbet YOKTUR.
 # Bu satır, sabah bilgisayarı açan sahibi üç bloğa götüren tek köprüdür. ISRAR YOK (D-21):
 # yaş bilgidir, uyarı değil; dosya yoksa satır hiç doğmaz.
 SABAH="$KOK/00_pano/SABAH.md"
@@ -76,9 +76,9 @@ if [ -r "$SABAH" ]; then
   SABAH_GUN="$(printf '%s' "$SABAH_BASLIK" | grep -o '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' | head -n1 || true)"
   if [ -n "$SABAH_GUN" ]; then
     if [ "$SABAH_GUN" = "$(date '+%Y-%m-%d')" ]; then
-      printf 'ℹ️ Bu gece bir koşu oldu — üç blok hazır: 00_pano/SABAH.md\n'
+      printf 'ℹ️ Bu gece bir dönem oldu — üç blok hazır: 00_pano/SABAH.md\n'
     else
-      printf 'ℹ️ Son koşunun sabah yüzeyi %s tarihli: 00_pano/SABAH.md\n' "$SABAH_GUN"
+      printf 'ℹ️ Son dönemin sabah yüzeyi %s tarihli: 00_pano/SABAH.md\n' "$SABAH_GUN"
     fi
   fi
 fi

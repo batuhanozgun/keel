@@ -10,14 +10,14 @@
 #   00_pano/SENDE_BEKLEYEN.md kuyruğuna EKLER (tekilleştirmeli; EL_KITABI F1 istisna 2 — mekanik
 #   yazar bu kancadır, kapanış işareti rolündür, SİLME YASAK). Blok durumu bekçiye KAPANIS_BLOK
 #   değişkeniyle geçer (yalnız rol damgası varken — rolsüz oturumda sahibe dırdır edilmez);
-#   (1) bekçi koşusu (tools/bekci/bekci.sh varsa — konvansiyon-yol, GENESIS G3.2;
+#   (1) bekçi denetimi (tools/bekci/bekci.sh varsa — konvansiyon-yol, GENESIS G3.2;
 #   PANO/SAGLIK damgası tazelenir; kuyruk ondan ÖNCE yazılır ki PANO sayacı taze olsun);
 #   (2) 00_pano/oturum-gunlugu.jsonl'e TEK satır oturum-meta (şema surum:3 — Öbek-2'de
 #   `blok` + `bekleyen_eklendi`, dış göz paketinde `porcelain` eklendi; surum:1/2 satırları
 #   eski oturumlardır)
 #   (tarih · oturum · neden · rol · blok · porcelain · süre · token · damga-yaşı — transcript'ten OKUNABİLDİĞİ KADAR:
 #   biçim Claude Code'un iç formatıdır, sürümle değişebilir [doc-teyitli]; okunamayan alan null,
-#   satır HEP düşer). Damga-yaşı = SAGLIK "son koşu:" damgasının dakika yaşı (SALT-OKUMA; politika
+#   satır HEP düşer). Damga-yaşı = SAGLIK "son denetim:" damgasının dakika yaşı (SALT-OKUMA; politika
 #   kancada yok, bayatlığın sahip-yüzeyi kokpittir).
 # FAIL-OPEN (bilinçli; file-guard'ın fail-closed'undan farklı): SessionEnd engelleyemez (doc-teyitli),
 #   kapanış hijyeni oturumu rehin almaz; kancanın ölümünü bekçinin kablo-denetimi KIRMIZI basar (çift hat).
@@ -156,7 +156,7 @@ process.stdout.write(blok + "\t" + eklendi);
   esac
 fi
 
-# (1) Bekçi koşusu — sonucu günlük satırına işlensin diye meta yazımından ÖNCE koşar (günlük .md
+# (1) bekçi denetimi — sonucu günlük satırına işlensin diye meta yazımından ÖNCE koşar (günlük .md
 # değil: drift radarına ve mtime kuralına görünmez; PANO_SOZLESMESI sırası bozulmaz).
 # KAPANIS_BLOK yalnız rol damgası varken geçer: kapanış bloğu rol-oturumu disiplinidir,
 # rolsüz oturumda bekçi bunu denetlemez (sahibe dırdır yok).
@@ -196,10 +196,12 @@ const out = {
   sure_dk: null, girdi_token: null, cikti_token: null, cache_okuma: null, cache_yazma: null,
   not: null,
 };
-// Damga yasi (plan karari 12 — SALT-OKUMA): SAGLIK "son koşu:" damgasi yerel saattir.
+// Damga yasi (plan karari 12 — SALT-OKUMA): SAGLIK "son denetim:" damgasi yerel saattir.
+// Geri uyum (dil paketi, 2026-07-29): eski yazim "son kosu:" idi; eski KEEL surumuyle kurulmus
+// bir projenin bekcisi hala onu yazabilir — ikisi de okunur, yoksa olcum sessizce kaybolur.
 try {
   const s = readFileSync(process.env.KAPANIS_KOK + "/00_pano/SAGLIK.md", "utf8");
-  const m = s.match(/son koşu:\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/);
+  const m = s.match(/son (?:denetim|koşu):\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/);
   if (m) {
     const t = new Date(m[1].replace(" ", "T") + ":00").getTime();
     if (Number.isFinite(t)) out.damga_yasi_dk = Math.max(0, Math.round((Date.now() - t) / 60000));

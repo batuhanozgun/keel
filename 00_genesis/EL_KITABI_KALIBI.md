@@ -85,8 +85,8 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   sorulur. Boşta kalan rol iş icat etmez; sözleşmesindeki standby modülüyle TEK satır bekleme
   raporu verir (DEFO_MODELI #5, #10). Kendi yazılı ertelemen ("sonraki oturumun işi") sessizce
   çiğnenmez: öne çekiş beyanlı gerekçe + risk işareti ister. ERTELENENLER bu ekin dışındadır:
-  dönüşü yalnız sahip+uyanma koşuluyla (Kutu döngüsü 8). *Ders: tatbikatta 3 koşu beyansız
-  öne çekti; beyanla çeken tek koşunun davranışı kural oldu (2026-07-19).*
+  dönüşü yalnız sahip+uyanma koşuluyla (Kutu döngüsü 8). *Ders: tatbikatta 3 prova beyansız
+  öne çekti; beyanla çeken tek provanın davranışı kural oldu (2026-07-19).*
 
 ## F-kuralları (dosya)
 
@@ -116,7 +116,7 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   işaretçi konur; donmuş kopya tek-doğru sayılmaz.
 - **F5 · Olay-gömülü kapanış.** Kapanış hijyeni oturum-kapanışı OLAYINA gömülüdür: SessionEnd
   kancası bekçiyi koşar + `oturum-gunlugu.jsonl`e tek satır meta düşer; son satırın commit-dışı
-  kalması NORMALdir. Rol-kapanışındaki bekçi koşusu YEDEK hattır (kanca ölürse kablo-denetimi
+  kalması NORMALdir. Rol-kapanışındaki bekçi denetimi YEDEK hattır (kanca ölürse kablo-denetimi
   KIRMIZI). *Ders: olaya gömülü hijyen 73 oturumda HEP koştu; tetiğe/hatırlamaya bağlı bakım HİÇ koşmadı.*
 - **F6 · Kural-evrim kilidi.** EL_KITABI tek kural kaynağıdır; YALNIZ kutu-kapanış retrosunda,
   sahip onayı + AYNI commit'te değişir (bekçi kapanış-dışı diff'i yakalar). Retro önerir,

@@ -27,8 +27,8 @@ basılmış karar). Çapasız iz zaten kapıdan geçmez; senin baktığın, ÇAP
 Çalıştırma isteyen doğrulama (test koşmak, uygulamayı
 açmak) SENİN işin değil — onu denetçi rol-oturumu yapar; sen dosya-gerçeği katmanısın.
 
-**(8) Otonom koşuda karne sözleşmesi (E4 · K2).** Koşu AÇIKKEN (`tools/sevk/.kosu-acik` varsa)
-dönüşün standart 6 alanlı zarfla biter (`02_kanon/OTONOM_KOSU.md` §4) ve ÜÇ ek satır taşır —
+**(8) Otonom dönemde karne sözleşmesi (E4 · K2).** Dönem AÇIKKEN (`tools/sevk/.donem-acik` varsa)
+dönüşün standart 6 alanlı zarfla biter (`02_kanon/OTONOM_DONEM.md` §4) ve ÜÇ ek satır taşır —
 her biri AYRI satırın başında:
 
 ```

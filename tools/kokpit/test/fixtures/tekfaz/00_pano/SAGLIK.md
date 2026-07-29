@@ -1,6 +1,6 @@
 # SAĞLIK
 
-son koşu: 2026-07-04 01:44 (koşu #3)
+son denetim: 2026-07-04 01:44 (denetim #3)
 
 **Işıklar:** AKIŞ=YEŞİL · DOSYA=YEŞİL · DAVRANIŞ=VERİ-YOK
 

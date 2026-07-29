@@ -1,5 +1,5 @@
 #!/bin/bash
-# kanal-yokla — haber kanalının sağlık kontrolü (E5). `/kosu` töreninin ve bekçinin okuduğu
+# kanal-yokla — haber kanalının sağlık kontrolü (E5). `/donem` töreninin ve bekçinin okuduğu
 # tek satırlık hüküm; karar-alani.sh emsali, FAIL-CLOSED (kendi hatası da "HAZIR DEĞİL"dir).
 #
 # Neden ön koşul: kanalın kırık olduğunu öğrenmenin en ucuz anı, sahibin klavyede olduğu tek

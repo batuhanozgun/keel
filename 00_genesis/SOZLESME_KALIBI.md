@@ -63,10 +63,10 @@ panoda "bekleyen soru"; kayıtsız cevap spec'e dayanak olamaz. Devir notu F7'ye
   örneğini mi tarıyor — karneye yaz; tek-örnek = daraltılmış-test bulgusu. *Ders: "kişisel
   veri yok" testi ilk yazımda tek özel ada indirgendi (tatbikat, 2026-07-19).*
 - **Kanıt tür-bağımsızlığı (karneye iki satır):** aynı iddiayı besleyen kanıt birden çoksa
-  **FARKLI TÜRDEN** mi (dosya-gerçeği · koşu çıktısı · sahip teyidi — aynı türden iki kopya
+  **FARKLI TÜRDEN** mi (dosya-gerçeği · komut çıktısı · sahip teyidi — aynı türden iki kopya
   TEK kanıttır) · "sahip istedi / sahibin niyeti buydu" iddiası **sahip teyitli mi** (kayıtlı
   teyit yoksa iddia geçersizdir, olgu değil YORUM olarak işaretlenir).
-- Karne biçimi: **İDDİA → KANIT (dosya:satır / koşu çıktısı) → HÜKÜM + ŞİDDET** (DOĞRU /
+- Karne biçimi: **İDDİA → KANIT (dosya:satır / komut çıktısı) → HÜKÜM + ŞİDDET** (DOĞRU /
   DOĞRULANAMADI + sebep). Bulgudan görev açmayı koordinatör kararlaştırır. Betik koşturursan:
   koşturur-yorumlamazsın; çıktı yanlışsa betik normal rotadan düzeltilir. Test özetleri kesin
   satır-desenle okunur — kuyruk-okuma (`tail`) kanıt değildir (DEFO #7).
@@ -92,7 +92,7 @@ türetme yasak. Granülarite sınırı: "gerçek şöyle işliyor" dersin, "şö
 onayladığını kontrol edersin. Teslim protokolün rol-arası değil **sahip yüzeyidir** (D2).
 - **Okursun:** kutu (kabul ölçütleri + "göreceklerin" bloğu) · kararlar + `kilitli/` · PANO/SAGLIK ·
   rol DURUM'ları · `00_pano/oturum-gunlugu.jsonl` · `00_pano/SENDE_BEKLEYEN.md` ·
-  **`00_pano/zarf-gunlugu.jsonl`** (otonom koşu izi — varsa) · git geçmişi ·
+  **`00_pano/zarf-gunlugu.jsonl`** (otonom dönem izi — varsa) · git geçmişi ·
   EL_KITABI + retro. **Salt-okuma komutu serbesttir** (`git log/show/diff`, grep) — geçmişi
   okumanın başka yolu yok. YAZAN kabuk komutu yasak: kafesin dışına çıkan yazım porcelain
   dikişine takılır (rol töreni açılışta özet alır, kapanış kancası karşılaştırır).
@@ -112,7 +112,7 @@ onayladığını kontrol edersin. Teslim protokolün rol-arası değil **sahip y
   diline çevir) · "göreceklerin" bloğu ile bugünkü iş örtüşüyor mu (kapsam kayması) · kuyrukta
   aynı soru tekrar mı ediyor / madde yaşlandı mı · kutu kaç oturumdur açık, turlar uzuyor mu
   (`oturum-gunlugu.jsonl`) · kilitli kararla çelişen iş var mı.
-- **Otonom koşu varsa dört mercek daha** (zarf günlüğünden; koşu yoksa bu satır yok hükmünde):
+- **Otonom dönem varsa dört mercek daha** (zarf günlüğünden; dönem yoksa bu satır yok hükmünde):
   ① **jargon sızması** — sahibe giden metinlerde tanımsız kelime ② **sessizlik-onay ihlali** —
   cevapsız çatala iş bağlanmış mı (`bekletir-ihlali` bulguları + kuyrukta AÇIK madde)
   ③ **sahip-atfı kanıtsızlığı** — "sahip şöyle dedi" beyanı günlük işaretçisi taşıyor mu
@@ -136,7 +136,7 @@ Anlatı ile DURUM çelişirse DURUM esastır. Kalıcı gözlemini `03_roller/«S
 düş (tavan 2KB; F6 terfi hattının evi — kalıcı+çapraz-rol kanıtlanan not retroda kurala terfi eder).
 DURUM'u yerinde yeniden yaz (F2; sonraki oturumun ihtiyacı — geçmiş savunması değil) · devir
 notu F7 biçiminde · kırptığın parçaya "kırpıldı: X" izi · F5 hijyen kancaya emanet (yedek hat:
-bekçi koşusu).
+bekçi denetimi).
 
 ## Kural atıfları
 D1-D9 · F1-F8 · Üslup hükmü — tek ev: `02_kanon/EL_KITABI.md`. "Neden"ler: `00_genesis/DEFO_MODELI.md`.

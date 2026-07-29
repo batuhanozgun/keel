@@ -164,10 +164,10 @@ test('porcelain: kendi evi ve bekçi çıktıları özete GİRMEZ (yanlış-SARI
   const kok = gitKurulum();
   kos(kok, ['denetci', 'yazamaz']);
   const once = porcelainSatiri(kok);
-  // Kafesin izin verdiği yazımlar + bekçinin her koşuda tazelediği damga dosyaları:
+  // Kafesin izin verdiği yazımlar + bekçinin her denetimde tazelediği damga dosyaları:
   mkdirSync(join(kok, '00_pano'), { recursive: true });
   writeFileSync(join(kok, '03_roller', 'denetci', 'NOTLAR.md'), 'gözlem\n');
-  writeFileSync(join(kok, '00_pano', 'PANO.md'), '# PANO\nson koşu: bugün\n');
+  writeFileSync(join(kok, '00_pano', 'PANO.md'), '# PANO\nson denetim: bugün\n');
   writeFileSync(join(kok, '00_pano', 'SAGLIK.md'), '# SAĞLIK\n');
   const r = spawnSync('bash', ['-c', `. "${join(BURASI, '..', 'porcelain.sh')}"; porcelain_ozet "${kok}" denetci`], { encoding: 'utf8' });
   assert.equal('porcelain\t' + r.stdout.trim(), once, 'dışlanan yollara yazım özeti değiştirmemeli');

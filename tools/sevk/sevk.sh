@@ -1,14 +1,14 @@
 #!/bin/bash
-# sevk — otonom koşunun MOTORU (E4). Stop kancası: oturum bitmeye çalıştığında koşar.
+# sevk — otonom dönemin MOTORU (E4). Stop kancası: oturum bitmeye çalıştığında koşar.
 # Tek işi: "sıradaki işi doğru role, doğru girdiyle vermek" (tek-odak ilkesi). İÇERİK YAZMAZ,
 # KARAR BASMAZ, KAPI KAPATMAZ — kapıyı bağımsız karne kapatır (K2).
 #
 # Çıkış sözleşmesi:
-#   exit 0, sessiz        = koşu yok (el-sürüşlü oturum HİÇ etkilenmez)
+#   exit 0, sessiz        = dönem yok (el-sürüşlü oturum HİÇ etkilenmez)
 #   exit 2 + stderr       = durmayı ENGELLER; stderr'daki SEVK talimatı modele ulaşır
-#   exit 0 + stdout       = koşu KAPANDI (açık iş yok / duran kapı) — gösterge silinir
+#   exit 0 + stdout       = dönem KAPANDI (açık iş yok / duran kapı) — gösterge silinir
 #
-# FAIL-CLOSED YÖNÜ (bilinçli): sevkin kendi hatası koşuyu SÜRDÜRMEZ, KAPATIR. Ters yön
+# FAIL-CLOSED YÖNÜ (bilinçli): sevkin kendi hatası dönemi SÜRDÜRMEZ, KAPATIR. Ters yön
 #   (hatada exit 2) sonsuz Stop döngüsü üretirdi — motorun güvenli tarafı DURMAKTIR.
 # Döngü frenleri ÜÇ katman: bütçe sayacı · ilerleme-yok eşiği · mutlak tur tavanı.
 #   (`stop_hook_active` fren OLARAK KULLANILMAZ: sevk döngüsü tanımı gereği çok turludur.)
@@ -17,20 +17,20 @@ export LC_ALL=C.UTF-8
 
 KOK="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 DIZIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-GOSTERGE="$DIZIN/.kosu-acik"
+GOSTERGE="$DIZIN/.donem-acik"
 
-# En ucuz eleme: koşu yoksa bu kanca yok hükmünde.
+# En ucuz eleme: dönem yoksa bu kanca yok hükmünde.
 [ -e "$GOSTERGE" ] || exit 0
 
 GIRDI="$(cat 2>/dev/null || true)"
 
-# ── Kapanış yüzeyi (E5) — koşunun DÖRT bitiş hâlinde de aynı üç blok ─────────────────────
-# Üç iş: uyanık-tutma savını bırak · 00_pano/SABAH.md'yi yerinde yeniden yaz · kosu-bitti
+# ── Kapanış yüzeyi (E5) — dönemin DÖRT bitiş hâlinde de aynı üç blok ─────────────────────
+# Üç iş: uyanık-tutma savını bırak · 00_pano/SABAH.md'yi yerinde yeniden yaz · donem-bitti
 # haberini gönder. Üçü de fail-OPEN'dır: kapanışın kendisi bunlara bağlı olamaz (kapanamayan
-# koşu, kapanan koşudan çok daha kötüdür). Bloklar çözümleyiciden gelir — TEK üretici.
+# dönem, kapanan dönemden çok daha kötüdür). Bloklar çözümleyiciden gelir — TEK üretici.
 kapanis_yuzeyi() { # $1: 3. blok yedeği (bloklar hiç üretilemediyse)
   local B1="${BLOK1:-}" B2="${BLOK2:-}" B3="${BLOK3:-}"
-  [ -n "$B1" ] || B1="koşu turu tamamlanamadı — sayaçlar okunamadı"
+  [ -n "$B1" ] || B1="dönem turu tamamlanamadı — sayaçlar okunamadı"
   [ -n "$B2" ] || B2="kuyruk durumu okunamadı (00_pano/SENDE_BEKLEYEN.md)"
   [ -n "$B3" ] || B3="${1:-durdu}"
 
@@ -45,25 +45,25 @@ kapanis_yuzeyi() { # $1: 3. blok yedeği (bloklar hiç üretilemediyse)
   # ama şişme dedektörü kendi yüzeyinde de geçerli (PANO disiplini).
   if [ -d "$KOK/00_pano" ]; then
     {
-      printf '# SABAH — %s · %s · %s\n\n' "${KOSU_KUTU:-?}" "${KOSU_ID:-?}" "$(date '+%Y-%m-%d %H:%M')"
+      printf '# SABAH — %s · %s · %s\n\n' "${DONEM_KUTU:-?}" "${DONEM_ID:-?}" "$(date '+%Y-%m-%d %H:%M')"
       printf '## GECE NE OLDU\n%s\n\n## SENDE BEKLEYEN\n%s\n\n## ŞİMDİ NE YAPIYOR\n%s\n' "$B1" "$B2" "$B3"
     } 2>/dev/null | cut -c1-4096 > "$KOK/00_pano/SABAH.md" 2>/dev/null || true
   fi
 
   if command -v haber_at >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$KOK" haber_at --olay kosu-bitti --kosu "${KOSU_ID:-bilinmiyor}" \
-      --kutu "${KOSU_KUTU:-}" --blok1 "$B1" --blok2 "$B2" --blok3 "$B3" || true
+    CLAUDE_PROJECT_DIR="$KOK" haber_at --olay donem-bitti --donem "${DONEM_ID:-bilinmiyor}" \
+      --kutu "${DONEM_KUTU:-}" --blok1 "$B1" --blok2 "$B2" --blok3 "$B3" || true
   fi
 }
 
-kapat() { # $1: sınıf · $2: sebep (tek satır) — koşuyu kapatır, gösterge silinir
+kapat() { # $1: sınıf · $2: sebep (tek satır) — dönemi kapatır, gösterge silinir
   rm -f "$GOSTERGE"
   kapanis_yuzeyi "durdu — $1: $2"
   if [ -n "${NODE_BIN:-}" ]; then
-    J_tip=kosu-kapanis J_kosu="${KOSU_ID:-bilinmiyor}" J_kutu="${KOSU_KUTU:-}" \
+    J_tip=donem-kapanis J_donem="${DONEM_ID:-bilinmiyor}" J_kutu="${DONEM_KUTU:-}" \
       J_sinif="$1" J_sebep="$2" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
   fi
-  printf 'KOŞU KAPANDI · %s · %s\n%s\n' "${KOSU_ID:-bilinmiyor}" "$1" "$2"
+  printf 'DÖNEM KAPANDI · %s · %s\n%s\n' "${DONEM_ID:-bilinmiyor}" "$1" "$2"
   exit 0
 }
 # Günlüğe yazım FAIL-CLOSED'dur (hasım bulgusu — en ağırı): sevkin ÜÇ freni de (bütçe ·
@@ -76,46 +76,46 @@ yaz_ya_da_kapat() { # stdin: tek satır JSON
   fi
 }
 
-[ -r "$DIZIN/ortak.sh" ] || { rm -f "$GOSTERGE"; printf 'KOŞU KAPANDI · arıza · ortak kitaplık yok (tools/sevk/ortak.sh) — sevk ailesi eksik\n'; exit 0; }
+[ -r "$DIZIN/ortak.sh" ] || { rm -f "$GOSTERGE"; printf 'DÖNEM KAPANDI · arıza · ortak kitaplık yok (tools/sevk/ortak.sh) — sevk ailesi eksik\n'; exit 0; }
 # shellcheck source=/dev/null
 . "$DIZIN/ortak.sh"
 
-trap 'kapat "ariza" "sevk kendi içinde durdu (satır $LINENO) — fail-closed: motor durdu, koşu kapandı"' ERR
+trap 'kapat "ariza" "sevk kendi içinde durdu (satır $LINENO) — fail-closed: motor durdu, dönem kapandı"' ERR
 
 # ── 1 · Gösterge ──────────────────────────────────────────────────────────────────────────
 # (|| ile yakalanır: ERR tuzağı kurulu, çıplak başarısızlık tuzağı ateşlerdi)
-GOSTERGE_RC=0; kosu_oku "$KOK" || GOSTERGE_RC=$?
-if [ "$GOSTERGE_RC" = "2" ]; then kapat "duran-kapi" "koşu göstergesi bozuk: ${KOSU_HATA} — kimliksiz/tanımsız koşu sevk edilemez (fail-closed)"; fi
+GOSTERGE_RC=0; donem_oku "$KOK" || GOSTERGE_RC=$?
+if [ "$GOSTERGE_RC" = "2" ]; then kapat "duran-kapi" "dönem göstergesi bozuk: ${DONEM_HATA} — kimliksiz/tanımsız dönem sevk edilemez (fail-closed)"; fi
 if [ "$GOSTERGE_RC" != "0" ]; then exit 0; fi
-[ -z "$KOSU_HATA" ] || printf 'sevk notu: %s\n' "$KOSU_HATA" >&2
+[ -z "$DONEM_HATA" ] || printf 'sevk notu: %s\n' "$DONEM_HATA" >&2
 
 node_bul || kapat "duran-kapi" "node bulunamadı — sevk karar veremiyor (fail-closed)"
 
-# ── 2 · Kapılanma çapaları (çift hat: tören de bakmıştı; damga koşu içinde silinebilir) ────
+# ── 2 · Kapılanma çapaları (çift hat: tören de bakmıştı; damga dönem içinde silinebilir) ────
 EKSIK=""
 [ -d "$KOK/03_roller/disgoz" ] || EKSIK="$EKSIK dış-göz-koltuğu"
 for D in T0 T1 T2 T3; do [ -s "$DIZIN/damgalar/$D" ] || EKSIK="$EKSIK ${D}-damgası"; done
-[ -z "$EKSIK" ] || kapat "duran-kapi" "kapılanma eksik —$EKSIK. Kalkansız motor yok (OTONOM_KOSU §10)."
-if [ "${KOSU_SINIF:-gercek}" = "gercek" ]; then
+[ -z "$EKSIK" ] || kapat "duran-kapi" "kapılanma eksik —$EKSIK. Kalkansız motor yok (OTONOM_DONEM §10)."
+if [ "${DONEM_SINIF:-gercek}" = "gercek" ]; then
   GERCEK_EKSIK="$(gercek_kutu_eksikleri "$DIZIN")"
-  [ -z "$GERCEK_EKSIK" ] || kapat "duran-kapi" "gerçek kutu koşusunun ek şartları eksik —$GERCEK_EKSIK (OTONOM_KOSU §10; tatbikat koşuları muaftır)"
+  [ -z "$GERCEK_EKSIK" ] || kapat "duran-kapi" "gerçek kutu döneminin ek şartları eksik —$GERCEK_EKSIK (OTONOM_DONEM §10; tatbikat dönemleri muaftır)"
 fi
 
-# ── 2b · Bayat gösterge (hasım bulgusu): koşu anormal biterse gösterge diskte KALIR ve hiçbir
-# şey onu temizlemez — sonraki sıradan oturumda sevk koşuyu "diriltir", devir kapısı her
+# ── 2b · Bayat gösterge (hasım bulgusu): dönem anormal biterse gösterge diskte KALIR ve hiçbir
+# şey onu temizlemez — sonraki sıradan oturumda sevk dönemi "diriltir", devir kapısı her
 # alt-ajan çağrısını keser. Asıl çözüm E5 watchdog'udur; buradaki TTL ikinci hattır.
-KOSU_YAS_SAAT=""
-if [ -n "${KOSU_DAMGA:-}" ]; then
-  KOSU_YAS_SAAT="$(D="$KOSU_DAMGA" "$NODE_BIN" -e 'const t=Date.parse(process.env.D||"");console.log(Number.isFinite(t)?Math.floor((Date.now()-t)/3600000):"")' 2>/dev/null || true)"
+DONEM_YAS_SAAT=""
+if [ -n "${DONEM_DAMGA:-}" ]; then
+  DONEM_YAS_SAAT="$(D="$DONEM_DAMGA" "$NODE_BIN" -e 'const t=Date.parse(process.env.D||"");console.log(Number.isFinite(t)?Math.floor((Date.now()-t)/3600000):"")' 2>/dev/null || true)"
 fi
-case "$KOSU_YAS_SAAT" in
+case "$DONEM_YAS_SAAT" in
   ''|*[!0-9]*) : ;;
-  *) [ "$KOSU_YAS_SAAT" -lt 12 ] || kapat "duran-kapi" "koşu göstergesi BAYAT (${KOSU_YAS_SAAT} saat önce açılmış) — koşu anormal bitmiş olabilir; gösterge temizlendi. Yeniden başlatma sahibin işidir (watchdog E5)." ;;
+  *) [ "$DONEM_YAS_SAAT" -lt 12 ] || kapat "duran-kapi" "dönem göstergesi BAYAT (${DONEM_YAS_SAAT} saat önce açılmış) — dönem anormal bitmiş olabilir; gösterge temizlendi. Yeniden başlatma sahibin işidir (watchdog E5)." ;;
 esac
 
 # ── 2c · Kurulum türünde mekanik kapı raporu (kurulum denetçisinin okuyacağı ek-okuma) ─────
-if [ "$KOSU_TUR" = "kurulum" ] && [ -r "$DIZIN/kurulum-kapisi.sh" ]; then
-  CLAUDE_PROJECT_DIR="$KOK" bash "$DIZIN/kurulum-kapisi.sh" "$KOSU_KUTU" "$KOK" \
+if [ "$DONEM_TUR" = "kurulum" ] && [ -r "$DIZIN/kurulum-kapisi.sh" ]; then
+  CLAUDE_PROJECT_DIR="$KOK" bash "$DIZIN/kurulum-kapisi.sh" "$DONEM_KUTU" "$KOK" \
     > "$KOK/00_pano/kurulum-kapisi.txt" 2>&1 || true
 fi
 
@@ -137,20 +137,20 @@ fi
 [ "$KUYRUK_HATA" = "0" ] || kapat "duran-kapi" "sahibin kuyruğu okunamadı — BEKLETİR kilidi değerlendirilemedi (fail-closed); 00_pano/SENDE_BEKLEYEN.md ve tools/sevk/catal-kuyruk.sh'a bak"
 
 # ── 5 · Çözümleme (tek node turu) ─────────────────────────────────────────────────────────
-CIKTI="$(printf '%s' "$GIRDI" | S_KOK="$KOK" S_KOSU="$KOSU_ID" S_KUTU="$KOSU_KUTU" S_TUR="$KOSU_TUR" \
-  S_KIP="$KOSU_KIP" S_KUYRUK="$KUYRUK_DURUM" \
+CIKTI="$(printf '%s' "$GIRDI" | S_KOK="$KOK" S_DONEM="$DONEM_ID" S_KUTU="$DONEM_KUTU" S_TUR="$DONEM_TUR" \
+  S_KIP="$DONEM_KIP" S_KUYRUK="$KUYRUK_DURUM" \
   "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const KOK = process.env.S_KOK || ".";
-const KOSU = process.env.S_KOSU || null;
+const DONEM = process.env.S_DONEM || null;
 const KUTU = process.env.S_KUTU || "";
 const TUR = process.env.S_TUR || "yapim";
 const KIP = process.env.S_KIP || "interaktif";
 
 const loglar = [], metin = [], alarmlar = [];
-const kayit = (o) => loglar.push(JSON.stringify({ surum: 1, ts: new Date().toISOString(), kosu: KOSU, ...o }));
+const kayit = (o) => loglar.push(JSON.stringify({ surum: 1, ts: new Date().toISOString(), donem: DONEM, ...o }));
 const yaz = (s) => metin.push(s);
 let BEKCI_GEREK = 0;
 
@@ -161,10 +161,10 @@ let BEKCI_GEREK = 0;
 const OZET = { sevk: 0, kapiToplam: 0, karneli: 0, bulgu: 0, miras: 0, pas: [], bekleyen: null, simdi: "" };
 const ucBlok = () => {
   const b1 = OZET.kapiToplam
-    ? OZET.sevk + " alt-ajan kosusu · " + OZET.karneli + "/" + OZET.kapiToplam + " kapi karneyle kapali"
-      + (OZET.miras ? " · " + OZET.miras + " miras kapi (karnesiz, kosudan once kapanmis)" : "")
+    ? OZET.sevk + " alt-ajan cagrisi · " + OZET.karneli + "/" + OZET.kapiToplam + " kapi karneyle kapali"
+      + (OZET.miras ? " · " + OZET.miras + " miras kapi (karnesiz, donemden once kapanmis)" : "")
       + " · " + OZET.bulgu + " bulgu"
-    : OZET.sevk + " alt-ajan kosusu · kapi tablosu okunamadi · " + OZET.bulgu + " bulgu";
+    : OZET.sevk + " alt-ajan cagrisi · kapi tablosu okunamadi · " + OZET.bulgu + " bulgu";
   const b2 = OZET.bekleyen === null
     ? "kuyruk durumu okunamadi (00_pano/SENDE_BEKLEYEN.md)"
     : (OZET.bekleyen ? OZET.bekleyen + " gorevi bekleten acik catal var (00_pano/SENDE_BEKLEYEN.md)"
@@ -192,7 +192,7 @@ const dur = (sebep) => {
 
 // ── KUTU.md: kapi tablosu + durus sozlesmesi + bagimlilik/risk blogu ────────────────────
 const kutuYol = join(KOK, "01_kutular", KUTU, "KUTU.md");
-if (!KUTU || !existsSync(kutuYol)) dur("kosu gostergesindeki kutu bulunamadi: 01_kutular/" + KUTU + "/KUTU.md — sevk neyi koşturacagini bilmiyor");
+if (!KUTU || !existsSync(kutuYol)) dur("donem gostergesindeki kutu bulunamadi: 01_kutular/" + KUTU + "/KUTU.md — sevk neyi koşturacagini bilmiyor");
 const kutuMetin = readFileSync(kutuYol, "utf8");
 
 const DURUM_SOZ = new Set(["açık", "sürüyor", "mühür-bekliyor", "kapalı", "pas"]);
@@ -232,7 +232,7 @@ else kayit({ tip: "bulgu", cins: "butce-okunmadi", detay: "durus sozlesmesinde B
 
 // Bagimlilik/risk blogu: her kapi icin bir satir sart (kurulum kapisinin de aradigi sema).
 const riskBlok = blok("Bağımlılık ve risk");
-if (riskBlok === null) dur("KUTU.md bagimlilik/risk blogu yok — kutu otonom kosuya hazir degil (OTONOM_KOSU §3; kurulum kapisi bunu arar)");
+if (riskBlok === null) dur("KUTU.md bagimlilik/risk blogu yok — kutu otonom doneme hazir degil (OTONOM_DONEM §3; kurulum kapisi bunu arar)");
 const bagimlilik = {};
 for (const s of riskBlok.split("\n")) {
   const m = s.match(/^\s*(G-\d+)\s*:\s*onkosul=([^·]*)·\s*risk=(düşük|riskli)\b/);
@@ -251,17 +251,17 @@ if (existsSync(gunlukYol)) {
     if (!l.trim()) continue;
     let j;
     try { j = JSON.parse(l); } catch {
-      dur("zarf gunlugu bozuk: " + (i + 1) + ". satir JSON degil — butun gozler ayni anda korelir, kosu durdu (fail-closed)");
+      dur("zarf gunlugu bozuk: " + (i + 1) + ". satir JSON degil — butun gozler ayni anda korelir, donem durdu (fail-closed)");
     }
     kayitlar.push({ i: i + 1, j });
   }
 }
-const buKosu = kayitlar.filter((r) => r.j.kosu === KOSU);
+const buKosu = kayitlar.filter((r) => r.j.donem === DONEM);
 const sonIndeks = (sart) => { let n = -1; for (const r of kayitlar) if (sart(r.j)) n = r.i; return n; };
 const sonKayit = (sart) => { let k = null; for (const r of kayitlar) if (sart(r.j)) k = r.j; return k; };
 
-// Bekci kosu-ici tazeligi (§7.4): kapi kapanisi ANINDA — yani gunluge YENI bir karne dustugu
-// turda — isik tazelenir. Otonom kosuda oturum uzundur; SessionEnd bekcisi beklenirse Stop-turu
+// Bekci donem-ici tazeligi (§7.4): kapi kapanisi ANINDA — yani gunluge YENI bir karne dustugu
+// turda — isik tazelenir. Otonom donemde oturum uzundur; SessionEnd bekcisi beklenirse Stop-turu
 // BAYAT isik okur. Karari node verir; kosturan ve KIRMIZI ise EZEN taraf kabuktur.
 if (sonIndeks((j) => j.tip === "karne") > sonIndeks((j) => j.tip === "bekci")) BEKCI_GEREK = 1;
 
@@ -272,13 +272,13 @@ const sevkKararlari = buKosu.filter((r) => r.j.tip === "sevk-karar").map((r) => 
 
 // ── Frenler ─────────────────────────────────────────────────────────────────────────────
 const TUR_TAVANI = 3 * BUTCE + 5;
-if (TUR_NO > TUR_TAVANI) dur("mutlak tur tavani asildi (" + TUR_NO + " > " + TUR_TAVANI + ") — sonsuz Stop dongusune karsi son kemer; kosu durdu");
+if (TUR_NO > TUR_TAVANI) dur("mutlak tur tavani asildi (" + TUR_NO + " > " + TUR_TAVANI + ") — sonsuz Stop dongusune karsi son kemer; donem durdu");
 const sonIki = nabizlar.slice(-2);
 if (sonIki.length === 2 && sonIki.every((n) => n.zarf_sayisi === zarfSayisi)) {
   dur("ilerleme yok: son iki turda gunluge yeni zarf dusmedi (zarf sayisi " + zarfSayisi + ") — gorev bolunmeli ya da halka kopmus (maxTurns kesmesi ISARETSIZDIR, E0 kalem 4)");
 }
 if (sevkKararlari.length >= BUTCE) {
-  dur("butce tavani doldu: bu kosuda " + sevkKararlari.length + " alt-ajan kosusu acildi (tavan " + BUTCE + ") — sahip bakmadan bu kadari kurulur (K-G)");
+  dur("butce tavani doldu: bu donemde " + sevkKararlari.length + " alt-ajan cagrisi acildi (tavan " + BUTCE + ") — sahip bakmadan bu kadari kurulur (K-G)");
 }
 
 // ── Kuyruk: BEKLETIR kilidi + cozulemeyen madde ─────────────────────────────────────────
@@ -302,7 +302,7 @@ OZET.bekleyen = bekletilen.size;
 
 // ── SISME ALARMI (E5; tasarim §7.4) — sahibin 13 kez ELLE yaptigi is mekaniklesiyor ───────
 // "Bu kutu neden buyuyor?" sorusu artik yapinin kendi gozu. Capa: bu kutu icin gunlukteki EN
-// ESKI kapi-sayaci kaydi; yoksa bugunku sayi capa olur (ilk kosu kendi capasini kurar).
+// ESKI kapi-sayaci kaydi; yoksa bugunku sayi capa olur (ilk donem kendi capasini kurar).
 // DURDURMAZ — haberdir. Esik burada SABITTIR: olculen sayi frene girerse fren fren olmaktan
 // cikar (E3 tavan dersi). Ilk gercek kutuda kalibre edilecek, bugun kalibre EDILMEMISTIR.
 const SISME_ORANI = 1.5;
@@ -337,15 +337,15 @@ const karneDurumu = (kapi) => {
   const zIdx = sonIndeks((j) => j.tip === "zarf" && j.gorev === kapi && j.sinif !== "karne" && j.sinif !== "hukum");
   return { var: true, hukum: k.hukum, taze: kIdx > zIdx, ajan: k.ajan };
 };
-// Bu KOŞUDA fiilen is uretilmis kapi (karneci/denetci zarflari is degildir).
-const isZarfiVar = (kapi) => kayitlar.some((r) => r.j.tip === "zarf" && r.j.kosu === KOSU &&
+// Bu DÖNEMDE fiilen is uretilmis kapi (karneci/denetci zarflari is degildir).
+const isZarfiVar = (kapi) => kayitlar.some((r) => r.j.tip === "zarf" && r.j.donem === DONEM &&
   r.j.gorev === kapi && r.j.sinif !== "karne" && r.j.sinif !== "hukum");
 
-// MIRAS KAPI AYRIMI (hasim bulgusu): karne mekanigi bu paketle DOGDU — koşudan ONCE kapanmis
+// MIRAS KAPI AYRIMI (hasim bulgusu): karne mekanigi bu paketle DOGDU — dönemden ONCE kapanmis
 // hicbir kapinin karnesi olamaz. Ilk surum her `kapalı` satira dogrulayici sevk ediyordu:
 // eski bir kutu acildiginda butce yalniz miras kapilari dogrulamaya giderdi. Kural: karne
-// sarti BU KOSUNUN DOKUNDUGU kapilara uygulanir; miras kapi tabloya guvenilerek kapali sayilir
-// ve bir kez `miras-kapi` bulgusu duser (sessiz gecmez, ama koşuyu da yemez).
+// sarti BU DONEMIN DOKUNDUGU kapilara uygulanir; miras kapi tabloya guvenilerek kapali sayilir
+// ve bir kez `miras-kapi` bulgusu duser (sessiz gecmez, ama dönemi de yemez).
 const kapaliSayilir = (kapi) => {
   const k = kapilar.find((x) => x.id === kapi);
   if (!k) return false;
@@ -361,8 +361,8 @@ const ajanVar = (slug) => /^[a-z0-9_-]+$/.test(String(slug || "")) && existsSync
 const talimat = (rol, gorev, tip, sebep, ekOkuma) => {
   kayit({ tip: "sevk-karar", gorev, rol, is_tipi: tip, sebep });
   kayit({ tip: "nabiz", gorev, tur_no: TUR_NO, zarf_sayisi: zarfSayisi });
-  yaz("SEVK · " + KOSU + " · tur " + TUR_NO + "/" + TUR_TAVANI + " · butce " + (sevkKararlari.length + 1) + "/" + BUTCE + " · " + sebep);
-  yaz("AC: Agent araciyla alt-ajan kosusu — subagent_type: " + rol);
+  yaz("SEVK · " + DONEM + " · tur " + TUR_NO + "/" + TUR_TAVANI + " · butce " + (sevkKararlari.length + 1) + "/" + BUTCE + " · " + sebep);
+  yaz("AC: Agent araciyla alt-ajan cagrisi — subagent_type: " + rol);
   yaz("DEVIR METNI (AYNEN gecir, baska hicbir satir ekleme):");
   yaz("gorev: " + gorev);
   yaz("kutu: 01_kutular/" + KUTU + "/KUTU.md");
@@ -373,7 +373,7 @@ const talimat = (rol, gorev, tip, sebep, ekOkuma) => {
   const rolEvi = join(KOK, "03_roller", rol, "ROL.md");
   if (existsSync(rolEvi)) yaz("sozlesme: 03_roller/" + rol + "/ROL.md");
   else if (existsSync(join(KOK, ".claude", "agents", rol + ".md"))) yaz("sozlesme: .claude/agents/" + rol + ".md");
-  if (existsSync(join(KOK, "02_kanon", "OTONOM_KOSU.md"))) yaz("kural: 02_kanon/OTONOM_KOSU.md");
+  if (existsSync(join(KOK, "02_kanon", "OTONOM_DONEM.md"))) yaz("kural: 02_kanon/OTONOM_DONEM.md");
   if (ekOkuma) yaz("ek-okuma: " + ekOkuma);
   bitir("SEVK");
 };
@@ -384,12 +384,12 @@ if (TUR === "kurulum" || TUR === "kapanis") {
   const rol = TUR === "kurulum" ? "kurulum-denetcisi" : "dogrulayici";
   // TAZELIK BU DALDA DA ARANIR (hasim bulgusu): karne sartinin yazili ucuncu kosulu
   // ("karne son degisiklikten SONRA") kurulum/kapanis dalinda hic sorulmuyordu. KURULUM ve
-  // KAPANIS kapilarinin "is zarfi" yoktur; onlarin tazeligi KOSU-YERELDIR — onceki koşudan
+  // KAPANIS kapilarinin "is zarfi" yoktur; onlarin tazeligi DONEM-YERELDIR — onceki dönemden
   // kalma bir YEŞİL karne bugunku kurulumu kapatamaz.
   const k = karneDurumu(kapi);
-  const kayitBuKosuda = kayitlar.some((r) => r.j.tip === "karne" && r.j.kapi === kapi && r.j.kosu === KOSU);
+  const kayitBuKosuda = kayitlar.some((r) => r.j.tip === "karne" && r.j.kapi === kapi && r.j.donem === DONEM);
   if (k.var && !kayitBuKosuda) {
-    kayit({ tip: "bulgu", gorev: kapi, cins: "bayat-karne", detay: "karne onceki kosudan — " + TUR + " kapisi kosu-yerel karne ister" });
+    kayit({ tip: "bulgu", gorev: kapi, cins: "bayat-karne", detay: "karne onceki donemden — " + TUR + " kapisi donem-yerel karne ister" });
   }
   if (k.var && kayitBuKosuda && k.hukum === "YEŞİL") {
     yaz(TUR === "kurulum"
@@ -398,9 +398,9 @@ if (TUR === "kurulum" || TUR === "kapanis") {
     bitir("KAPAT");
   }
   if (k.var && kayitBuKosuda && k.hukum !== "YEŞİL") {
-    dur(kapi + " karnesi " + k.hukum + " — kutu bu haliyle " + (TUR === "kurulum" ? "acilis" : "kapanis") + " muhrune gidemez; bulgular kapatilmadan kosu surmez");
+    dur(kapi + " karnesi " + k.hukum + " — kutu bu haliyle " + (TUR === "kurulum" ? "acilis" : "kapanis") + " muhrune gidemez; bulgular kapatilmadan donem surmez");
   }
-  if (!ajanVar(rol)) dur("zorunlu goz kadroda yok: .claude/agents/" + rol + ".md — " + TUR + " kosusu bagimsiz denetim olmadan kapanamaz");
+  if (!ajanVar(rol)) dur("zorunlu goz kadroda yok: .claude/agents/" + rol + ".md — " + TUR + " donemi bagimsiz denetim olmadan kapanamaz");
   // MEKANIK KALEM KANALI (hasim bulgusu — kapatilmazsa kurulum turu yapisal olarak YESILE
   // ULASAMAZ): koltugun sozlesmesi "mekanik kalemlerin sonucu sana prompt icinde verilir"
   // diyordu ama verecek kanal yoktu (devir semasi serbest metni kesiyor). Kabuk tarafi
@@ -413,7 +413,7 @@ if (TUR === "kurulum" || TUR === "kapanis") {
 
 // ── Tur: yapim ──────────────────────────────────────────────────────────────────────────
 // (0) Catal suzgeci — E3ten E4e gelen ZORUNLU girdi (tasarim §7.2): zarfta ÇATAL dolu dustuyse
-//     soru sahibe GITMEDEN once catal-denetcisi kosusu acilir. Suzgec hukmu (catal-suzgec kaydi)
+//     soru sahibe GITMEDEN once catal-denetcisi cagrisi acilir. Suzgec hukmu (catal-suzgec kaydi)
 //     gelmemis bir catal, kuyruga da dusmemistir — bu is her seyin onunde gelir: acik catal
 //     BEKLETIR listesindeki gorevleri kilitler, yani beklemek koseyi tikar.
 const catalBekleyen = [];
@@ -430,12 +430,12 @@ if (catalBekleyen.length) {
     "catal suzgeci: " + catalBekleyen[0] + " gorevinin catali sahibe gitmeden once bes kalemden gecer");
 }
 
-// (a) Karne sarti — BU KOŞUDA is uretilmis ama karnesiz/bayat kapi (miras kapi haric — yukarida)
+// (a) Karne sarti — BU DÖNEMDE is uretilmis ama karnesiz/bayat kapi (miras kapi haric — yukarida)
 for (const k of kapilar) {
   if (k.durum !== "kapalı") continue;
   if (!isZarfiVar(k.id)) {
     const knm = karneDurumu(k.id);
-    if (!knm.var) kayit({ tip: "bulgu", gorev: k.id, cins: "miras-kapi", detay: "kosu oncesi kapanmis, bagimsiz karnesi yok — tabloya guveniliyor (karne mekanigi E4te dogdu)" });
+    if (!knm.var) kayit({ tip: "bulgu", gorev: k.id, cins: "miras-kapi", detay: "donem oncesi kapanmis, bagimsiz karnesi yok — tabloya guveniliyor (karne mekanigi E4te dogdu)" });
     continue;
   }
   const kn = karneDurumu(k.id);
@@ -454,8 +454,8 @@ for (const k of kapilar) {
 // (b) Gorev secimi — bes suzgec
 // YENIDEN-SEVK HAKKI (T4 on-olcumunun dusurdugu kusur, 2026-07-28): model-araciyi halka
 // kopabilir — talimat verilir ama alt-ajan cagrisi hic yapilmaz ya da devir kapisinda doner.
-// Ilk surumde bu gorev "ucusta" sayilip koşunun sonuna kadar KILITLENIYORDU (canli olcumde
-// gorüldü: tek dusen cagri butun kosuyu duran kapiya soktu). Kural: donusu gelmemis gorev BIR
+// Ilk surumde bu gorev "ucusta" sayilip dönemin sonuna kadar KILITLENIYORDU (canli olcumde
+// gorüldü: tek dusen cagri butun donemi duran kapiya soktu). Kural: donusu gelmemis gorev BIR
 // KEZ yeniden sevk edilir (taze cagri — §2.3 zaten "aynı alt-ajan surdurulmez" diyor); ikinci
 // kez de donmezse ucustadir ve duran kapi uretir. Sessiz sonsuz tekrar YOK.
 const acilis = {};
@@ -464,7 +464,7 @@ for (const sk of sevkKararlari) {
   acilis[sk.gorev] = (acilis[sk.gorev] || 0) + 1;
 }
 const donen = new Set(kayitlar
-  .filter((r) => r.j.tip === "zarf" && r.j.kosu === KOSU && r.j.sinif !== "karne" && r.j.sinif !== "hukum")
+  .filter((r) => r.j.tip === "zarf" && r.j.donem === DONEM && r.j.sinif !== "karne" && r.j.sinif !== "hukum")
   .map((r) => r.j.gorev));
 const ucusta = new Set(Object.keys(acilis).filter((g) => !donen.has(g) && acilis[g] >= 2));
 const yeniden = new Set(Object.keys(acilis).filter((g) => !donen.has(g) && acilis[g] === 1));
@@ -513,14 +513,14 @@ if (!acikVar) {
   yaz("GECE NE OLDU: " + bl[0]);
   yaz("SENDE BEKLEYEN: " + bl[1]);
   yaz("SIMDI NE YAPIYOR: " + bl[2]);
-  if (KIP === "interaktif") yaz("not: bu kosu interaktif kipteydi — izin sorusu cikarsa kosu ASILI kalir; cikisi DUR ya da watchdog olur (E5).");
+  if (KIP === "interaktif") yaz("not: bu donem interaktif kipteydi — izin sorusu cikarsa donem ASILI kalir; cikisi DUR ya da watchdog olur (E5).");
   bitir("KAPAT");
 }
 
 // (d) Acik kapi var ama hicbiri acilamiyor → duran kapi (SESSIZ "is bitti" DEMEZ)
 kayit({ tip: "nabiz", tur_no: TUR_NO, zarf_sayisi: zarfSayisi });
 dur("acik kapi var ama hicbiri acilamiyor:\n  - " + engeller.join("\n  - "));
-')" || kapat "ariza" "sevk çözümleyicisi koşamadı (fail-closed) — motor durdu, koşu kapandı"
+')" || kapat "ariza" "sevk çözümleyicisi koşamadı (fail-closed) — motor durdu, dönem kapandı"
 
 # ── 6 · Protokol çözümü ───────────────────────────────────────────────────────────────────
 KARAR="$(printf '%s' "${CIKTI%%$'\n'*}" | cut -f2)"
@@ -531,32 +531,32 @@ MESAJ="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="METIN"{sub(/^METIN\t/,""); prin
 BLOK1="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="BLOK" && $2=="1"{print $3; exit}')"
 BLOK2="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="BLOK" && $2=="2"{print $3; exit}')"
 BLOK3="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="BLOK" && $2=="3"{print $3; exit}')"
-# Alarmlar (E5): DURDURMAYAN haberler — koşu sürer, sahip bilir. Gönderim fail-open.
+# Alarmlar (E5): DURDURMAYAN haberler — dönem sürer, sahip bilir. Gönderim fail-open.
 ALARMLAR="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="ALARM"{sub(/^ALARM\t/,""); print}')"
 if [ -n "$ALARMLAR" ]; then
   while IFS=$'\t' read -r A_CINS A_DETAY; do
     [ -n "$A_CINS" ] || continue
     CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins "$A_CINS" --anahtar "$A_CINS" \
-      --kosu "$KOSU_ID" --kutu "$KOSU_KUTU" --detay "$A_DETAY" || true
+      --donem "$DONEM_ID" --kutu "$DONEM_KUTU" --detay "$A_DETAY" || true
   done <<EOF_ALARM
 $ALARMLAR
 EOF_ALARM
 fi
 
-# ── 7 · Bekçi koşu-içi tazeliği (§7.4): kapı kapanışı turunda ışık tazelenir ──────────────
-# Otonom koşuda oturum uzundur; bekçi yalnız SessionEnd'de koşarsa Stop-turu BAYAT ışık okur.
+# ── 7 · Bekçi dönem-içi tazeliği (§7.4): kapı kapanışı turunda ışık tazelenir ──────────────
+# Otonom dönemde oturum uzundur; bekçi yalnız SessionEnd'de koşarsa Stop-turu BAYAT ışık okur.
 # KIRMIZI duran kapıdır ve node'un kararını EZER (sıra: önce ışık, sonra sevk).
 # ÜÇ HASIM DÜZELTMESİ (2026-07-28):
 #  (a) FAIL-CLOSED: bekçinin ÇIKIŞ KODU karara girer — çöken/erken ölen bekçi YEŞİL sayılmaz.
 #      (Eskiden yalnız çıktı metninde "KIRMIZI" aranıyordu: çöken bekçi = sessiz yeşil.)
-#  (b) KATEGORİ DUYARLI: KUTU tavan KIRMIZI'sı koşuyu DURDURMAZ — kanonun iki yerde yazdığı
-#      istisna (OTONOM_KOSU §1 · GENESIS bekçi tarifi): o bir KAPANIŞ KİLİDİDİR, duran kapı değil.
+#  (b) KATEGORİ DUYARLI: KUTU tavan KIRMIZI'sı dönemi DURDURMAZ — kanonun iki yerde yazdığı
+#      istisna (OTONOM_DONEM §1 · GENESIS bekçi tarifi): o bir KAPANIŞ KİLİDİDİR, duran kapı değil.
 #      `[tavan]` etiketli satırdaki KIRMIZI ayrı sayılır; başka her kategori durdurur.
 #  (c) Bekçi çıktısı stdout/stderr AYRI okunur; ışık satır bazında sınıflanır.
 if [ "${BEKCI_GEREK:-0}" = "1" ]; then
   BEKCI="$KOK/tools/bekci/bekci.sh"
   if [ ! -r "$BEKCI" ]; then
-    kapat "duran-kapi" "bekçi yok (tools/bekci/bekci.sh) — koşu-içi ışık tazelenemiyor; kurulu projede bekçi zorunludur (GENESIS G3.2)"
+    kapat "duran-kapi" "bekçi yok (tools/bekci/bekci.sh) — dönem-içi ışık tazelenemiyor; kurulu projede bekçi zorunludur (GENESIS G3.2)"
   fi
   BEKCI_CIKIS=0
   BEKCI_CIKTI="$(cd "$KOK" && CLAUDE_PROJECT_DIR="$KOK" bash "$BEKCI" 2>&1)" || BEKCI_CIKIS=$?
@@ -578,20 +578,20 @@ EOF_BEKCI
   else
     case "$BEKCI_CIKTI" in *SARI*) BEKCI_ISIK="SARI" ;; *) BEKCI_ISIK="YEŞİL" ;; esac
   fi
-  J_tip=bekci J_kosu="$KOSU_ID" J_isik="$BEKCI_ISIK" JN_cikis="$BEKCI_CIKIS" \
+  J_tip=bekci J_donem="$DONEM_ID" J_isik="$BEKCI_ISIK" JN_cikis="$BEKCI_CIKIS" \
     J_kaynak="sevk kapı-turu" json_kur 2>/dev/null | yaz_ya_da_kapat
   if [ "$BEKCI_ISIK" = "KIRMIZI" ]; then
-    # Ayrı `alarm` postası ATILMAZ: kapat() zaten kosu-bitti haberini gönderiyor ve 3. blok
+    # Ayrı `alarm` postası ATILMAZ: kapat() zaten donem-bitti haberini gönderiyor ve 3. blok
     # sebebi taşıyor. İki posta aynı olayı anlatırsa kanal gürültüye döner (dört olay sözleşmesi).
-    kapat "duran-kapi" "bekçi KIRMIZI (koşu-içi tazeleme): ${DURDURAN} — otonom koşuda bekçi kırmızısı duran kapıdır (OTONOM_KOSU §1)."
+    kapat "duran-kapi" "bekçi KIRMIZI (dönem-içi tazeleme): ${DURDURAN} — otonom dönemde bekçi kırmızısı duran kapıdır (OTONOM_DONEM §1)."
   fi
-  # TAVAN-KIRMIZI koşuyu DURDURMAZ (kanonun iki yerde yazdığı istisna: kapanış kilidi, duran
+  # TAVAN-KIRMIZI dönemi DURDURMAZ (kanonun iki yerde yazdığı istisna: kapanış kilidi, duran
   # kapı değil) — ama sahibe HİÇ söylenmezse kutu sessizce tavanı aşmış olur. Alarm tam da
-  # "görür ama bağlamaz"ın kapandığı yer: haber gider, koşu sürer.
+  # "görür ama bağlamaz"ın kapandığı yer: haber gider, dönem sürer.
   if [ "$BEKCI_ISIK" = "TAVAN-KIRMIZI" ]; then
     CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins kirmizi --anahtar tavan \
-      --kosu "$KOSU_ID" --kutu "$KOSU_KUTU" \
-      --detay "Bekçi KUTU tavanı için KIRMIZI basıyor. Bu bir DURAN KAPI değildir (kapanış kilidi): koşu sürüyor, ama kutu kapanış mührüne bu hâliyle gidemez." || true
+      --donem "$DONEM_ID" --kutu "$DONEM_KUTU" \
+      --detay "Bekçi KUTU tavanı için KIRMIZI basıyor. Bu bir DURAN KAPI değildir (kapanış kilidi): dönem sürüyor, ama kutu kapanış mührüne bu hâliyle gidemez." || true
   fi
 fi
 
@@ -617,9 +617,9 @@ case "$KARAR" in
   KAPAT)
     rm -f "$GOSTERGE"
     kapanis_yuzeyi "durdu — açık iş kalmadı"
-    J_tip=kosu-kapanis J_kosu="$KOSU_ID" J_kutu="$KOSU_KUTU" J_sinif="acik-is-yok" \
+    J_tip=donem-kapanis J_donem="$DONEM_ID" J_kutu="$DONEM_KUTU" J_sinif="acik-is-yok" \
       J_sebep="acik is kalmadi" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
-    printf 'KOŞU KAPANDI · %s · açık iş yok\n%s\n' "$KOSU_ID" "$MESAJ"
+    printf 'DÖNEM KAPANDI · %s · açık iş yok\n%s\n' "$DONEM_ID" "$MESAJ"
     exit 0
     ;;
   *)

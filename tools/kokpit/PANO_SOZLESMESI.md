@@ -12,7 +12,7 @@ içerik serbest.** GENESIS her projede bu iskeleti aynen üretir.
 - **Ayıraçlar:** alan ayıracı ` · ` (U+00B7, boşluklu) · durum ayıracı ` — ` (U+2014, em-dash).
   ASCII'ye normalize edilmez; `toLowerCase` uygulanmaz (Türkçe İ/ı).
 - **PANO mekanik blok:** `## MEKANİK BLOK` başlığı altında ``` ``` ``` fenced blok; içinde:
-  - `Son koşu: YYYY-MM-DD HH:MM (koşu #N)`
+  - `Son denetim: YYYY-MM-DD HH:MM (denetim #N)`
   - `Işıklar: <AD>=<değer> · <AD>=<değer> · …`  → **NAME=val çiftleri** (ad serbest, değer ciddiyet sözlüğünden)
   - `Görevler: G-NN=<durum> · …`
   - `Kırmızı: N · Sarı: N`
@@ -59,7 +59,11 @@ bekleniyor"* gösterir (rol adı değil dosya mtime; aynı-gün ayrımı için).
 Parser bu string'leri **birebir** arar; ASCII'ye çevirme, harf değiştirme:
 
 - `## MEKANİK BLOK`  (İ = U+0130, noktalı büyük I)
-- `Işıklar:`  (I = noktasız büyük I) · `Son koşu:` · `Görevler:` · `Bekleyen sorular:` · `Kırmızı: N · Sarı: N`
+- `Işıklar:`  (I = noktasız büyük I) · `Son denetim:` · `Görevler:` · `Bekleyen sorular:` · `Kırmızı: N · Sarı: N`
+- **Geri uyum (dil paketi, 2026-07-29):** damga satırının kanonik yazımı `Son denetim: … (denetim #N)`.
+  Parser eski yazımı (`Son koşu: … (koşu #N)`) da okur — kokpit kodu üç kopyada ortaktır (D-02) ve
+  üçüncü kopya, eski yazımı kullanan ve yazılmayan Loopinance vault'unu okur (D-05). **Yeni kurulum
+  eski yazımı ÜRETMEZ.**
 - **Ciddiyet değerleri:** `YEŞİL` · `SARI` · `KIRMIZI` · `VERİ-YOK` (nötr). ASCII `YESIL` **skorlanmaz** → nötr sayılır, sistem yanlışlıkla yeşil görünür.
 - `# DURUM — <Ad>`  (— = U+2014 em-dash, çevresinde boşluk) · `**Son oturum:** …`
 - Boş rol için gövdede `Henüz oturum açılmadı` (parser bunu "boş" işaretler).

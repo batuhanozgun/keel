@@ -53,7 +53,9 @@ function parseMekanik(pano, warnings) {
     return out;
   }
   const body = block[1];
-  const son = body.match(/Son koşu:\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\(koşu #(\d+)\)/);
+  // Geri uyum (dil paketi, 2026-07-29): kanonik yazım artık "Son denetim: … (denetim #N)".
+  // Eski kurulumlar ve Loopinance aynası eski yazımı kullanır — ikisi de okunur (D-02/D-05).
+  const son = body.match(/Son (?:denetim|koşu):\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\((?:denetim|koşu) #(\d+)\)/);
   if (son) {
     out.lastRun = son[1];
     out.runNo = Number(son[2]);
@@ -88,7 +90,8 @@ function parseSaglik(saglik, warnings) {
     warnings.push('SAGLIK.md okunamadı');
     return out;
   }
-  const stamp = saglik.match(/son koşu:\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\(koşu #(\d+)\)/);
+  // Geri uyum: kanonik yazım "son denetim: … (denetim #N)"; eski yazım da okunur (D-02/D-05).
+  const stamp = saglik.match(/son (?:denetim|koşu):\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\((?:denetim|koşu) #(\d+)\)/);
   if (stamp) {
     out.lastRun = stamp[1];
     out.runNo = Number(stamp[2]);
@@ -189,7 +192,7 @@ function parseDurum(slug, text) {
   return out;
 }
 
-// --- Tazelik: sahibin tek ezberi (bekçi tazeliği) + koşu-sonrası dosya değişimi (drift radarı) ---
+// --- Tazelik: sahibin tek ezberi (bekçi tazeliği) + denetim-sonrası dosya değişimi (drift radarı) ---
 async function computeFreshness(root, saglik, warnings) {
   const out = { lastRun: saglik.lastRun, stale: false, staleReason: null, driftAfterRun: false, driftFiles: [] };
   if (!saglik.lastRun) {
@@ -218,7 +221,7 @@ async function computeFreshness(root, saglik, warnings) {
   if (ageMs > 24 * 3600 * 1000) {
     out.stale = true;
     const gun = Math.floor(ageMs / (24 * 3600 * 1000));
-    out.staleReason = 'son sağlık koşusu ' + gun + ' gün önce — bekçi güncel değil';
+    out.staleReason = 'son sağlık denetimi ' + gun + ' gün önce — bekçi güncel değil';
   }
   // Koşudan sonra değişen dosyalar (bekçi çıktıları hariç) → ışıklar geride olabilir
   const skip = new Set(['00_pano/SAGLIK.md', '00_pano/PANO.md']);

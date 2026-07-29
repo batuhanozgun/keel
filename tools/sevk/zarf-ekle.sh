@@ -6,7 +6,7 @@
 # kanca bash sürecinde koşar, o engelden geçmez) · BOZUK/yarım satır bekçide KIRMIZI · şema-GEÇERLİ
 # sahte satıra karşı mekanik yakalayıcı YOK — o sınır süreç disiplinidir (bilinen sınır, E2+ adayı).
 # Girdi: stdin'de TEK satır JSON. Şema (surum:1): zorunlu alanlar surum=1 · ts (ISO) · tip
-#   (bilinen liste) · kosu (dize ya da null). Tip listesi: kosu-acilis · kosu-kapanis · nabiz ·
+#   (bilinen liste) · donem (dize ya da null). Tip listesi: donem-acilis · donem-kapanis · nabiz ·
 #   zarf · bicim · sevk-karar · catal-suzgec · sahip-temas · izin-engel · bulgu · karne · devir ·
 #   bekci · haber · dur-alindi · kapi-sayaci (son üçü E5).
 # FAIL-CLOSED: geçersiz girdi / kilit alınamadı / yazım hatası → exit 1 + stderr gerekçe;
@@ -40,12 +40,12 @@ node_bul || hata "node bulunamadi — sema denetimi yapilamiyor (fail-closed)"
 # satırsonu JSON.stringify ile fiziken imkânsızlaşır), geçersizse HATA\t<sebep>.
 SATIR="$(printf '%s' "$GIRDI" | "$NODE_BIN" --input-type=module -e '
 import { readFileSync } from "node:fs";
-const TIPLER = new Set(["kosu-acilis","kosu-kapanis","nabiz","zarf","bicim","sevk-karar","catal-suzgec","sahip-temas","izin-engel","bulgu",
+const TIPLER = new Set(["donem-acilis","donem-kapanis","nabiz","zarf","bicim","sevk-karar","catal-suzgec","sahip-temas","izin-engel","bulgu",
                         "karne","devir","bekci",
                         // E5 (kanal + nabiz): haber = disa giden posta sonucu · dur-alindi = DUR
                         // isaretinin gorulme ani (kaynak: isaret|posta) · kapi-sayaci = sisme
                         // alarminin capasi. Beyaz liste FAIL-CLOSED: listede olmayan tip
-                        // reddedilir ve sevkin uc freni gunlukten sayildigi icin kosu KAPANIR.
+                        // reddedilir ve sevkin uc freni gunlukten sayildigi icin donem KAPANIR.
                         "haber","dur-alindi","kapi-sayaci","alarm"]);
 let ham = "";
 try { ham = readFileSync(0, "utf8"); } catch { console.log("HATA\tstdin okunamadi"); process.exit(0); }
@@ -56,7 +56,7 @@ if (j === null || typeof j !== "object" || Array.isArray(j)) { console.log("HATA
 if (j.surum !== 1) { console.log("HATA\tsurum 1 degil"); process.exit(0); }
 if (typeof j.ts !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(j.ts)) { console.log("HATA\tts eksik/bicimsiz (ISO bekleniyor)"); process.exit(0); }
 if (typeof j.tip !== "string" || !TIPLER.has(j.tip)) { console.log("HATA\ttip eksik ya da bilinmeyen: " + String(j.tip)); process.exit(0); }
-if (!("kosu" in j) || (j.kosu !== null && typeof j.kosu !== "string")) { console.log("HATA\tkosu alani eksik (dize ya da null olmali)"); process.exit(0); }
+if (!("donem" in j) || (j.donem !== null && typeof j.donem !== "string")) { console.log("HATA\tdonem alani eksik (dize ya da null olmali)"); process.exit(0); }
 console.log("TAMAM\t" + JSON.stringify(j));
 ')" || hata "sema denetleyicisi kosamadi (fail-closed)"
 
