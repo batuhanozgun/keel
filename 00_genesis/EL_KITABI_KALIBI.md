@@ -80,7 +80,7 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
 - **D8 · Ayna-delta.** Sahibe "ne anladığını teyit" sözün tekrarı olamaz: kendi kelimelerin +
   en az bir çıkarım/soru. Teyit anında ilgili dosyaya tek satır delta-damgası düşer (retro izi).
   Delta yoksa açıkça: "ekleyecek şeyim yok, yalnız teyit ediyorum" (DEFO_MODELI #2).
-- **D9 · İş-icat yasağı.** İş yalnız iki kaynaktan doğar: aktif kutunun kapıları ya da sahibin
+- **D9 · İş-icat yasağı.** İş yalnız iki kaynaktan doğar: aktif kutunun görevleri ya da sahibin
   koyduğu amaç. Kutu bitince sistem DURUR: pano BEKLEME gösterir, sahibe "sıradaki dilim?"
   sorulur. Boşta kalan rol iş icat etmez; sözleşmesindeki standby modülüyle TEK satır bekleme
   raporu verir (DEFO_MODELI #5, #10). Kendi yazılı ertelemen ("sonraki oturumun işi") sessizce
@@ -99,13 +99,13 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   yeniden yazılır; tarihçe git'te. (İstisna: `oturum-gunlugu.jsonl` — append-only makine günlüğü.)
 - **F3 · Şema + tavanlar.** Dosyalar bilinen yerlerde: `00_pano/` · `01_kutular/` (+`_arsiv/`) ·
   `02_kanon/` · `03_roller/<slug>/` · ürün kodu «ÜRÜN-YOLU» · `tools/`. Şema-dışı = SARI.
-  **Tavanlar (sarı eşik):** PANO 2KB · DURUM 2KB · görev/kapı dosyası 6KB · KUTU 10KB ·
+  **Tavanlar (sarı eşik):** PANO 2KB · DURUM 2KB · görev dosyası 6KB · KUTU 10KB ·
   ERTELENENLER 4KB · SENDE_BEKLEYEN 2KB (madde başına TEK satır) · BRIFING 2KB · NOTLAR 2KB ·
   EL_KITABI 16KB (doğum kapısında KIRMIZI — bilinçli fail-closed). Sarı = uyarı (iş
   durmaz); kırmızı (1,5×) = yalnız kutu KAPANIŞINI kilitler. Sayılar İLK RETRODA ölçümle
   yeniden kalibre edilir (retro zorunlu maddesi). **İçerik-sınıfı:** süreç-günlüğü · 1 satırı
   aşan açık-kalem anlatısı · kural-atıf açılımı/kopyası (sözleşme dosyaları dahil) → SARI (tavandan
-  bağımsız). **Tanecik:** 3+ sorulu görüş işi soru-başına bölünür. **İş-boyutu:** bir kapı =
+  bağımsız). **Tanecik:** 3+ sorulu görüş işi soru-başına bölünür. **İş-boyutu:** bir görev =
   tek oturuş + tek cümlelik kabul testi + tek çıktı + net devir (hata adım sayısıyla katlanır
   — kendi ölçümümüz). *Ders: tavansız dosya bir
   günde 5,6× büyüdü; tavanlılar sınırın 10 baytına yaslandı — tavan içerik-sınıfsız yetmez.
@@ -142,21 +142,21 @@ yoksa silme-testi koşulmamış sayılır). (Neden: DEFO_MODELI #3 + iz ilkesi.)
 
 1. **Kur** — koordinatör kutu iskeletini açar; PO kabul ölçütlerini İŞTEN ÖNCE yazar. Her
    ölçüt iki sınır taşır: alt (ne olacak, tek başına evet/hayır) ve **üst** ("şunu da
-   eklersen kapsam aşımı = hata"). Tavan: tek faz · tek gözle-görülür demo cümlesi · ≤5 kapı ·
-   tek domain rolü — sığmıyorsa böl. Çözülmemiş bağımlılıklı kapı AÇILMAZ (öne alınır ya da
+   eklersen kapsam aşımı = hata"). Tavan: tek faz · tek gözle-görülür demo cümlesi · ≤5 görev ·
+   tek domain rolü — sığmıyorsa böl. Çözülmemiş bağımlılıklı görev AÇILMAZ (öne alınır ya da
    ERTELENENLER'e sahip+uyanma koşuluyla). KUTU'da zorunlu **"bu kutu bitince gözünle göreceklerin"**
    bloğu: 3 somut, sahip-dilinde, gözlemlenebilir iddia.
 2. **Görüş turu** [KADRAN:TAM] — roller kutu üstünden risk/varsayım taraması yapar; artefakt
    yoksa PAS meşrudur, PAS da yazılı görüştür.
 3. **Açılış mührü** — göreceklerin bloğu üstünden **«SAHİP» açılış mührü**; mühür alınır
    alınmaz commit atılır (**taban ref** — bekçinin ölçüt-diff'i buna göre çalışır).
-4. **Üretim** — kod içeren kapı önce BAŞARISIZ testle başlar (RED→GREEN — şablonun kendi
-   geliştirme disiplini; miras). Kapılar işlenir; Kanıt hücresi doğar (açıkken `test:`/`demo:` tipi; vault-yolu
+4. **Üretim** — kod içeren görev önce BAŞARISIZ testle başlar (RED→GREEN — şablonun kendi
+   geliştirme disiplini; miras). Görevler işlenir; Kanıt hücresi doğar (açıkken `test:`/`demo:` tipi; vault-yolu
    ancak dosya fiilen doğunca yazılır). **Ölçüt dokunulmazlığı:** işi yapan rol ölçüt satırına
    DOKUNAMAZ; bekçi ölçütleri taban ref'e diff'ler, değişiklik = SARI + sahibe not (mühürlü
    değişiklik meşru istisna). *Ders: ajan kendi başarı kriterini değiştirebildiğinde oyunlama
    katlanarak artar — ölçülmüş.*
-5. **Bağımsız doğrulama** — denetçi kapıları fiilen kontrol eder (D4); dosya-gerçeği
+5. **Bağımsız doğrulama** — denetçi görevleri fiilen kontrol eder (D4); dosya-gerçeği
    `dogrulayici` alt-ajanıyla. [KADRAN:TAM] Büyük yama paketinde kapanış mühründen önce
    hasım turu önerilir: `/hasim-inceleme` (yakıt-yoğun; küçük işte gerekmez).
 6. **Demo + kapanış mührü** — tüketilmemiş L2/L3 bayrağı varken kutu KAPANMAZ. Sahibe D7
@@ -170,7 +170,7 @@ yoksa silme-testi koşulmamış sayılır). (Neden: DEFO_MODELI #3 + iz ilkesi.)
 8. **Arşiv** — kutu `_arsiv/`e; ertelenmişler sahip+uyanma koşuluyla ERTELENENLER'e ("zamanı
    gelince getir" parkı dahil — sahip karara zorlanmaz, parklanan kalem kaybolmaz).
 
-**Kapı durum sözlüğü (makine-okur, birebir):** `açık` · `sürüyor` · `mühür-bekliyor` · `kapalı` · `pas`.
+**Görev durum sözlüğü (makine-okur, birebir):** `açık` · `sürüyor` · `mühür-bekliyor` · `kapalı` · `pas`.
 
 ## Mühür ritüeli
 
@@ -195,7 +195,7 @@ türetmek YASAK.
 
 İlk kutularda kanon incedir; esneme bilinçli: karar gövdesi yokken L3 = "yeni karar üret +
 mühürle" · golden/spec-tazelik kontrolleri ilgili dosya yoksa BİLGİ (KIRMIZI değil) ·
-bağ-varlık ESNEMEZ (kapı satırı varsa Kanıt işaretçisi de var).
+bağ-varlık ESNEMEZ (görev satırı varsa Kanıt işaretçisi de var).
 
 ## Kişisel-veri süzgeci
 

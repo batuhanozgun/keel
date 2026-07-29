@@ -10,10 +10,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEKFAZ = path.join(__dirname, 'fixtures/tekfaz');
 const IKIFAZ = path.join(__dirname, 'fixtures/ikifaz');
 
-test('tek-faz: Faz başlığı yokken tüm kapılar toplanır', async () => {
+test('tek-faz: Faz başlığı yokken tüm görevler toplanır', async () => {
   const s = await buildState(TEKFAZ);
   assert.ok(s.kutu, 'aktif kutu olmalı');
-  assert.equal(s.kutu.gates.length, 5, 'tek-faz 5 kapı');
+  assert.equal(s.kutu.gates.length, 5, 'tek-faz 5 görev');
   const ids = s.kutu.gates.map((g) => g.id).sort();
   assert.deepEqual(ids, ['G-01', 'G-02', 'G-03', 'G-04', 'G-05']);
   const g05 = s.kutu.gates.find((g) => g.id === 'G-05');
@@ -21,7 +21,7 @@ test('tek-faz: Faz başlığı yokken tüm kapılar toplanır', async () => {
   assert.equal(g05.durum, 'açık');
 });
 
-test('iki-faz: yalnız Faz A kapıları toplanır (Faz B hariç)', async () => {
+test('iki-faz: yalnız Faz A görevleri toplanır (Faz B hariç)', async () => {
   const s = await buildState(IKIFAZ);
   assert.ok(s.kutu);
   const ids = s.kutu.gates.map((g) => g.id).sort();
@@ -53,18 +53,43 @@ test('geri-uyum: 4 sütunlu eski tablo kanit=null ile okunur (eski vault kırıl
   const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-4sutun-'));
   await fs.mkdir(path.join(kok, '01_kutular', 'KT-009-eski'), { recursive: true });
   await fs.writeFile(path.join(kok, '01_kutular', 'KT-009-eski', 'KUTU.md'),
-    '# KT-009 — Eski biçim\n\n## Kapılar\n| Kapı | İş | Sahip | Durum |\n|---|---|---|---|\n| G-01 | Eski iş | uygulayici | açık |\n');
+    '# KT-009 — Eski biçim\n\n## Görevler\n| Görev | İş | Sahip | Durum |\n|---|---|---|---|\n| G-01 | Eski iş | uygulayici | açık |\n');
   const s = await buildState(kok);
   assert.equal(s.kutu.gates.length, 1);
   assert.equal(s.kutu.gates[0].kanit, null);
   assert.equal(s.kutu.gates[0].durum, 'açık');
 });
 
+// Dil paketi 2. katman (2026-07-29): başlık "## Kapılar" → "## Görevler" oldu. Kod üç kopyada
+// bayt-bayt ortaktır (D-02) ve üçüncü kopya eski başlığı kullanan bir vault'u okur → iki başlık
+// da okunmalı. Bu test o geri-uyumu tek başına tutar (yukarıdaki test 4-sütunu ölçer).
+test('geri-uyum: eski "## Kapılar" başlığı da okunur — çok-faz kolu dâhil', async () => {
+  const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-eski-baslik-'));
+  await fs.mkdir(path.join(kok, '01_kutular', 'KT-012-eski-baslik'), { recursive: true });
+  await fs.writeFile(path.join(kok, '01_kutular', 'KT-012-eski-baslik', 'KUTU.md'),
+    '# KT-012 — Eski başlık\n\n## Kapılar\n\n### Faz A — aktif\n| Kapı | İş | Sahip | Durum | Kanıt |\n|---|---|---|---|---|\n'
+    + '| G-01 | Eski başlıklı iş | uygulayici | açık | test: x |\n\n### Faz B — iskelet\n| Kapı | İş | Sahip | Durum | Kanıt |\n|---|---|---|---|---|\n'
+    + '| G-09 | Pasif | tasarim | açık | — |\n');
+  const s = await buildState(kok);
+  assert.deepEqual(s.kutu.gates.map((g) => g.id), ['G-01'], 'eski başlık altında Faz A okunur, Faz B pasif kalır');
+  assert.equal(s.kutu.gates[0].kanit, 'test: x');
+});
+
+test('yeni başlık: "## Görevler" okunur (kanonik biçim)', async () => {
+  const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-yeni-baslik-'));
+  await fs.mkdir(path.join(kok, '01_kutular', 'KT-013-yeni-baslik'), { recursive: true });
+  await fs.writeFile(path.join(kok, '01_kutular', 'KT-013-yeni-baslik', 'KUTU.md'),
+    '# KT-013 — Yeni başlık\n\n## Görevler\n| Görev | İş | Sahip | Durum | Kanıt |\n|---|---|---|---|---|\n| G-01 | İş | uygulayici | açık | test: y |\n');
+  const s = await buildState(kok);
+  assert.equal(s.kutu.gates.length, 1);
+  assert.equal(s.kutu.gates[0].kanit, 'test: y');
+});
+
 test('B4 (soğuk-denetim): hücredeki `a|b` satır-içi kodu sütunları KAYDIRMAZ (markdown.mjs ile ortak bölücü)', async () => {
   const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-pipe-'));
   await fs.mkdir(path.join(kok, '01_kutular', 'KT-011-kod'), { recursive: true });
   await fs.writeFile(path.join(kok, '01_kutular', 'KT-011-kod', 'KUTU.md'),
-    '# KT-011 — Kod\n\n## Kapılar\n| Kapı | İş | Sahip | Durum | Kanıt |\n|---|---|---|---|---|\n| G-01 | kod `a|b` üret | uygulayici | açık | test: x |\n');
+    '# KT-011 — Kod\n\n## Görevler\n| Görev | İş | Sahip | Durum | Kanıt |\n|---|---|---|---|---|\n| G-01 | kod `a|b` üret | uygulayici | açık | test: x |\n');
   const s = await buildState(kok);
   const g = s.kutu.gates[0];
   assert.equal(g.is, 'kod `a|b` üret', 'iş hücresi bütün kalmalı');
@@ -77,7 +102,7 @@ test('— hücresi işaretçisiz sayılır: kanit=null (bekçiyle aynı dil; UI 
   const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-tire-'));
   await fs.mkdir(path.join(kok, '01_kutular', 'KT-010-tire'), { recursive: true });
   await fs.writeFile(path.join(kok, '01_kutular', 'KT-010-tire', 'KUTU.md'),
-    '# KT-010 — Tire\n\n## Kapılar\n| Kapı | İş | Sahip | Durum | Kanıt |\n|---|---|---|---|---|\n| G-01 | İş | uygulayici | açık | — |\n');
+    '# KT-010 — Tire\n\n## Görevler\n| Görev | İş | Sahip | Durum | Kanıt |\n|---|---|---|---|---|\n| G-01 | İş | uygulayici | açık | — |\n');
   const s = await buildState(kok);
   assert.equal(s.kutu.gates[0].kanit, null);
 });

@@ -46,29 +46,64 @@ Değişen yalnız **isim** hâlidir.
 
 ---
 
-## 2 · "kapı" → **görev** — KARARLAŞTIRILDI, HENÜZ UYGULANMADI
+## 2 · "kapı" ÜÇ şeyi anlatıyordu · UYGULANDI
 
-`KUTU.md` içindeki `## Kapılar` tablosunun bir satırı bir **görevdir** (`G-NN`). Kod bugün aynı
-şey için **iki ad** taşıyor: yerel değişken `kapi`, günlük alanı `gorev` — `sevk.sh` içinde
-`r.j.gorev === kapi` satırı bunu açıkça gösteriyor. Hedef: tek ad, **görev**.
+Düzeltme tarihi: 2026-07-29 (dil paketi 2. katman). Yöntem: 50 dosya **dosya dosya okundu** —
+635 geçişin her biri tek tek sınıflandırıldı. Mekanik toplu değiştirme bir kez denenip geri
+alınmıştı (anlam bozuyordu); bu kayıt onun yerine geçer.
+
+### Anlam 1 → **görev**
+
+`KUTU.md` görev tablosunun bir satırı (`G-NN`): sahibi var, durumu var, kanıtı var, alt-ajana
+sevk edilir, karneyle kapanır. Kod aynı şey için **iki ad** taşıyordu — yerel değişken `kapi`,
+günlük alanı `gorev` (`sevk.sh`'ta `r.j.gorev === kapi`). Tek ada indi: **görev**.
 
 | Eski | Yeni |
 |---|---|
 | kapı (`KUTU.md` tablosunun satırı) | **görev** |
-| `## Kapılar` başlığı | `## Görevler` |
-| `duran-kapi` · `miras-kapi` · `kapi-sayaci` · `kapiToplam` | `duran-gorev` · `miras-gorev` · `gorev-sayaci` · `gorevToplam` |
-| günlük alanı `kapi` (karne kayıtları) | `gorev` — **şema değişikliği** |
-| denetleyen mekanizmalar (`kurulum-kapisi.sh`, `zarf-bicim-kapisi.sh`, `devir-kapisi.sh`, biçim/devir/kurulum/izin/SubagentStop kapısı) | **değişmez** — bunlar gerçekten birer kapıdır: geçirir ya da geçirmez |
+| `## Kapılar` başlığı · `\| Kapı \|` sütun başlığı | `## Görevler` · `\| Görev \|` |
+| `kapilar` · `kapiToplam` | `gorevler` · `gorevToplam` |
+| `miras-kapi` · `pas-kapi` · `kapi-kapatilmadi` (bulgu cinsleri) | `miras-gorev` · `pas-gorev` · `gorev-kapatilmadi` |
+| `tip: "kapi-sayaci"` + alanı `kapi_sayisi` | `tip: "gorev-sayaci"` + `gorev_sayisi` |
+| karne kaydının alanı `kapi` (`j.kapi`) | `gorev` — **şema değişikliği** |
+| zarf satırı `KARNE-KAPI:` | **`KARNE-GOREV:`** — **sözleşme değişikliği** (rol zarfları, iki ajan kalıbı, biçim kapısı, testler birlikte döndü) |
+| kokpit paneli `kutu · kapılar` | `kutu · görevler` |
 
-**Neden bugün uygulanmadı (2026-07-29):** mekanik dönüşüm denendi ve **anlam bozdu.** İki cins
-"kapı" aynı cümlede, hatta satır sonunda bölünmüş hâlde yaşıyor — kalıp dosyasında *"SubagentStop
-biçim / kapısı"* (mekanizma) *"biçim görevi"* oldu, *"İzin kapısı"* *"İzin görevi"* oldu. Değişiklik
-geri alındı. Bu katman **dosya dosya okunarak** yapılır; kural listesiyle değil.
+### Anlam 2 → **kapı** (değişmedi)
 
-**Uygulanınca geçerli olacak geri uyum kuralı:** kokpit (`tools/kokpit/lib/status.mjs`) **iki
-başlığı da okumalı** — `## Görevler` ve `## Kapılar`. Sebep: kokpit kodu üç kopyada bayt-bayt
-ortaktır (D-02) ve üçüncü kopya Loopinance projesinin panosudur; o proje eski başlığı kullanır ve
-oraya yazılmaz (D-05). Aynı yöntem 2026-07-14'te sütun sayısı için de kullanıldı.
+Geçiren ya da geçirmeyen **denetim noktası**: `kurulum-kapisi.sh` · `devir-kapisi.sh` ·
+`zarf-bicim-kapisi.sh` · biçim/devir/izin/jargon/SubagentStop kapısı · G4.5 sabit kapısı ·
+bekçi kapıları · faz kapıları · "kapılanma" · `KAPI_` önekli ortam değişkenleri.
+
+**`duran kapı` da buraya girer — sözlüğün ilk yazımı yanlıştı.** Burada `duran-kapi` →
+`duran-gorev` yazıyordu; uygulama sırasında çürütüldü: `sevk.sh` bu cinsi "node bulunamadı",
+"DUR işareti var", "gösterge bayat", "bekçi KIRMIZI" gibi **hiçbir görevle ilgisi olmayan**
+hâllerde de basıyor. Duran kapı bir `G-NN` satırı değil, akışın açılmayan bir denetim noktasına
+çarpmasıdır. Doğru okunuş — ikisi aynı cümlede yaşar:
+
+> "açık **görev** var ama hiçbiri açılamıyor → duran **kapı**"
+
+### Anlam 3 → **adım** (yeni bulundu)
+
+`00_genesis/GENESIS_DURUM.md` başlığı `## Bekleyen kapı` bir **G-adımını** anlatıyordu (G0…G5) —
+ne görev ne mekanizma. Aynı dosya zaten "Tamamlanan adımlar" diyor. → **`## Bekleyen adım`**
+(ve `GENESIS.md`'deki ona yapılan atıf). Başka hiçbir yerde bu dönüşüm yok.
+
+### Geri uyum — kokpit iki başlığı da okur
+
+`tools/kokpit/lib/status.mjs` hem `## Görevler` hem `## Kapılar` okur. Sebep: kokpit kodu üç
+kopyada bayt-bayt ortaktır (D-02) ve üçüncü kopya Loopinance projesinin panosudur; o proje eski
+başlığı kullanır ve oraya yazılmaz (D-05). Aynı yöntem 2026-07-14'te sütun sayısı için de
+kullanılmıştı. İki başlığı da ayrı birer test tutar.
+
+**Karne kaydının `kapi` alanı ve `KARNE-KAPI` satırı için geri uyum YOKTUR** — bilerek. Bu
+mekanizma 2026-07-28'de doğdu; hiçbir kurulu projede eski yazımlı zarf günlüğü yok. Geri uyum
+eklemek, hiç okunmayacak bir ikinci şemayı kalıcılaştırırdı.
+
+**Kanıt (2026-07-29):** guard 343/343 iki kopyada · kokpit 52 test üç kopyada (50 → 52; eklenen
+ikisi eski ve yeni başlığı tek tek tutar) · gerçek Loopinance vault'u eski başlıkla hâlâ sıfır
+uyarıyla okunuyor (21 görev) · `keel-tatbikat-faz3` numunesi de sıfır uyarı · `kurulu-sim`
+15.843B / marj 541B (freni geçiyor).
 
 ---
 
@@ -81,6 +116,8 @@ oraya yazılmaz (D-05). Aynı yöntem 2026-07-14'te sütun sayısı için de kul
 | **`damga`** — rol damgası, kapanış damgası, tarih damgası | Gerçekten damgadır; tek istisna aşağıda |
 | **`tools/sevk/damgalar/T0-T4`** = **prova fişi** | Adı bugün düzeltilmedi: bu dosyalar dağıtılan kopyadan tamamen çıkacak (Faz 2 paket 7). Aynı dosyaya iki kez dokunulmaz |
 | **`yapim` · `kurulum` · `kapanis`** dönem türleri | `yapim` iş üretir; `kurulum` ve `kapanis` hiçbir şey üretmez, **denetim evresidir**. Adlar Faz 2 paket 7'de evre tasarımıyla birlikte ele alınır |
+| kokpitteki İngilizce `gates` · `parseGates` alanları | Türkçe "kapı"nın iki anlamı İngilizce adda çakışmıyor: kodda mekanizmalara hiçbir yerde `gate` denmiyor. Ad kokpitin JSON sözleşmesidir ve üç kopyada bayt-bayt ortaktır — değiştirmek D-02 eşitleme riskini karşılıksız artırırdı |
+| `KURULUM` · `KAPANIS` **görev** kimlikleri ile `kurulum kapısı` · `kapanış kapısı` **mekanizmaları** | İkisi ayrı şey ve ikisi de doğru: kimlik, karnenin konusu olan denetim görevidir; kapı, o mühürden önce geçilmesi gereken denetim noktasıdır |
 
 ---
 

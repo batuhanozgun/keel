@@ -119,7 +119,7 @@ if (!existsSync(gy)) {
 // sevk-karar" diyordu, kod yalnizca "bir kere eslesti mi" diye bakiyordu — donusu gelmis bir
 // gorev sinirsiz kez yeniden acilabiliyordu ve butce freni gercek alt-ajan sayisini kacirtiyordu).
 // Tuketim IKI kanaldan sayilir, MAX alinir (cift sayim yok): (a) zarf kaydi BİTEN goreviyle;
-// (b) hukum kaydi (karne / catal-suzgec) hukmun KONUSU olan kapiyla — hukum koltuklarinin
+// (b) hukum kaydi (karne / catal-suzgec) hukmun KONUSU olan gorevle — hukum koltuklarinin
 // BİTEN gorevi kendi cagrisini anlatir, sevkin actigi gorevi degil.
 let hicVar = false;
 const gorulen = [];
@@ -134,7 +134,7 @@ for (const l of readFileSync(gy, "utf8").split("\n")) {
   } else if (j.tip === "zarf") {
     const a = String(j.ajan) + " " + String(j.gorev); zarfS[a] = (zarfS[a] || 0) + 1;
   } else if (j.tip === "karne" || j.tip === "catal-suzgec") {
-    const a = String(j.ajan) + " " + String(j.kapi || j.gorev); hukumS[a] = (hukumS[a] || 0) + 1;
+    const a = String(j.ajan) + " " + String(j.gorev); hukumS[a] = (hukumS[a] || 0) + 1;
   }
 }
 const bu = rol + " " + gorev;

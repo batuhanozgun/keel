@@ -18,7 +18,7 @@ hiçbir parça devreye girmez (dönem-AÇIK şartı).
   süzgeci · **karne şartı** · görev seçimi · kapanış. `exit 2` = durmayı engeller, stderr'daki
   talimat modele ulaşır; `exit 0` = dönem kapandı. **Fail-closed YÖNÜ terstir:** sevkin kendi
   hatası dönemi sürdürmez, KAPATIR (aksi sonsuz Stop döngüsü olurdu). İş yapmaz, karar basmaz,
-  kapı kapatmaz. Bekçiyi kapı-turunda konvansiyon-yoldan kendisi koşturur (KIRMIZI = duran kapı).
+  görev kapatmaz. Bekçiyi görev-turunda konvansiyon-yoldan kendisi koşturur (KIRMIZI = duran kapı).
 - **`devir-kapisi.sh`** — alt-ajan çağrısının PreToolUse kapısı (E4; matcher `Task|Agent`).
   Üç denetim: **şema** (devir metni yalnız `gorev·kutu·sozlesme·kural·ek-okuma`; tavan 800 B) ·
   **talimat↔fiil** ((rol, görev) açık bir `sevk-karar`la eşleşmeli — *iç içe alt-ajan da burada
@@ -64,15 +64,15 @@ Yazamaz koltuklar (`.claude/agents/`): `dogrulayici` (dosya-gerçeği **+ E4 kar
 ## Karne şartı (K2 — E4'ün çekirdeği)
 
 "Kimse kendi işine yeşil diyemez" E4'e kadar bir KURALDI; artık mekaniktir. **Karneci sınıfı**
-(`dogrulayici` · `kurulum-denetcisi`) dönüşüne üç satır ekler — `KARNE-KAPI` · `HÜKÜM` ·
-`MADDELER` — ve biçim kapısı günlüğe ayrı bir `karne` kaydı düşürür. Sevk bir kapıyı **ancak**
+(`dogrulayici` · `kurulum-denetcisi`) dönüşüne üç satır ekler — `KARNE-GOREV` · `HÜKÜM` ·
+`MADDELER` — ve biçim kapısı günlüğe ayrı bir `karne` kaydı düşürür. Sevk bir görevi **ancak**
 (a) tabloda `kapalı`, (b) YEŞİL karne kaydı var, (c) karne o görevin **son iş-zarfından SONRA**
 yazılmışsa kapalı sayar. Üç mekanik ayrıntı:
 
 - **Öz-karne yasağı:** karnenin konusu olan işi yapan koltuk karneyi yazamaz (kapı keser + iz).
 - **Sınıf ayrımı:** karneci/denetçi zarfları `sinif` alanı taşır (`karne`/`hukum`); tazelik
   ölçümü yalnız `is` zarflarına bakar — aksi hâlde karne kendi zarfından eski görünürdü.
-- **KIRMIZI karne duran kapıdır** (v1): sevk kapıyı kendi açamaz, iş role/sahibe döner.
+- **KIRMIZI karne duran kapıdır** (v1): sevk görevi kendi açamaz, iş role/sahibe döner.
 
 ## Dönem sınıfı, bütçe ve bilinen sınırlar (hasım turu 2026-07-28)
 
@@ -80,11 +80,11 @@ yazılmışsa kapalı sayar. Üç mekanik ayrıntı:
   dönem, OTONOM_DONEM §10'un iki EK şartını arar — **T6 damgası** (E5 kanal tatbikatı) ve
   **kurulu watchdog** (`tools/sevk/watchdog-kurulu`). Bugün ikisi de yoktur: yani gerçek bir
   kutu E5 kurulmadan sahipsiz koşamaz. Tatbikat dönemleri muaftır (döngüsel bağımlılık olmasın).
-- **BÜTÇE üretim + doğrulama çağrılarının TOPLAMIDIR:** karne şartı yüzünden bir kapı tipik
+- **BÜTÇE üretim + doğrulama çağrılarının TOPLAMIDIR:** karne şartı yüzünden bir görev tipik
   olarak **iki** alt-ajan çağrısı yer (üretim + doğrulayıcı). Duruş sözleşmesindeki sayıyı buna
   göre seç; küçük bütçe dönemi doğrulamanın ortasında duran kapıya sokar.
-- **Miras kapı:** karne mekaniği E4'te doğdu; dönemden ÖNCE kapanmış kapıların karnesi olamaz.
-  Sevk onları yeniden doğrulatmaz (bütçeyi yerdi), tabloya güvenir ve `miras-kapi` bulgusu düşer.
+- **Miras görev:** karne mekaniği E4'te doğdu; dönemden ÖNCE kapanmış görevlerin karnesi olamaz.
+  Sevk onları yeniden doğrulatmaz (bütçeyi yerdi), tabloya güvenir ve `miras-gorev` bulgusu düşer.
 - **Tur-tavanı şüphesi mekaniği:** `maxTurns` kesmesi işaretsizdir (E0 ölçümü); zarfı hiç
   dönmeyen dönem biçim kapısında yakalanır ve `tur-tavani-suphesi` bulgusu düşer. Sevk ayrıca
   dönüşü gelmeyen görevi **bir kez** yeniden sevk eder, ikincide duran kapı üretir.

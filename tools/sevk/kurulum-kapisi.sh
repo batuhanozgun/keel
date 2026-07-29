@@ -8,10 +8,10 @@
 # FAIL-CLOSED: betiğin kendi hatası da "eksik"tir (sessiz yeşil yok).
 #
 # Denetlediği (yargı gerektirmeyenler — gerisi kurulum-denetcisi koltuğunun işidir):
-#   K3  duruş sözleşmesi dört satır dolu + BÜTÇE sayılı · bağımlılık/risk bloğu her kapı için tam
+#   K3  duruş sözleşmesi dört satır dolu + BÜTÇE sayılı · bağımlılık/risk bloğu her görev için tam
 #   K6  sahibin karar alanı hazır (karar-alani.sh) — D-25 ③ proje katmanı
 #   K7  gerçek-veri işaret listesi dolu (boşsa BEYAN zorunlu: "Hat-1 yalnız jenerik desenle koşuyor")
-#   +   her kapının sahibi kadroda kayıtlı · alt-ajan dosyalarında `memory:` alanı YOK
+#   +   her görevin sahibi kadroda kayıtlı · alt-ajan dosyalarında `memory:` alanı YOK
 set -uo pipefail
 export LC_ALL=C.UTF-8
 
@@ -64,15 +64,15 @@ else {
   }
 }
 
-// Kapi tablosu + bagimlilik/risk blogu eslesmesi
-const kapilar = [];
+// Gorev tablosu + bagimlilik/risk blogu eslesmesi
+const gorevler = [];
 for (const s of satirlar) {
   if (!/^\s*\|/.test(s)) continue;
   const h = s.split("|").map((x) => x.trim());
   if (h.length < 6 || !/^G-\d+$/.test(h[1])) continue;
-  kapilar.push({ id: h[1], sahip: h[3] });
+  gorevler.push({ id: h[1], sahip: h[3] });
 }
-if (!kapilar.length) cik.push("EKSIK\tkapi tablosu okunamadi (G-NN satiri yok)");
+if (!gorevler.length) cik.push("EKSIK\tgorev tablosu okunamadi (G-NN satiri yok)");
 const risk = blok("Bağımlılık ve risk");
 if (risk === null) cik.push("EKSIK\tbagimlilik/risk blogu yok (## Bağımlılık ve risk) — sevk bagimlilik okuyamaz (OTONOM_DONEM §3)");
 else {
@@ -82,23 +82,23 @@ else {
     if (m) kayitli.add(m[1]);
     else if (/^\s*G-\d+\s*:/.test(s)) cik.push("EKSIK\trisk satiri bicimsiz: " + s.trim().slice(0, 70));
   }
-  const yok = kapilar.filter((k) => !kayitli.has(k.id)).map((k) => k.id);
-  if (yok.length) cik.push("EKSIK\tbagimlilik/risk satiri olmayan kapi(lar): " + yok.join(" "));
-  else if (kapilar.length) cik.push("GECTI\tbagimlilik/risk blogu " + kapilar.length + " kapinin hepsini kapsiyor");
-  // Onkosul cozulebilir mi (var olmayan kapiya bagimlilik = kurulum kusuru)
-  const idler = new Set(kapilar.map((k) => k.id));
+  const yok = gorevler.filter((k) => !kayitli.has(k.id)).map((k) => k.id);
+  if (yok.length) cik.push("EKSIK\tbagimlilik/risk satiri olmayan gorev(ler): " + yok.join(" "));
+  else if (gorevler.length) cik.push("GECTI\tbagimlilik/risk blogu " + gorevler.length + " gorevin hepsini kapsiyor");
+  // Onkosul cozulebilir mi (var olmayan goreve bagimlilik = kurulum kusuru)
+  const idler = new Set(gorevler.map((k) => k.id));
   for (const s of risk.split("\n")) {
     const m = s.match(/^\s*(G-\d+)\s*:\s*onkosul=([^·]*)/);
     if (!m) continue;
     for (const o of (m[2].match(/G-\d+/g) || [])) {
-      if (!idler.has(o)) cik.push("EKSIK\t" + m[1] + " var olmayan kapiya bagimli: " + o);
+      if (!idler.has(o)) cik.push("EKSIK\t" + m[1] + " var olmayan goreve bagimli: " + o);
       if (o === m[1]) cik.push("EKSIK\t" + m[1] + " kendine bagimli (dongusel onkosul)");
     }
   }
 }
 
-// Kadro esligi: her kapinin sahibi .claude/agents altinda kayitli olmali (sevk oyle sevk eder)
-for (const k of kapilar) {
+// Kadro esligi: her gorevin sahibi .claude/agents altinda kayitli olmali (sevk oyle sevk eder)
+for (const k of gorevler) {
   if (!/^[a-z0-9_-]+$/.test(k.sahip || "")) { cik.push("EKSIK\t" + k.id + " sahip hucresi slug degil: " + JSON.stringify(k.sahip)); continue; }
   if (!existsSync(join(KOK, ".claude", "agents", k.sahip + ".md"))) cik.push("EKSIK\t" + k.id + " sahibi kadroda yok: .claude/agents/" + k.sahip + ".md");
 }

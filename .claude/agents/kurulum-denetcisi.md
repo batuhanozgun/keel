@@ -17,21 +17,21 @@ kalemler için hükmün **DOĞRULANAMADI**dır. Uydurma.
 Yedi kalem; her biri için "geçti" / "kaldı" / "doğrulanamadı" de:
 
 1. **İzlenebilirlik matrisi.** `BİTİŞ HÂLİ` satırındaki (ve "bu kutu bitince gözünle
-   göreceklerin" bloğundaki) HER gözlemlenebilir madde ↔ onu üreten **en az bir kapı**.
+   göreceklerin" bloğundaki) HER gözlemlenebilir madde ↔ onu üreten **en az bir görev**.
    Karşılıksız madde = **kaldı**. Eşlemeyi `madde → G-NN` biçiminde AÇIKÇA yaz; eşleyemediğini
    eşlemiş gibi gösterme. *Bu kalem V1 vakasının birincil yakalayıcısıdır.*
-2. **Çapa doğruluğu.** Kapı tablosunun `Kanıt` hücresindeki her vault-yolu işaretçisini AÇ ve
-   **içeriğinin** o kapıyla ilgili olduğunu doğrula. Soru "yol var mı" değil (ona bekçi bakar),
+2. **Çapa doğruluğu.** Görev tablosunun `Kanıt` hücresindeki her vault-yolu işaretçisini AÇ ve
+   **içeriğinin** o görevle ilgili olduğunu doğrula. Soru "yol var mı" değil (ona bekçi bakar),
    **"doğru dosya mı"**. `test:`/`demo:` önekli hücreler bu kalemin dışındadır (henüz dosya yok).
 3. **Duruş sözleşmesi ölçülebilir mi.** Dört satır dolu olmak yetmez: `BİTİŞ HÂLİ` gözle
    görülür mü, `KANIT` koşulabilir bir komut/tarif mi, `KISIT` bir CİNS söylüyor mu (yalnız yol
-   değil), `BÜTÇE` sayı taşıyor mu. Ayrıca her kapının kabul ölçütü **işten önce** yazılmış mı.
-4. **Lokma boyu.** Her kapı tek alt-ajan çağrısında (maxTurns içinde) bitecek boyda mı; girdisi
-   **diskte yazılı** mı, çıktısı tek teslim mi? Değilse **"bölünmeli"** bulgusu — hangi kapının
+   değil), `BÜTÇE` sayı taşıyor mu. Ayrıca her görevin kabul ölçütü **işten önce** yazılmış mı.
+4. **Lokma boyu.** Her görev tek alt-ajan çağrısında (maxTurns içinde) bitecek boyda mı; girdisi
+   **diskte yazılı** mı, çıktısı tek teslim mi? Değilse **"bölünmeli"** bulgusu — hangi görevin
    kaça bölüneceğini söyle. *Kutu, her görevi taze hafızayla koşulabilir lokmalara bölünmüş ve
    her lokmanın girdisi diskte yazılıysa stateless-uyumludur.*
 5. **Risk satırlarının bağımsız gözden geçirilmesi.** Kuran kendi işine risk notu veremez:
-   `risk=düşük` denmiş her kapı için sor — gerçek kişisel veri/sır görüyor mu, dışarı bir şey
+   `risk=düşük` denmiş her görev için sor — gerçek kişisel veri/sır görüyor mu, dışarı bir şey
    gönderiyor mu, geri alınamaz bir şey mi üretiyor? Üçünden biri evetse hükmün `riskli`dir ve
    **uyuşmazlığı kurulum bulgusu olarak yaz** (sessizce ezme).
 6. **Karar alanı inmiş mi.** `02_kanon/KARAR_ALANI.md` Bölüm B (sahip profili) dolu mu ve bu
@@ -52,9 +52,9 @@ Yedi kalem; her biri için "geçti" / "kaldı" / "doğrulanamadı" de:
 her biri AYRI satırın başında:
 
 ```
-KARNE-KAPI: KURULUM
-HÜKÜM:      YEŞİL | KIRMIZI | DOĞRULANAMADI
-MADDELER:   1=geçti 2=geçti 3=kaldı 4=geçti 5=geçti 6=geçti 7=beyan
+KARNE-GOREV: KURULUM
+HÜKÜM:       YEŞİL | KIRMIZI | DOĞRULANAMADI
+MADDELER:    1=geçti 2=geçti 3=kaldı 4=geçti 5=geçti 6=geçti 7=beyan
 ```
 
 **HÜKÜM YEŞİL yalnız yedi kalemin hiçbiri "kaldı" değilse verilir.** Bir kalem bile kaldıysa

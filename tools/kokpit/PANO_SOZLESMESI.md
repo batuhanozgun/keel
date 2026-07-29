@@ -19,15 +19,15 @@ içerik serbest.** GENESIS her projede bu iskeleti aynen üretir.
 - **Ciddiyet sözlüğü (sabit Türkçe):** `YEŞİL` · `SARI` · `KIRMIZI` · `VERİ-YOK` (nötr).
 - **PANO yargı bloğu (koordinatör nesri):** kalın etiketli satırlar —
   `- **Aktif kutu:** …` · `- **SIRADAKİ OTURUM:** <rol> — …` · `- **Paralel açılabilir:** …` · `- **Blokaj:** …`
-- **KUTU kapı tablosu:** `## Kapılar` başlığı altında `| Kapı | İş | Sahip | Durum | Kanıt |` tablosu.
+- **KUTU görev tablosu:** `## Görevler` başlığı altında `| Görev | İş | Sahip | Durum | Kanıt |` tablosu.
   **Kanıt** = kanıt-işaretçisi (`test:`/`demo:` öneki ya da vault yolu); varlık denetimini bekçinin
-  bağ-varlık kategorisi yapar (yeni projelerde zorunlu; açık kapıda `test:`/`demo:` tipi — yol-tipi
-  kapı kapanırken yazılır). Kokpit 4 sütunlu eski tabloyu da okur (Kanıt boş kalır — geri-uyum);
-  `—` hücresi "işaretçisiz" sayılır.
+  bağ-varlık kategorisi yapar (yeni projelerde zorunlu; açık görevde `test:`/`demo:` tipi — yol-tipi
+  görev kapanırken yazılır). Kokpit 4 sütunlu eski tabloyu **ve** eski `## Kapılar` başlığını da
+  okur (geri-uyum); `—` hücresi "işaretçisiz" sayılır.
   - **Tek-faz:** Faz alt-başlığı yok → tablo doğrudan aktif.
-  - **Çok-faz:** `### Faz A …` (aktif) · `### Faz B …` (iskelet, pasif). Kapı ID öneki `G-`.
+  - **Çok-faz:** `### Faz A …` (aktif) · `### Faz B …` (iskelet, pasif). Görev ID öneki `G-`.
 - **Rol durumu:** `03_roller/<rol>/DURUM.md`, `# DURUM — <Ad>` başlığı; `**Son oturum:** …` satırı.
-- **ID önekleri:** kutu `KT-` · kapı/görev `G-`.
+- **ID önekleri:** kutu `KT-` · görev `G-`.
 
 ## Serbest (içerik — projeye göre değişir)
 

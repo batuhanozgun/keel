@@ -136,7 +136,7 @@ function renderPano() {
     });
   }
 
-  // Kutu + kapılar
+  // Kutu + görevler
   var k = state.kutu, gb = '';
   if (k) {
     if (y.blokaj && y.blokaj.trim() !== 'yok') gb += '<div class="blokaj"><b>Blokaj:</b> ' + jsInline(y.blokaj) + '</div>';
@@ -205,7 +205,7 @@ function renderPano() {
   if (state.warnings && state.warnings.length) mb += '<div class="warns">okuma notu: ' + state.warnings.map(esc).join(' · ') + '</div>';
 
   var left = panel('sağlık', lb, { sub: 'sistemin genel durumu — üç ışığı bekçi ölçer · yeşil iyi, sarı dikkat, kırmızı sorun' }) +
-    panel('kutu · kapılar', gb, { grow: true, aside: sevkte, sub: 'açık kutudaki görevler — hangi iş kimde ve ne durumda' });
+    panel('kutu · görevler', gb, { grow: true, aside: sevkte, sub: 'açık kutudaki görevler — hangi iş kimde ve ne durumda' });
   var right = '<section class="panel now">' + nb + '</section>' +
     panel('roller', rb, { grow: true, aside: 'kendi ağzından', sub: 'ekibin (' + (state.roller || []).length + ' yapay zeka rolü) — her biri en son ne yaptı' }) +
     panel('ana plan', mb, { cls: 'mini', aside: k ? esc(k.id) : '', sub: 'iş paketleri (kutular) ve ertelenen işler' });

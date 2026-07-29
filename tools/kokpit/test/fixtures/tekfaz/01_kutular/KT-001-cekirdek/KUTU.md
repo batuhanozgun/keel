@@ -3,8 +3,8 @@
 
 **Durum:** AÇIK. Tek faz · tek demo.
 
-## Kapılar (≤5 görev — iskelet)
-| Kapı | İş | Sahip | Durum | Kanıt |
+## Görevler (≤5 görev — iskelet)
+| Görev | İş | Sahip | Durum | Kanıt |
 |---|---|---|---|---|
 | G-01 | Akış tasarımı | uygulayici | açık | demo: akış ekranda uçtan uca gezilir |
 | G-02 | Veri modeli | uygulayici | açık | test: model.test.mjs |

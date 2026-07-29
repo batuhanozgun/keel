@@ -25,7 +25,7 @@ kaybedersin." (Ders: deneyimsiz sahip tohum-kararların ağırlığını sorudan
   en az bir çıkarım/soru.
 - **Kişisel-veri süzgeci:** sahibin anlattığından belgeye HAM kişisel veri geçmez, türevi geçer
   (doğum tarihi → yaş bandı). Süzdüğünü sahibe söyle.
-- **Beklenti cümlesi:** her kapı/adım kapanışında tek satır: "sıradaki adımda senden şunu
+- **Beklenti cümlesi:** her görev/adım kapanışında tek satır: "sıradaki adımda senden şunu
   isteyeceğim: …". (Ders: verilmeyince sahip "beni dinlemedi" hissine kapıldı.)
 - **Soru amacı:** her sorunun ne için sorulduğu açık (ör. isim sorusu hitap için mi lisans
   için mi — söylenmezse sahip yanlış bağlamda cevaplar).

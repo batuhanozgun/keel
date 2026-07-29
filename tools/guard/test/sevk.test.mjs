@@ -221,7 +221,7 @@ test('kapı: riskli görevde commit-kanıtı reddedilir, dosya:satır geçer (Ha
   writeFileSync(join(kok, '01_kutular', 'KT-100-test', 'KUTU.md'), [
     '# KUTU — test', '', '## Bağımlılık ve risk (yalnız sevk + kurulum denetçisi okur)',
     'G-07: onkosul=yok · risk=riskli — sentetik kişisel veri işleniyor',
-    'G-08: onkosul=G-07 · risk=düşük — salt rapor', '', '## Kapılar', ''].join('\n'));
+    'G-08: onkosul=G-07 · risk=düşük — salt rapor', '', '## Görevler', ''].join('\n'));
   const commitli = kosKapi(kok, girdi(kok, { zarf: zarfMetni({ kanit: 'abc1234' }) }));
   assert.equal(commitli.status, 2);
   assert.match(commitli.stderr, /commit-kanit yasak/);

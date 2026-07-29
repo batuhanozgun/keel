@@ -33,12 +33,12 @@ function kararAlaniMetni({ profil = true } = {}) {
 }
 
 const KUTU_ADI = 'KT-900-e4';
-function kutuMetni({ kapilar = [
+function kutuMetni({ gorevler = [
   { id: 'G-01', is: 'ilk iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t.mjs' },
   { id: 'G-02', is: 'ikinci iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t.mjs' },
 ], onkosul = { 'G-01': 'yok', 'G-02': 'G-01' }, risk = {}, butce = '3', durus = true, riskBloku = true } = {}) {
-  const l = ['# ' + KUTU_ADI + ' — tatbikat kutusu', '', '## Kapılar', '| Kapı | İş | Sahip | Durum | Kanıt |', '|---|---|---|---|---|'];
-  for (const k of kapilar) l.push(`| ${k.id} | ${k.is} | ${k.sahip} | ${k.durum} | ${k.kanit} |`);
+  const l = ['# ' + KUTU_ADI + ' — tatbikat kutusu', '', '## Görevler', '| Görev | İş | Sahip | Durum | Kanıt |', '|---|---|---|---|---|'];
+  for (const k of gorevler) l.push(`| ${k.id} | ${k.is} | ${k.sahip} | ${k.durum} | ${k.kanit} |`);
   if (durus) {
     l.push('', '## Duruş sözleşmesi',
       'BİTİŞ HÂLİ: ekranda iki satır görünür',
@@ -48,7 +48,7 @@ function kutuMetni({ kapilar = [
   }
   if (riskBloku) {
     l.push('', '## Bağımlılık ve risk (yalnız sevk + kurulum denetçisi okur)');
-    for (const k of kapilar) {
+    for (const k of gorevler) {
       if (!(k.id in onkosul)) continue;
       l.push(`${k.id}: onkosul=${onkosul[k.id]} · risk=${risk[k.id] || 'düşük'} — tek satır gerekçe`);
     }
@@ -114,11 +114,11 @@ function zarf({ biten = 'G-01 — iş bitti · kanıt: 00_pano/PANO.md:1', catal
              'DEĞERLENDİRMEDİKLERİM: yok', 'SIRADAKİ: kapalı', 'TÜRETME-İZİ: yok', 'GERİ-ÇEKİLEN: yok'];
   return l.join('\n') + (ek ? '\n' + ek : '') + '\n';
 }
-const karneZarfi = ({ ajan = 'dogrulayici', kapiAd = 'G-01', hukum = 'YEŞİL', maddeler = 'kanıt=DOĞRU çapa=DOĞRU' } = {}) => ({
+const karneZarfi = ({ ajan = 'dogrulayici', gorevAd = 'G-01', hukum = 'YEŞİL', maddeler = 'kanıt=DOĞRU çapa=DOĞRU' } = {}) => ({
   agent_type: ajan,
   last_assistant_message: zarf({
     biten: 'G-01 — karne verildi · kanıt: 00_pano/PANO.md:1',
-    ek: [`KARNE-KAPI: ${kapiAd}`, `HÜKÜM: ${hukum}`, `MADDELER: ${maddeler}`].join('\n'),
+    ek: [`KARNE-GOREV: ${gorevAd}`, `HÜKÜM: ${hukum}`, `MADDELER: ${maddeler}`].join('\n'),
   }),
 });
 
@@ -202,7 +202,7 @@ test('sevk: dönem yokken TAM sessizlik (el-sürüşlü oturum etkilenmez)', () 
   assert.equal(gunluk(kok).length, 0);
 });
 
-test('sevk: açık kapı varsa exit 2 + işaretçi şemalı talimat + sevk-karar/nabiz kaydı', () => {
+test('sevk: açık görev varsa exit 2 + işaretçi şemalı talimat + sevk-karar/nabiz kaydı', () => {
   const kok = kurulum({ donem: true });
   const r = sevk(kok);
   assert.equal(r.status, 2, 'durmayı engellemeli: ' + r.stdout);
@@ -248,10 +248,10 @@ test('sevk: günlükte bozuk satır → duran kapı (bütün gözler aynı anda 
   assert.match(r.stdout, /zarf gunlugu bozuk/);
 });
 
-test('sevk/karne şartı: kapalı ama karnesiz kapı → doğrulayıcı talimatı (kapı kapanmaz)', () => {
+test('sevk/karne şartı: kapalı ama karnesiz görev → doğrulayıcı talimatı (görev kapanmaz)', () => {
   const kok = kurulum({
     donem: true,
-    kutu: kutuMetni({ kapilar: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } }),
+    kutu: kutuMetni({ gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } }),
   });
   bekciKur(kok, 'YEŞİL');
   ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
@@ -263,12 +263,12 @@ test('sevk/karne şartı: kapalı ama karnesiz kapı → doğrulayıcı talimat�
   assert.equal(sk.is_tipi, 'dogrulama');
 });
 
-test('sevk/karne şartı: taze YEŞİL karne kapıyı kapatır; KIRMIZI karne duran kapıdır', () => {
-  const tek = { kapilar: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
+test('sevk/karne şartı: taze YEŞİL karne görevi kapatır; KIRMIZI karne duran kapıdır', () => {
+  const tek = { gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
   const yesil = kurulum({ donem: true, kutu: kutuMetni(tek) });
   bekciKur(yesil, 'YEŞİL');
   ekle(yesil, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
-  ekle(yesil, { tip: 'karne', ajan: 'dogrulayici', kapi: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  ekle(yesil, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
   const r1 = sevk(yesil);
   assert.equal(r1.status, 0, r1.stderr);
   assert.match(r1.stdout, /açık iş yok/);
@@ -277,7 +277,7 @@ test('sevk/karne şartı: taze YEŞİL karne kapıyı kapatır; KIRMIZI karne du
   const kirmizi = kurulum({ donem: true, kutu: kutuMetni(tek) });
   bekciKur(kirmizi, 'YEŞİL');
   ekle(kirmizi, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
-  ekle(kirmizi, { tip: 'karne', ajan: 'dogrulayici', kapi: 'G-01', hukum: 'KIRMIZI', maddeler: 'x=YANLIŞ' });
+  ekle(kirmizi, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'KIRMIZI', maddeler: 'x=YANLIŞ' });
   const r2 = sevk(kirmizi);
   assert.equal(r2.status, 0);
   assert.match(r2.stdout, /karnesi KIRMIZI/);
@@ -286,13 +286,13 @@ test('sevk/karne şartı: taze YEŞİL karne kapıyı kapatır; KIRMIZI karne du
 test('sevk/karne tazeliği: karneden SONRA iş zarfı gelirse karne düşer (yeniden doğrulanır)', () => {
   const kok = kurulum({
     donem: true,
-    kutu: kutuMetni({ kapilar: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } }),
+    kutu: kutuMetni({ gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } }),
   });
   bekciKur(kok, 'YEŞİL');
-  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', kapi: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
   ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
   const r = sevk(kok);
-  assert.equal(r.status, 2, 'bayat karne kapıyı kapatmamalı');
+  assert.equal(r.status, 2, 'bayat karne görevi kapatmamalı');
   assert.match(r.stderr, /karnesi bayat/);
   assert.ok(gunluk(kok).some((j) => j.cins === 'bayat-karne'));
 });
@@ -300,7 +300,7 @@ test('sevk/karne tazeliği: karneden SONRA iş zarfı gelirse karne düşer (yen
 test('sevk/BEKLETİR birincil hattı: cevapsız çatalın görevi HİÇ açılmaz', () => {
   const kok = kurulum({
     donem: true,
-    kutu: kutuMetni({ kapilar: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t' }], onkosul: { 'G-01': 'yok' } }),
+    kutu: kutuMetni({ gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t' }], onkosul: { 'G-01': 'yok' } }),
   });
   writeFileSync(join(kok, '00_pano', 'SENDE_BEKLEYEN.md'),
     '# SENDE BEKLEYEN\n\n- [ ] 2026-07-28 · po · ÇATAL Ç-01 · "Puanlar ayrı satır görünsün mü?" · bekletir: G-01 · kaynak: zarf-günlüğü satır 2\n');
@@ -329,7 +329,7 @@ test('sevk/çatal süzgeci: ÇATAL dolu zarfın hükmü yoksa catal-denetcisi ZO
 test('sevk/önkoşul: çözülmemiş bağımlılık görevi açtırmaz (duran kapı, sessiz "bitti" DEĞİL)', () => {
   const kok = kurulum({
     donem: true,
-    kutu: kutuMetni({ kapilar: [{ id: 'G-02', is: 'ikinci', sahip: 'uretici', durum: 'açık', kanit: 'test: t' }], onkosul: { 'G-02': 'G-01' } }),
+    kutu: kutuMetni({ gorevler: [{ id: 'G-02', is: 'ikinci', sahip: 'uretici', durum: 'açık', kanit: 'test: t' }], onkosul: { 'G-02': 'G-01' } }),
   });
   const r = sevk(kok);
   assert.equal(r.status, 0);
@@ -340,7 +340,7 @@ test('sevk/önkoşul: çözülmemiş bağımlılık görevi açtırmaz (duran ka
 test('sevk/yeniden-sevk: dönüşü gelmeyen görev BİR KEZ yeniden açılır, ikincide duran kapı', () => {
   // T4 ön-ölçümünün düşürdüğü kusur: tek düşen alt-ajan çağrısı görevi dönem boyunca
   // kilitliyor ve bütün dönemi duran kapıya sokuyordu (canlı görüldü 2026-07-28).
-  const tek = { kapilar: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t' }], onkosul: { 'G-01': 'yok' } };
+  const tek = { gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t' }], onkosul: { 'G-01': 'yok' } };
   const bir = kurulum({ donem: true, kutu: kutuMetni(tek) });
   ekle(bir, { tip: 'sevk-karar', gorev: 'G-01', rol: 'uretici', is_tipi: 'uretim' });
   const r1 = sevk(bir);
@@ -354,15 +354,15 @@ test('sevk/yeniden-sevk: dönüşü gelmeyen görev BİR KEZ yeniden açılır, 
   assert.equal(r2.status, 0, 'ikinci düşen çağrıdan sonra sessiz tekrar OLMAMALI');
   assert.match(r2.stdout, /iki kez sevk edildi/);
 
-  // Dönüşü gelmiş ama kapısı kapanmamış görev TEKRAR SEVK EDİLMEZ (aynı iş iki kez yapılmaz);
-  // sessiz de geçilmez — kapi-kapatilmadi bulgusu düşer ve dönem duran kapıya gider.
+  // Dönüşü gelmiş ama kapanmamış görev TEKRAR SEVK EDİLMEZ (aynı iş iki kez yapılmaz);
+  // sessiz de geçilmez — gorev-kapatilmadi bulgusu düşer ve dönem duran kapıya gider.
   const donen = kurulum({ donem: true, kutu: kutuMetni(tek) });
   ekle(donen, { tip: 'sevk-karar', gorev: 'G-01', rol: 'uretici', is_tipi: 'uretim' });
   ekle(donen, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
   const r3 = sevk(donen);
   assert.equal(r3.status, 0, 'dönmüş görev yeniden açılmamalı: ' + r3.stderr);
-  assert.match(r3.stdout, /kapi satiri hala açık/);
-  assert.ok(gunluk(donen).some((j) => j.cins === 'kapi-kapatilmadi'), 'kusur izsiz kalmamalı');
+  assert.match(r3.stdout, /gorev satiri hala açık/);
+  assert.ok(gunluk(donen).some((j) => j.cins === 'gorev-kapatilmadi'), 'kusur izsiz kalmamalı');
 });
 
 test('sevk/frenler: bütçe dolunca ve ilerleme yokken duran kapı', () => {
@@ -381,20 +381,20 @@ test('sevk/frenler: bütçe dolunca ve ilerleme yokken duran kapı', () => {
   assert.match(r2.stdout, /ilerleme yok/);
 });
 
-test('sevk/şema: kapı durumu sözlük dışıysa ve sahibi kadroda yoksa duran kapı', () => {
-  const sozluk = kurulum({ donem: true, kutu: kutuMetni({ kapilar: [{ id: 'G-01', is: 'x', sahip: 'uretici', durum: 'yarım', kanit: 't' }], onkosul: { 'G-01': 'yok' } }) });
-  assert.match(sevk(sozluk).stdout, /kapi durumu sozlukte yok/);
+test('sevk/şema: görev durumu sözlük dışıysa ve sahibi kadroda yoksa duran kapı', () => {
+  const sozluk = kurulum({ donem: true, kutu: kutuMetni({ gorevler: [{ id: 'G-01', is: 'x', sahip: 'uretici', durum: 'yarım', kanit: 't' }], onkosul: { 'G-01': 'yok' } }) });
+  assert.match(sevk(sozluk).stdout, /gorev durumu sozlukte yok/);
 
-  const kadro = kurulum({ donem: true, kadro: ['dogrulayici'], kutu: kutuMetni({ kapilar: [{ id: 'G-01', is: 'x', sahip: 'hayalet', durum: 'açık', kanit: 't' }], onkosul: { 'G-01': 'yok' } }) });
+  const kadro = kurulum({ donem: true, kadro: ['dogrulayici'], kutu: kutuMetni({ gorevler: [{ id: 'G-01', is: 'x', sahip: 'hayalet', durum: 'açık', kanit: 't' }], onkosul: { 'G-01': 'yok' } }) });
   assert.match(sevk(kadro).stdout, /sahibi kadroda yok/);
 });
 
 test('sevk/bekçi dönem-içi: yeni karne düştüğü turda bekçi koşar; KIRMIZI duran kapıdır', () => {
-  const tek = { kapilar: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
+  const tek = { gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
   const kok = kurulum({ donem: true, kutu: kutuMetni(tek) });
   bekciKur(kok, 'KIRMIZI');
   ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
-  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', kapi: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
   const r = sevk(kok);
   assert.equal(r.status, 0);
   assert.match(r.stdout, /bekçi KIRMIZI/);
@@ -404,7 +404,7 @@ test('sevk/bekçi dönem-içi: yeni karne düştüğü turda bekçi koşar; KIRM
   // Bekçi hiç yoksa: dönem-içi ışık tazelenemiyor → duran kapı (sessiz geçmez)
   const bekcisiz = kurulum({ donem: true, kutu: kutuMetni(tek) });
   ekle(bekcisiz, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
-  ekle(bekcisiz, { tip: 'karne', ajan: 'dogrulayici', kapi: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  ekle(bekcisiz, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
   assert.match(sevk(bekcisiz).stdout, /bekçi yok/);
 });
 
@@ -416,7 +416,7 @@ test('sevk/kurulum türü: kurulum-denetcisi ZORUNLU açılır; YEŞİL karnesiz
   assert.match(r.stderr, /subagent_type: kurulum-denetcisi/);
   assert.match(r.stderr, /^gorev: KURULUM$/m);
 
-  ekle(kok, { tip: 'karne', ajan: 'kurulum-denetcisi', kapi: 'KURULUM', hukum: 'YEŞİL', maddeler: '1=geçti' });
+  ekle(kok, { tip: 'karne', ajan: 'kurulum-denetcisi', gorev: 'KURULUM', hukum: 'YEŞİL', maddeler: '1=geçti' });
   const r2 = sevk(kok);
   assert.equal(r2.status, 0);
   assert.match(r2.stdout, /kurulum denetimi YESIL/);
@@ -494,10 +494,10 @@ test('karne: üç ek satırdan biri eksikse dönüş reddedilir', () => {
   assert.match(r.stderr, /karne dönüşünde eksik alan/);
 });
 
-test('karne: HÜKÜM ve KARNE-KAPI birebir okunur (uydurma jeton geçmez)', () => {
+test('karne: HÜKÜM ve KARNE-GOREV birebir okunur (uydurma jeton geçmez)', () => {
   const kok = kurulum({ donem: true });
   assert.match(kapi(kok, karneZarfi({ hukum: 'yesil' })).stderr, /HÜKÜM okunmuyor/);
-  assert.match(kapi(kok, karneZarfi({ kapiAd: 'birinci-kapi' })).stderr, /KARNE-KAPI çözülmüyor/);
+  assert.match(kapi(kok, karneZarfi({ gorevAd: 'birinci-gorev' })).stderr, /KARNE-GOREV çözülmüyor/);
 });
 
 test('karne: geçerli karne → günlüğe `karne` kaydı + zarf sınıfı "karne"', () => {
@@ -507,7 +507,7 @@ test('karne: geçerli karne → günlüğe `karne` kaydı + zarf sınıfı "karn
   const g = gunluk(kok);
   const k = g.find((j) => j.tip === 'karne');
   assert.ok(k, 'karne kaydı düşmeli');
-  assert.equal(k.kapi, 'G-01');
+  assert.equal(k.gorev, 'G-01');
   assert.equal(k.hukum, 'YEŞİL');
   const z = g.find((j) => j.tip === 'zarf');
   assert.equal(z.sinif, 'karne', 'karneci zarfı iş zarfı sayılmamalı (tazelik ölçümü)');
@@ -554,16 +554,16 @@ test('kurulum kapısı: duruş sözleşmesi/BÜTÇE eksikse EKSİK', () => {
   assert.match(r2.stdout, /BÜTÇE satirinda sayi yok/);
 });
 
-test('kurulum kapısı: risk satırı olmayan kapı + var olmayan/döngüsel önkoşul yakalanır', () => {
+test('kurulum kapısı: risk satırı olmayan görev + var olmayan/döngüsel önkoşul yakalanır', () => {
   const eksik = kurulum({ kutu: kutuMetni({ onkosul: { 'G-01': 'yok' } }) });   // G-02 satırı yok
   const r1 = kos(eksik, 'kurulum-kapisi.sh', [KUTU_ADI, eksik]);
   assert.equal(r1.status, 1);
-  assert.match(r1.stdout, /risk satiri olmayan kapi/);
+  assert.match(r1.stdout, /risk satiri olmayan gorev/);
 
   const hayalet = kurulum({ kutu: kutuMetni({ onkosul: { 'G-01': 'G-99', 'G-02': 'G-02' } }) });
   const r2 = kos(hayalet, 'kurulum-kapisi.sh', [KUTU_ADI, hayalet]);
   assert.equal(r2.status, 1);
-  assert.match(r2.stdout, /var olmayan kapiya bagimli: G-99/);
+  assert.match(r2.stdout, /var olmayan goreve bagimli: G-99/);
   assert.match(r2.stdout, /kendine bagimli/);
 });
 
@@ -597,7 +597,7 @@ test('kurulum-denetimi: alt-ajan dosyasında memory alanı KIRMIZI (zorunlu unut
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════════
-// 7 · Hasım turunun açtığı kapılar (2026-07-28) — kablo · daraltma · istisna · fren
+// 7 · Hasım turunun açtığı görevler (2026-07-28) — kablo · daraltma · istisna · fren
 // ══════════════════════════════════════════════════════════════════════════════════════════
 
 test('kablo: settings.json Stop ve Task|Agent kancalarını FİİLEN bağlıyor (kopan kablo sessiz kalmasın)', () => {
@@ -615,13 +615,13 @@ test('kablo: settings.json Stop ve Task|Agent kancalarını FİİLEN bağlıyor 
 });
 
 test('bekçi: KUTU tavan KIRMIZI"sı dönemi DURDURMAZ (kanonun iki yerde yazdığı istisna)', () => {
-  const tek = { kapilar: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
+  const tek = { gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
   const kok = kurulum({ donem: true, kutu: kutuMetni(tek) });
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
   writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), "#!/bin/bash\nprintf '[tavan] KIRMIZI — KUTU 21KB\\n'\n");
   chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
   ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
-  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', kapi: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
   const r = sevk(kok);
   assert.equal(r.status, 0);
   assert.ok(!/bekçi KIRMIZI/.test(r.stdout), 'tavan kırmızısı duran kapı DEĞİLDİR (kapanış kilididir): ' + r.stdout);
@@ -630,13 +630,13 @@ test('bekçi: KUTU tavan KIRMIZI"sı dönemi DURDURMAZ (kanonun iki yerde yazdı
 });
 
 test('bekçi: çıkış kodu fail-CLOSED — çıktısında KIRMIZI olmayan çöken bekçi YEŞİL sayılmaz', () => {
-  const tek = { kapilar: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
+  const tek = { gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
   const kok = kurulum({ donem: true, kutu: kutuMetni(tek) });
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
   writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), "#!/bin/bash\nprintf 'yarim cikti\\n'\nexit 3\n");
   chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
   ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
-  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', kapi: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
   const r = sevk(kok);
   assert.match(r.stdout, /bekçi KIRMIZI/);
   assert.match(r.stdout, /çıkış kodu 3/);
@@ -731,17 +731,17 @@ test('kurulum kapısı: otonom kural evi (02_kanon/OTONOM_DONEM.md) yoksa EKSİK
   assert.match(r.stdout, /kural evi kurulmamış/);
 });
 
-test('miras kapı: dönemden önce kapanmış kapı yeniden doğrulanmaz ama izsiz de kalmaz', () => {
+test('miras görev: dönemden önce kapanmış görev yeniden doğrulanmaz ama izsiz de kalmaz', () => {
   const kok = kurulum({
     donem: true,
     kutu: kutuMetni({
-      kapilar: [{ id: 'G-01', is: 'eski iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' },
+      gorevler: [{ id: 'G-01', is: 'eski iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' },
                 { id: 'G-02', is: 'yeni iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t' }],
       onkosul: { 'G-01': 'yok', 'G-02': 'G-01' },
     }),
   });
   const r = sevk(kok);
-  assert.equal(r.status, 2, 'miras kapı G-02yi kilitlememeli: ' + r.stdout);
+  assert.equal(r.status, 2, 'miras görev G-02yi kilitlememeli: ' + r.stdout);
   assert.match(r.stderr, /^gorev: G-02$/m);
-  assert.ok(gunluk(kok).some((j) => j.cins === 'miras-kapi'), 'miras kapı izsiz geçmemeli');
+  assert.ok(gunluk(kok).some((j) => j.cins === 'miras-gorev'), 'miras görev izsiz geçmemeli');
 });

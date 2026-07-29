@@ -12,7 +12,7 @@
 ## Son mühür
 (henüz yok)
 
-## Bekleyen kapı
+## Bekleyen adım
 G0 · Yönlendirme + ağırlık kadranı
 
 ## Format spec (G3'te doldurulur)

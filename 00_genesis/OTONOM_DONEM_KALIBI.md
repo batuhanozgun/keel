@@ -32,7 +32,7 @@ başlama YOKTUR (D-25 ①'in sınırı — 3. basamak tasarımın hiçbir yerind
 görevleri yapı açar-kapatır: her görev (G-NN) **taze hafızalı bir alt-ajan çağrısıdır**; rol
 alt-ajan dosyasına `memory` alanı yazılmaz (zorunlu unutmanın ölüm noktası — kurulum denetimi
 KIRMIZI basar). Döngü: sevk görevi seçer → alt-ajan çağrısı → dönüş zarfı → SubagentStop biçim
-kapısı → sevk karne/kapı koşullarına bakar → sıradaki.
+kapısı → sevk karne/görev koşullarına bakar → sıradaki.
 
 **Dönem dört hâlden biriyle biter:** açık iş kalmadı · duran kapı (çatal/mühür) · bütçe tavanı
 doldu · bekçi KIRMIZI'sı ya da DUR işareti. **İzin kapısı (`ask`) bunlardan biri DEĞİLDİR —
@@ -58,7 +58,7 @@ BÜTÇE:      <dönem başına en çok N alt-ajan çağrısı · ilerleme-yok e�
 ```
 
 - **Bitti tanımı iki iş yapar (K-H):** ne içeri girer + ne zaman biter. Dönem içinde doğan her
-  yeni iş bu süzgeçten geçer: *bitti tanımına hizmet ediyor mu?* — tek satır beyanla kapı
+  yeni iş bu süzgeçten geçer: *bitti tanımına hizmet ediyor mu?* — tek satır beyanla görev
   tablosuna girer; etmiyorsa ERTELENENLER'e. Yazılmamışsa kurulum denetçisi kurulumu geçirmez.
 - **BÜTÇE = "sahip bakmadan en fazla ne kadar şey kurulabilir"** (K-G) — kontrol vidası, para
   değil. İlk dönemlerde küçük başlar (dönem başına 3 alt-ajan çağrısı), veriyle gevşetilir.
@@ -200,10 +200,10 @@ otonom dönem YOKTUR — bu sahibin kararıdır (D-25 ②③) ve betiğin ilk sa
 ## 11 · Sevk döngüsü ve kanal (E4-E5)
 
 Tören: `/donem <kutu> [yapim|kurulum|kapanis] [interaktif|bassiz] [gercek|tatbikat]`.
-Sevk (Stop kancası) iş yapmaz, karar basmaz, kapı kapatmaz; işi seçer ve talimatı üretir.
+Sevk (Stop kancası) iş yapmaz, karar basmaz, görev kapatmaz; işi seçer ve talimatı üretir.
 Görev seçimi, frenler ve izin zemini mekaniktir: `tools/sevk/README.md`. Seni bağlayanlar:
 
-**Karne şartı (K2):** kapı ancak tabloda `kapalı` + TAZE YEŞİL karne varsa kapalı SAYILIR
+**Karne şartı (K2):** görev ancak tabloda `kapalı` + TAZE YEŞİL karne varsa kapalı SAYILIR
 (taze = son iş-zarfından sonra). **Kendi işine karne yazamazsın.**
 
 **Devir metni yalnız işaretçidir** (`gorev · kutu · sozlesme · kural · ek-okuma`; tavan 800 B).

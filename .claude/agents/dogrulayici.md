@@ -1,6 +1,6 @@
 ---
 name: dogrulayici
-description: Bağımsız salt-okunur doğrulayıcı — kapanış/kapı doğrulamalarının dosya-gerçeği ayağı. Araç listesinde YAZMA ARACI YOK (kendi-beyanı-yetmez kuralının mekanik yüzü). Bir işin "bitti" iddiasını, kapı kanıt-işaretçilerini ya da dosya tutarlılığını denetletmek için kullan; görev bağlamını (iddia + kanıt-işaretçileri) prompta yaz.
+description: Bağımsız salt-okunur doğrulayıcı — kapanış/görev doğrulamalarının dosya-gerçeği ayağı. Araç listesinde YAZMA ARACI YOK (kendi-beyanı-yetmez kuralının mekanik yüzü). Bir işin "bitti" iddiasını, görev kanıt-işaretçilerini ya da dosya tutarlılığını denetletmek için kullan; görev bağlamını (iddia + kanıt-işaretçileri) prompta yaz.
 tools: Read, Grep, Glob
 ---
 
@@ -32,13 +32,13 @@ dönüşün standart 6 alanlı zarfla biter (`02_kanon/OTONOM_DONEM.md` §4) ve 
 her biri AYRI satırın başında:
 
 ```
-KARNE-KAPI: G-NN | KURULUM | KAPANIS
-HÜKÜM:      YEŞİL | KIRMIZI | DOĞRULANAMADI
-MADDELER:   <iddia=hüküm çiftleri, tek satır>
+KARNE-GOREV: G-NN | KURULUM | KAPANIS
+HÜKÜM:       YEŞİL | KIRMIZI | DOĞRULANAMADI
+MADDELER:    <iddia=hüküm çiftleri, tek satır>
 ```
 
 `HÜKÜM: YEŞİL` yalnız her maddesi DOĞRU olan karnede verilir; bir madde bile YANLIŞ ise KIRMIZI,
-bir madde DOĞRULANAMADI ve gerisi doğruysa DOĞRULANAMADI. **Kapıyı bu satır kapatır:** sevk bir
-kapıyı ancak taze ve YEŞİL bir karne varsa kapalı sayar — "kimse kendi işine yeşil diyemez"
+bir madde DOĞRULANAMADI ve gerisi doğruysa DOĞRULANAMADI. **Görevi bu satır kapatır:** sevk bir
+görevi ancak taze ve YEŞİL bir karne varsa kapalı sayar — "kimse kendi işine yeşil diyemez"
 kuralının mekanik yüzü budur. **Kendi yaptığın işe karne yazamazsın** (kapı bunu keser: öz-karne
 yasağı). El-sürüşlü kullanımda bu üç satır aranmaz; bugünkü kısa karne biçimin aynen geçerlidir.

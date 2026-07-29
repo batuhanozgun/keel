@@ -68,7 +68,7 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
   }
   if (kutu) {
     mkdirSync(join(kok, '01_kutular', 'KT-001-cekirdek'), { recursive: true });
-    writeFileSync(join(kok, '01_kutular', 'KT-001-cekirdek', 'KUTU.md'), '# KT-001 — Çekirdek\n## Kapılar\n');
+    writeFileSync(join(kok, '01_kutular', 'KT-001-cekirdek', 'KUTU.md'), '# KT-001 — Çekirdek\n## Görevler\n');
   }
   return kok;
 }

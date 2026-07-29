@@ -26,7 +26,7 @@ test('fixture (tek-faz): durum şekli + jenerik roller', async () => {
   assert.equal(s.warnings.length, 0, 'temiz fixture 0 uyarı');
 });
 
-test('fixture (iki-faz): ışık çelişkisiz, kapı yalnız Faz A', async () => {
+test('fixture (iki-faz): ışık çelişkisiz, görev yalnız Faz A', async () => {
   const s = await buildState(IKIFAZ);
   assert.equal(s.saglik.lights.find((l) => l.ad === 'DOSYA').deger, 'SARI');
   assert.deepEqual(s.kutu.gates.map((g) => g.id).sort(), ['G-07', 'G-08']);
@@ -93,7 +93,7 @@ test('B5: birden fazla açık kutu → uyarı basılır, ayrıntı paneli ada g�
   const kok = await tempVault({});
   for (const ad of ['KT-002-ikinci', 'KT-001-birinci']) {
     await fs.mkdir(path.join(kok, '01_kutular', ad), { recursive: true });
-    await fs.writeFile(path.join(kok, '01_kutular', ad, 'KUTU.md'), '# ' + ad + '\n## Kapılar\n');
+    await fs.writeFile(path.join(kok, '01_kutular', ad, 'KUTU.md'), '# ' + ad + '\n## Görevler\n');
   }
   const s = await buildState(kok);
   assert.equal(s.kutu.id, 'KT-001', 'deterministik: ada göre ilk');
@@ -140,7 +140,7 @@ test('hasım: çoklu kutu SAYISAL sıralı — KT-2 < KT-10 (ayrıntı KT-2\'yi 
   const kok = await tempVault({});
   for (const ad of ['KT-10-on', 'KT-2-iki']) {
     await fs.mkdir(path.join(kok, '01_kutular', ad), { recursive: true });
-    await fs.writeFile(path.join(kok, '01_kutular', ad, 'KUTU.md'), '# ' + ad + '\n## Kapılar\n');
+    await fs.writeFile(path.join(kok, '01_kutular', ad, 'KUTU.md'), '# ' + ad + '\n## Görevler\n');
   }
   const s = await buildState(kok);
   assert.equal(s.kutu.id, 'KT-2');
@@ -161,7 +161,7 @@ test('gerçek vault regresyonu: 0 uyarı + şekil (KOKPIT_VAULT verilirse)', asy
   for (const lt of s.saglik.lights) {
     assert.ok(['YEŞİL', 'SARI', 'KIRMIZI', 'VERİ-YOK'].includes(lt.deger), 'geçerli ciddiyet: ' + lt.deger);
   }
-  assert.ok(s.kutu && s.kutu.gates.length >= 1, 'aktif kutu + en az 1 kapı');
+  assert.ok(s.kutu && s.kutu.gates.length >= 1, 'aktif kutu + en az 1 görev');
   assert.ok(s.roller.length >= 1, 'en az 1 rol');
   assert.ok(typeof s.yargi.siradakiStale === 'boolean', 'bayatlık alanı hesaplanır');
 });

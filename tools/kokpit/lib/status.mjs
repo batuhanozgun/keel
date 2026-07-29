@@ -3,7 +3,7 @@
 // — (U+2014), → (U+2192) load-bearing; ASCII normalize edilmez, toLowerCase kullanılmaz.
 //
 // Kaynak önceliği (recon gotcha): görev durumu için tek otorite PANO MEKANİK BLOK
-// (bekci.sh üretir, makine). KUTU kapı tablosu koordinatör elyazımı (en bayat) → yalnız iş+sahip.
+// (bekci.sh üretir, makine). KUTU görev tablosu koordinatör elyazımı (en bayat) → yalnız iş+sahip.
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -115,22 +115,24 @@ function yargiField(pano, label) {
   return m ? m[1].trim() : null;
 }
 
-// --- KUTU.md kapı tablosu → [{id, is, sahip, durum, kanit}] ---
-// Sözleşme: kapılar "## Kapılar" bölümü altındadır. Tek-faz (Faz başlığı yok) →
+// --- KUTU.md görev tablosu → [{id, is, sahip, durum, kanit}] ---
+// Sözleşme: görevler "## Görevler" bölümü altındadır. ESKİ "## Kapılar" başlığı da okunur
+// (geri-uyum: kod üç kopyada bayt-bayt ortaktır ve üçüncü kopya eski başlığı kullanan bir
+// vault'u okur — 4-sütun geri-uyumuyla aynı yöntem). Tek-faz (Faz başlığı yok) →
 // tüm satırlar aktif. Çok-faz → yalnız "### Faz A" aktif; Faz B+ ve "Kapanan aşama"
 // gibi diğer alt başlıklar pasif (mevcut çok-faz davranışı korunur).
 function parseGates(kutu, warnings) {
   const gates = [];
   if (!kutu) return gates;
-  let inKapilar = false; // "## Kapılar" bölümünün içinde miyiz
-  let aktif = false;     // aktif kapı satırları toplanır mı
+  let inGorevler = false; // "## Görevler" (ya da eski "## Kapılar") bölümünün içinde miyiz
+  let aktif = false;      // aktif görev satırları toplanır mı
   for (const line of kutu.split(/\r?\n/)) {
-    if (/^##\s+Kapılar/.test(line)) { inKapilar = true; aktif = true; continue; }
-    if (/^##\s/.test(line)) { inKapilar = false; aktif = false; continue; } // başka H2 → Kapılar bitti
-    if (inKapilar && /^###\s+Faz\s+A\b/.test(line)) { aktif = true; continue; }
-    if (inKapilar && /^###\s+Faz\s+/.test(line)) { aktif = false; continue; } // Faz B, C… pasif
-    if (inKapilar && /^###\s/.test(line)) { aktif = false; continue; }        // "Kapanan aşama" vb. pasif
-    if (!inKapilar || !aktif) continue;
+    if (/^##\s+(Görevler|Kapılar)/.test(line)) { inGorevler = true; aktif = true; continue; }
+    if (/^##\s/.test(line)) { inGorevler = false; aktif = false; continue; } // başka H2 → bölüm bitti
+    if (inGorevler && /^###\s+Faz\s+A\b/.test(line)) { aktif = true; continue; }
+    if (inGorevler && /^###\s+Faz\s+/.test(line)) { aktif = false; continue; } // Faz B, C… pasif
+    if (inGorevler && /^###\s/.test(line)) { aktif = false; continue; }        // "Kapanan aşama" vb. pasif
+    if (!inGorevler || !aktif) continue;
     if (!/^\|\s*G-\d+\b/.test(line)) continue;
     // splitRow (markdown.mjs ile ORTAK): `a|b` gibi satır-içi kod hücreyi bölmez (soğuk-denetim B4).
     const cells = splitRow(line);
@@ -310,7 +312,7 @@ export async function buildState(root, config = {}) {
     if (l.deger !== 'VERİ-YOK' && !(l.deger in WORST)) warnings.push('tanınmayan ışık seviyesi: ' + l.ad + '=' + l.deger + ' (ölçülmemiş sayıldı — YEŞİL/SARI/KIRMIZI/VERİ-YOK bekleniyor)');
   }
 
-  // Görev kapıları: KUTU'dan iş+sahip, PANO mekanikten kanonik durum
+  // Görevler: KUTU'dan iş+sahip, PANO mekanikten kanonik durum
   const gates = kutuInfo ? parseGates(kutuInfo.text, warnings) : [];
   for (const g of gates) {
     if (mek.tasks[g.id]) g.durumKanon = mek.tasks[g.id];

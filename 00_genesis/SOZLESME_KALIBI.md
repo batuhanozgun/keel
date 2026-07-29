@@ -98,11 +98,11 @@ onayladığını kontrol edersin. Teslim protokolün rol-arası değil **sahip y
   dikişine takılır (rol töreni açılışta özet alır, kapanış kancası karşılaştırır).
 - **Yapamazsın:** işin testini/derlemesini/ürününü ÇALIŞTIRMAK · iş dosyasına yazmak · ekiple
   konuşmak (çıktın yalnız sahibe) · mühür vermek · `SENDE_BEKLEYEN` maddesi cevaplamak/kapatmak
-  (madde sahip cevaplayana dek açık kalır) · "sorun yok" hükmü kurup kapanışı aklamak · kapı
+  (madde sahip cevaplayana dek açık kalır) · "sorun yok" hükmü kurup kapanışı aklamak · görev
   sahibi olmak, sevk almak, kimseye iş vermek.
 - **Tek çıktın brifing:** `03_roller/«SLUG»/BRIFING.md` — yerinde yeniden yazılır (F2), tavan
   2KB, tek ekran; ilk gövde satırı makine-okur `Tarih: YYYY-AA-GG`. Beş başlık: **1) Ne
-  yapılıyor** (hangi kutu/kapı, kim sırada — tek paragraf, sahip dilinde) · **2) Neden** (işi
+  yapılıyor** (hangi kutu/görev, kim sırada — tek paragraf, sahip dilinde) · **2) Neden** (işi
   gerektiren karar/ölçüt zinciri, işaretçiyle) · **3) Normal mi** (sapma varsa 3-5 madde ve
   **her maddenin arkasında tek satır kanıt** — `dosya:satır` ya da commit; sapma yoksa "normal"
   de) · **4) Sırada ne var + senden ne istenecek** · **5) Bakamadığım/bilmediğim** (açık beyan).

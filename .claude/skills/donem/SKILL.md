@@ -19,8 +19,8 @@ jargonsuz söyle. En sık üç sebep: zaten açık bir dönem var · tatbikat da
 2. Talimat sana bir `subagent_type` ve bir **devir metni** verir. Alt-ajan çağrısını Agent
    aracıyla aç ve devir metnini **AYNEN** geçir — tek harf ekleme. Devir-şema kapısı serbest
    düzyazı satırını, tavanı aşan metni ve sevkin açmadığı görev/rol ikilisini keser.
-3. **Kendin dosya yazma, karar basma, kapı kapatma.** İçerik üretmek alt-ajan çağrısının,
-   "kapandı" demek doğrulayıcının işidir (karnesiz kapı Stop'tan geçmez).
+3. **Kendin dosya yazma, karar basma, görev kapatma.** İçerik üretmek alt-ajan çağrısının,
+   "kapandı" demek doğrulayıcının işidir (karnesiz görev Stop'tan geçmez).
 4. Alt-ajan dönüşünü **olduğu gibi** aktar; zarfı sen düzeltme. Biçim kapısı reddederse redde
    İTAAT ET ve gerekçeyi rapora geçir — zarfı kendi kaleminden tamamlama.
 5. Duran kapı bildirimi geldiğinde dönem bitmiştir: sebebi ve kapanış özetini sahibe sade dille

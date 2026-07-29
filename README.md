@@ -74,7 +74,7 @@ Kurulumdan sonra kökte **`NASIL_KULLANILIR.md`** adlı bir sahip kılavuzu olu�
 
 ## Kokpit — tek ekrandan izleme
 
-`tools/kokpit`, sistemin sağlığını — ışıklar · sıradaki adım · kutu kapıları · roller — tek ekranda gösteren **salt-okunur** yerel bir panodur. Hiçbir şeye dokunmaz, yalnızca okur. Harici paket yok (`npm install` gerekmez); yalnız yazı tipleri internetten yüklenir — internet yoksa kokpit sistem yazı tipiyle çalışmaya devam eder.
+`tools/kokpit`, sistemin sağlığını — ışıklar · sıradaki adım · kutu görevleri · roller — tek ekranda gösteren **salt-okunur** yerel bir panodur. Hiçbir şeye dokunmaz, yalnızca okur. Harici paket yok (`npm install` gerekmez); yalnız yazı tipleri internetten yüklenir — internet yoksa kokpit sistem yazı tipiyle çalışmaya devam eder.
 
 Açmak için iki yol:
 

@@ -138,13 +138,13 @@ const red = (sebep, ipucu) => {
 // Alan ayristirma: satir basinda (liste imi/kalin toleransli) ETIKET: deger
 const ETIKETLER = ["BİTEN", "ÇATAL", "DEĞERLENDİRMEDİKLERİM", "SIRADAKİ", "TÜRETME-İZİ", "GERİ-ÇEKİLEN", "İZİN-ENGELİ", "ÇEVİRİ", "ETKİ", "BEKLETİR",
                    "ÇATAL-KAYNAK", "HÜKÜM", "KALEMLER",    // E3: denetçi dönüş sözleşmesi
-                   "KARNE-KAPI", "MADDELER"];              // E4: karne dönüş sözleşmesi
+                   "KARNE-GOREV", "MADDELER"];              // E4: karne dönüş sözleşmesi
 // E3 · denetçi sınıfı: dönüşü ZARF + üç ek satır taşıyan yazamaz koltuklar. Bu koltukların
 // dönüşü "iş" değil "hüküm"dür — BEKLETİR kilidi (aşağıda) onlara uygulanmaz.
 const DENETCILER = new Set(["catal-denetcisi"]);
-// E4 · karneci sınıfı: kapı hükmü üreten yazamaz koltuklar (K2 — "kimse kendi işine yeşil
-// diyemez" kuralının mekanik yüzü). Dönüşleri ZARF + KARNE-KAPI/HÜKÜM/MADDELER taşır ve
-// günlüğe ayrıca `karne` kaydı düşer; sevk kapıyı YALNIZ o kayda bakarak kapalı sayar.
+// E4 · karneci sınıfı: görev hükmü üreten yazamaz koltuklar (K2 — "kimse kendi işine yeşil
+// diyemez" kuralının mekanik yüzü). Dönüşleri ZARF + KARNE-GOREV/HÜKÜM/MADDELER taşır ve
+// günlüğe ayrıca `karne` kaydı düşer; sevk görevi YALNIZ o kayda bakarak kapalı sayar.
 const KARNECILER = new Set(["dogrulayici", "kurulum-denetcisi"]);
 // Hüküm üreten koltuklar: iş değil yargı döndürürler — BEKLETİR kilidi ve çatal-iz şüphesi
 // onlara uygulanmaz (T3a dersi: denetçinin İŞİ çatal değerlendirmektir, şüphe değil beklentidir).
@@ -288,7 +288,7 @@ const denetciMi = DENETCILER.has(tipHam);
 const karneciMi = KARNECILER.has(tipHam);
 const hukumSinifi = HUKUM_SINIFI.has(tipHam);
 // Talimat-fiil dikisinin bakacagi gorev: uretim rolunde BİTEN satirinin G-NNsi; hukum
-// koltuklarinda HÜKMÜN KONUSU (catal denetcisinde ÇATAL-KAYNAK, karnecide KARNE-KAPI) —
+// koltuklarinda HÜKMÜN KONUSU (catal denetcisinde ÇATAL-KAYNAK, karnecide KARNE-GOREV) —
 // cunku onlarin BİTEN satiri kendi cagrilarini anlatir, sevkin actigi gorevi degil.
 let dikisGorev = gorev;
 let karneKaydi = null;
@@ -439,29 +439,29 @@ if (denetciMi) {
 
 // ═══ E4 · KARNE SÖZLEŞMESİ (K2) ═════════════════════════════════════════════════════════
 // "Kimse kendi isine yesil diyemez" bugune kadar bir KURALDI; burada mekanige donusuyor. Karneci
-// koltuklarin donusu uc ek satir tasir ve gunluge ayri bir `karne` kaydi duser — sevk kapiyi
-// YALNIZ o kayda bakarak kapali sayar (tasarim §2.5: karnesiz kapi Stop kancasindan gecmez).
+// koltuklarin donusu uc ek satir tasir ve gunluge ayri bir `karne` kaydi duser — sevk gorevi
+// YALNIZ o kayda bakarak kapali sayar (tasarim §2.5: karnesiz gorev Stop kancasindan gecmez).
 if (karneciMi) {
-  const kapiHam = (alan["KARNE-KAPI"] || "").trim();
+  const gorevHam = (alan["KARNE-GOREV"] || "").trim();
   const hukumHam2 = (alan["HÜKÜM"] || "").trim();
   const maddeler = (alan["MADDELER"] || "").trim();
   const eksikK = [];
-  if (!kapiHam) eksikK.push("KARNE-KAPI");
+  if (!gorevHam) eksikK.push("KARNE-GOREV");
   if (!hukumHam2) eksikK.push("HÜKÜM");
   if (!maddeler) eksikK.push("MADDELER");
   if (eksikK.length) {
     red("karne dönüşünde eksik alan: " + eksikK.join(", "),
-        "karneci koltuk zarfa üç satır daha ekler: KARNE-KAPI: G-NN|KURULUM|KAPANIS · HÜKÜM: YEŞİL|KIRMIZI|DOĞRULANAMADI · MADDELER: <iddia=hüküm çiftleri>");
+        "karneci koltuk zarfa üç satır daha ekler: KARNE-GOREV: G-NN|KURULUM|KAPANIS · HÜKÜM: YEŞİL|KIRMIZI|DOĞRULANAMADI · MADDELER: <iddia=hüküm çiftleri>");
   }
-  const kapiEs = kapiHam.split(/\s+/)[0].match(/^(G-\d+|KURULUM|KAPANIS)$/);
-  if (!kapiEs) red("KARNE-KAPI çözülmüyor: " + kapiHam, "hükmün konusu olan kapıyı yaz (G-NN ya da KURULUM/KAPANIS)");
-  const kapi = kapiEs[1];
+  const gorevEs = gorevHam.split(/\s+/)[0].match(/^(G-\d+|KURULUM|KAPANIS)$/);
+  if (!gorevEs) red("KARNE-GOREV çözülmüyor: " + gorevHam, "hükmün konusu olan görevi yaz (G-NN ya da KURULUM/KAPANIS)");
+  const gorev = gorevEs[1];
   // Ilk jeton BIREBIR karsilastirilir (E3 dersi: ASCII \b Turkce harfte sinir saymaz).
   const hIlk = hukumHam2.split(/\s+/)[0];
   const HUKUMLER = { "YEŞİL": "YEŞİL", "KIRMIZI": "KIRMIZI", "DOĞRULANAMADI": "DOĞRULANAMADI" };
   const hukumK = HUKUMLER[hIlk] || null;
   if (!hukumK) red("HÜKÜM okunmuyor: " + hukumHam2, "yalnız «YEŞİL», «KIRMIZI» ya da «DOĞRULANAMADI» yazılır");
-  // OZ-KARNE YASAGI: isi yapan kendi karnesini yazamaz. Kaynak, o kapinin son IS zarfinin
+  // OZ-KARNE YASAGI: isi yapan kendi karnesini yazamaz. Kaynak, o gorevin son IS zarfinin
   // ajanidir (karne sinifi zarflar disarida birakilir — karneci kendi kaydini kaynak sayamaz).
   let isAjani = null;
   try {
@@ -470,17 +470,17 @@ if (karneciMi) {
       for (const l of readFileSync(gy2, "utf8").split("\n")) {
         if (!l) continue;
         let j; try { j = JSON.parse(l); } catch { continue; }
-        if (j.tip === "zarf" && j.gorev === kapi && j.sinif !== "karne") isAjani = j.ajan || null;
+        if (j.tip === "zarf" && j.gorev === gorev && j.sinif !== "karne") isAjani = j.ajan || null;
       }
     }
   } catch {}
   if (isAjani && isAjani === tipHam) {
-    kayit({ tip: "bulgu", ajan: tipHam, gorev: kapi, cins: "oz-karne", detay: "isi yapan koltuk kendi karnesini yazmaya calisti" });
-    red("öz-karne yasak: " + kapi + " işini yapan koltuk (" + tipHam + ") kendi karnesini yazamaz",
+    kayit({ tip: "bulgu", ajan: tipHam, gorev: gorev, cins: "oz-karne", detay: "isi yapan koltuk kendi karnesini yazmaya calisti" });
+    red("öz-karne yasak: " + gorev + " işini yapan koltuk (" + tipHam + ") kendi karnesini yazamaz",
         "karneyi işe dokunmamış bir koltuk verir — «kimse kendi işine yeşil diyemez» kuralının mekanik yüzü budur");
   }
-  dikisGorev = kapi;
-  karneKaydi = { tip: "karne", ajan: tipHam, kapi, hukum: hukumK, maddeler: maddeler.slice(0, 400) };
+  dikisGorev = gorev;
+  karneKaydi = { tip: "karne", ajan: tipHam, gorev, hukum: hukumK, maddeler: maddeler.slice(0, 400) };
 }
 // ═══ E4 sonu ════════════════════════════════════════════════════════════════════════════
 

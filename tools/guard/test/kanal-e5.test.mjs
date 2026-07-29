@@ -295,7 +295,7 @@ test('zarf-ekle: E5 tipleri kabul edilir, uydurma tip REDDEDİLİR (beyaz liste 
   const yaz = (tip) => spawnSync('bash', [join(kok, 'tools', 'sevk', 'zarf-ekle.sh')], {
     encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: kok },
     input: JSON.stringify({ surum: 1, ts: '2026-07-28T10:00:00Z', donem: 'K1', tip }) });
-  for (const t of ['haber', 'dur-alindi', 'kapi-sayaci', 'alarm']) {
+  for (const t of ['haber', 'dur-alindi', 'gorev-sayaci', 'alarm']) {
     assert.equal(yaz(t).status, 0, t + ' kabul edilmeli');
   }
   const kotu = yaz('uydurma-tip');

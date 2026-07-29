@@ -1,7 +1,7 @@
 # Kokpit
 
 Projenin vault'unu **tek ekrandan izlemek** için yerel, salt-okunur bir pano.
-Işıklar, sıradaki oturum, aktif kutu kapıları, roller, ertelenenler ve ana plan —
+Işıklar, sıradaki oturum, aktif kutu görevleri, roller, ertelenenler ve ana plan —
 hepsi `.md` dosyalarını tek tek açmadan görünür. Ayrıca sol taraftaki ağaçtan
 istediğin dosyayı açıp okuyabilirsin. Üstteki **"nasıl kullanılır"** düğmesi projenin
 `NASIL_KULLANILIR.md` kılavuzunu panelde gösterir.

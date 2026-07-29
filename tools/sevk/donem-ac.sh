@@ -179,6 +179,6 @@ ${UYKU_NOT:+  $UYKU_NOT
 }${HKANAL:+  haber kanalı: HAZIR — dönem başladı postası gönderildi
 }
 Bundan sonrası yapının işi: sevk (Stop kancası) sıradaki görevi seçer, alt-ajan çağrısını
-açtırır, kapıyı bağımsız karne olmadan kapatmaz. Sen yalnız duran kapıda çağrılırsın.
+açtırır, görevi bağımsız karne olmadan kapatmaz. Sen yalnız duran kapıda çağrılırsın.
 Dönemi elle bitirmek: /donem kapat
 TOREN
