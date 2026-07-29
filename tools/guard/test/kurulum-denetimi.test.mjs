@@ -39,12 +39,18 @@ function disGozKur(kok, { koltuk = true, brifing = true, skill = '---\ndescripti
   writeFileSync(join(kok, '.claude', 'skills', 'rol-disgoz', 'SKILL.md'), skill);
 }
 
-function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, disgoz = {} } = {}) {
+function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, disgoz = {}, ortam = true } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
   mkdirSync(join(kok, '02_kanon'), { recursive: true });
   mkdirSync(join(kok, '00_genesis'), { recursive: true });
   mkdirSync(join(kok, '03_roller', slug), { recursive: true });
   mkdirSync(join(kok, '.claude', 'skills', 'rol-' + slug.replace(/[^a-z0-9-]/g, '')), { recursive: true });
+  // Ortam denetimi ikilisi (F1-2a): şablonla SABİT gelir; eksikse aktarım öz-denetimi KIRMIZI basar.
+  mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
+  if (ortam) {
+    writeFileSync(join(kok, 'tools', 'guard', 'ortam-kontrol.sh'), '#!/bin/bash\nexit 0\n');
+    writeFileSync(join(kok, 'tools', 'guard', 'ortam-kalemleri.txt'), '[node]\n');
+  }
   disGozKur(kok, disgoz);
   if (ek != null) writeFileSync(join(kok, '02_kanon', 'EL_KITABI.md'), ek);
   if (defo) writeFileSync(join(kok, '00_genesis', 'DEFO_MODELI.md'), '# DEFO\n## On defo — itki\n');
@@ -289,4 +295,12 @@ test('dış göz becerisi kilitsizse → KIRMIZI (koltuk da genel kilide tabidir
   const r = kos(kurulum({ disgoz: { skill: '---\ndescription: t\n---\ntören\n' } }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /insan-tetikleme kilidi.*rol-disgoz/s);
+});
+
+// F1-2a: ortam denetimi ikilisi aktarımda düşerse açılış kancası FAIL-OPEN olduğu için sessiz
+// kalır — aktarım öz-denetiminin görmesi gereken sınıf tam olarak budur.
+test('ortam denetimi ikilisi kopyalanmamış → KIRMIZI', () => {
+  const r = kos(kurulum({ ortam: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /ortam-kontrol\.sh/);
 });

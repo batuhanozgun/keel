@@ -26,6 +26,13 @@ Felsefesi tek cümlede: **bilerek az anla, çalışan bir sistem bırak.** Başt
 
 1. **Claude Code** — KEEL'i asıl *çalıştıran* budur. Bu depodaki dosyalar tek başına birer *tariftir*; onları hayata geçiren zekâ Claude Code'dur. → [docs.claude.com/claude-code](https://docs.claude.com/claude-code)
 2. **Node.js** — **kuruluma başlamadan önce kur.** Hem kokpit (izleme panosu) hem de **koruma kancası** ister: Claude Code'un her dosya-yazışını süzen bekçi yardımcısı kararını Node ile verir; Node yoksa güvenli tarafta kalır ve **yazmayı engeller** (kurulum ilk adımda durur). → [nodejs.org](https://nodejs.org)
+3. **Git** — **kuruluma başlamadan önce kur.** KEEL'in "geri alınabilir" güvencesi buna dayanır: kutunun açılış tarih çapası, ölçütlerin sonradan değiştirilmediğinin kanıtı ve çalışma alanının temiz olup olmadığı git'ten okunur. → [git-scm.com](https://git-scm.com) (macOS'ta `xcode-select --install` de kurar)
+
+2 ve 3 **zorunludur**. Ayrıca birkaç **seçimli** araç vardır (e-posta haberi, gece çalışması, gece nöbetçisi); yokluğu sistemi durdurmaz, yalnız o özelliği kapatır. Bu araçları tek komutla ölçüp sade dille açıklayan bir denetim var — kurulum bunu ilk iş olarak kendisi koşar, sen de istediğin an koşabilirsin:
+
+```
+bash tools/guard/ortam-kontrol.sh
+```
 
 > KEEL Türkçe bir sistemdir. Dosyalardaki Türkçe metin — Türkçe harfler dâhil (ı, ş, ğ, ç, ö, ü) — sistemin doğru çalışması için önemlidir; ASCII'ye çevirme.
 

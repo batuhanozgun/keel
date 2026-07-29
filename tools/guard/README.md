@@ -102,11 +102,13 @@ rehin almaz; kancanın ölümünü bekçinin kablo-denetimi KIRMIZI basar. Vault
 (00_pano yoksa) kanca susar. Rol damgasını yalnız OKUR; temizlik SessionStart'ta.
 node yoksa süzme atlanır (blok=bilinmiyor), meta satırı yine düşer.
 
-Açılış kancası (`acilis.sh`, SessionStart startup+clear): en fazla İKİ bilgi satırı basar,
-yoksa susar — (1) kuyrukta AÇIK madde varsa `Sende bekleyen N madde (en eskisi X gündür)`;
-(2) `03_roller/disgoz/` varsa ve brifingin içindeki `Tarih:` satırı 7 günden eskiyse (ya da
-brifing/tarih yoksa) `... dış göz brifingi ... "durumu anlat" diyebilirsin` — bu YUMUŞAK
-hatırlatmadır, kapanış kilidi değil (kilit bekçidedir ve git tarihine bakar).
+Açılış kancası (`acilis.sh`, SessionStart startup+clear): DÖRT koşullu bilgi satırı; hiçbiri
+her oturumda çıkmaz, koşul yoksa susar — (1) kuyrukta AÇIK madde varsa `Sende bekleyen N madde
+(en eskisi X gündür)`; (2) `03_roller/disgoz/` varsa ve brifingin içindeki `Tarih:` satırı 7
+günden eskiyse (ya da brifing/tarih yoksa) `... dış göz brifingi ... "durumu anlat"
+diyebilirsin` — bu YUMUŞAK hatırlatmadır, kapanış kilidi değil (kilit bekçidedir ve git
+tarihine bakar); (3) `00_pano/SABAH.md` varsa gece dönemine köprü (E5); (4) `ortam-kontrol.sh
+--satir` — ZORUNLU bir dış araç (node/git) eksikse tek satır; seçimli eksikte SUSAR (F1-2a).
 Salt-okurdur, hiçbir dosyaya yazmaz; fail-open (dosya yoksa/bozuksa sessiz exit 0).
 Yaş BİLGİdir — uyarı/eskalasyon YOKTUR (sahip kararı, 2026-07-24). `--resume` oturumlarında
 çalışmaz (rol-temizliğiyle aynı matcher kümesi; bilinçli).

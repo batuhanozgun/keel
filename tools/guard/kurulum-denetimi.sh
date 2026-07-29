@@ -86,6 +86,13 @@ if [ -f "$KOK/00_genesis/RETRO_KALIBI.md" ] && grep -q "Tavan kalibrasyonu" "$KO
 else
   kirmizi "00_genesis/RETRO_KALIBI.md yok ya da kalibrasyon maddesi eksik"
 fi
+# 4b · Ortam denetimi ikilisi (F1-2a): betik + veri dosyası. Eksik kopyalanırsa açılış kancası
+#      FAIL-OPEN olduğu için SESSİZ kalır — aktarım öz-denetiminin görmesi gereken tam olarak bu.
+if [ -f "$KOK/tools/guard/ortam-kontrol.sh" ] && [ -f "$KOK/tools/guard/ortam-kalemleri.txt" ]; then
+  gecti "ortam denetimi yerinde (betik + kalem listesi)"
+else
+  kirmizi "tools/guard/ortam-kontrol.sh ya da ortam-kalemleri.txt yok — ortam denetimi sessizce ölü (F1-2a)"
+fi
 
 # 5 · Bekçi: mevcut + sözdizimi + kadranın zorunlu kategorileri İLAN edilmiş
 #     (ilan `# kategoriler:` satırıdır — GENESIS tarifi zorunlu kılar; beyanın İÇERİĞİNİ

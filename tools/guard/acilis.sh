@@ -1,9 +1,12 @@
 #!/bin/bash
-# acilis — oturum-açılış kancası (SessionStart): sahibe en fazla İKİ bilgi satırı.
+# acilis — oturum-açılış kancası (SessionStart): sahibe kısa bilgi satırları, HER BİRİ koşullu
+# (hiçbiri her oturumda çıkmaz; dördü birden çıkması olağandışı bir gündür).
 # (1) V2 Öbek-2 (sahip yüzeyi): kapanışta sorulan soru sonraki oturumda buharlaşıyordu (ölçüldü);
 #     kuyruk kalıcı, hatırlatma AÇILIŞTA + PANODA.
 # (2) Dış göz (D-20 parça 2): brifing uzun süredir tazelenmediyse tek satır hatırlatma —
 #     "uzun sessizlikten sonraki ilk açılış" anı. Eşik 7 gün.
+# (3) Sabah yüzeyi (E5): gece bir dönem olduysa üç bloğa köprü.
+# (4) Ortam (F1-2a): ZORUNLU bir araç (node/git) yoksa tek satır — SEÇİMLİ eksik burada SUSAR.
 # Sahip seçimi (2026-07-24): ISRAR YOK — yaş BİLGİdir, uyarı değil; eskalasyon/dırdır
 # bilinçli kapsam dışı. Satırlar ünlem/KIRMIZI taşımaz, hiçbir akışı kilitlemez.
 # FAIL-OPEN: okunamayan/olmayan dosyada sessizce geçer (exit 0); açılışı hiçbir koşulda kilitlemez.
@@ -73,7 +76,8 @@ fi
 SABAH="$KOK/00_pano/SABAH.md"
 if [ -r "$SABAH" ]; then
   SABAH_BASLIK="$(head -n1 "$SABAH" 2>/dev/null || true)"
-  SABAH_GUN="$(printf '%s' "$SABAH_BASLIK" | grep -o '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' | head -n1 || true)"
+  # 2>/dev/null: dar PATH'te (grep/head yok) kanca sahibin ekranına "command not found" sızdırıyordu.
+  SABAH_GUN="$(printf '%s' "$SABAH_BASLIK" | grep -o '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' 2>/dev/null | head -n1 2>/dev/null || true)"
   if [ -n "$SABAH_GUN" ]; then
     if [ "$SABAH_GUN" = "$(date '+%Y-%m-%d')" ]; then
       printf 'ℹ️ Bu gece bir dönem oldu — üç blok hazır: 00_pano/SABAH.md\n'
@@ -82,4 +86,14 @@ if [ -r "$SABAH" ]; then
     fi
   fi
 fi
+
+# ── (4) Ortam eksiği (F1-2a) — YALNIZ zorunlu araç yokken konuşur ─────────────────────────
+# Gerekçe: node ya da git yoksa sistem sessizce yanlış davranır — koruma kancası yazmayı
+# engeller, kurulum ilk adımda durur, tarih çapası doğmaz. Bu, "bilgi" sınıfının en sert ucudur
+# ve yine de ISRAR YOK: tek satır, ünlem yok, hiçbir şeyi kilitlemez. Seçimli eksik SUSAR
+# (her oturumda "curl yok" demek dırdırdır; onun yeri kurulum raporudur).
+# Betiğin kendisi yoksa/patlarsa satır hiç doğmaz — açılış hiçbir koşulda kilitlenmez.
+ORTAM="$KOK/tools/guard/ortam-kontrol.sh"
+[ -r "$ORTAM" ] && bash "$ORTAM" --satir 2>/dev/null || true
+
 exit 0

@@ -1,0 +1,88 @@
+# ortam-kalemleri — ortam-kontrol.sh'ın okuduğu VERİ dosyası (kod değil).
+#
+# Her kayıt bir araçtır. Biçim: "[ad]" satırıyla başlar, altında "anahtar: değer" satırları.
+# "#" ile BAŞLAYAN satır yorumdur; boş satır yok sayılır.
+#
+# Anahtarlar:
+#   sinif    zorunlu | secimli
+#   ozellik  (yalnız seçimlide) hangi özelliğe bağlı — tek kelime öbeği
+#   arama    PATH'te aranacak komut adı
+#   aday     PATH dar olduğunda (GUI oturumu) denenecek tam yollar, boşlukla ayrık; joker serbest
+#   dene     (seçimli) çalışırlık yoklamasının argümanı — "$yol $dene" sıfır dönmeli.
+#            YALNIZ --rapor kipinde koşar (gerekçe betikte yazılı: macOS kurulum penceresi).
+#   nedir    | Sahibe okunan DÖRT cevap. Kurulum konuşması bunları olduğu gibi okur;
+#   neden    | GENESIS bunları yeniden yazmaz (kalıp metin sabittir — buharlaşma kapısı).
+#   yoksa    |
+#   nereden  |
+#
+# DİL KURALI: bu dört cevap sahibin KEEL'i HİÇ DUYMADIĞI anda okunur (kurulumun ilk adımı).
+# O yüzden burada KEEL sözlüğü kullanılmaz — "kutu", "mühür", "çapa", "ölçüt", "dönem" gibi
+# kelimeler bu dosyada geçmez. Karşılığı gündelik Türkçeyle anlatılır.
+#
+# KURAL: bu listeye yeni araç eklenirse dört cevabı da yazılır. Üçü yazılıp biri boş bırakılan
+# kayıt, sahibin "bunu neden kurayım" sorusunu cevapsız bırakır — eksik kayıt sayılır.
+#
+# ADAY LİSTESİ BİLEREK DAR: aynı liste file-guard.sh · kapanis.sh · icerik-suzgeci.sh ·
+# tools/sevk/ortak.sh içinde de var (dört kopya, bu dosyadan önce de öyleydi). Burası onlardan
+# GENİŞ olursa "node var" deriz ama koruma kancası node'u bulamaz — yanlış yeşil. `ortam.test.mjs`
+# beşini bağlar: ayrışırsa test KIRMIZI olur. Genişletme gerekirse BEŞİ BİRDEN genişletilir.
+
+[node]
+sinif: zorunlu
+arama: node
+aday: /usr/local/bin/node /opt/homebrew/bin/node /usr/local/opt/node*/bin/node /opt/homebrew/opt/node*/bin/node
+dene: --version
+nedir: Bilgisayarında küçük programları çalıştıran bir araç. Kendi başına bir şey yapmaz; başka programların motorudur.
+neden: KEEL'in koruyucusu, yapay zekânın yazmak istediği her dosyayı yazılmadan önce süzer — o süzme bununla çalışır. İzleme ekranı ve otomatik denetimler de buna bağlı.
+yoksa: Koruyucu karar veremez ve güvenli tarafta kalıp YAZMAYI ENGELLER; kurulum ilk adımda durur. İzleme ekranı da açılmaz.
+nereden: nodejs.org adresinden indirilir. KEEL'in içinden çıkmaz, ayrıca kurulur — kurulumu sen yaparsın.
+
+[git]
+sinif: zorunlu
+arama: git
+aday: /usr/bin/git /usr/local/bin/git /opt/homebrew/bin/git
+dene: --version
+nedir: Dosyaların her değişikliğini tarih tarih kaydeden, istediğinde eski hâline döndüren bir araç.
+neden: KEEL'in "yanlış giderse geri alınır" sözü buna dayanır. Bir işin ne zaman başladığını ve o işin kabul şartlarının sonradan değiştirilip değiştirilmediğini bununla kanıtlarız — kimsenin beyanına değil, kayda bakarız.
+yoksa: Geri dönüş yolu kalmaz; "bu şart sonradan değiştirilmemiş" denetimi ölçüm yapamaz ve yapay zekânın gece yaptığı iş gözden geçirilemez hâle gelir.
+nereden: git-scm.com adresinden kurulur; Mac'te Terminal'e "xcode-select --install" yazmak da kurar. Kurulumu sen yaparsın.
+
+[curl]
+sinif: secimli
+ozellik: e-posta haberi
+arama: curl
+aday: /usr/bin/curl /usr/local/bin/curl /opt/homebrew/bin/curl
+nedir: İnternetten veri gönderip alan bir araç.
+neden: Gece çalışılan işin sonucunu sana e-postayla bu gönderir; uzaktan verdiğin "dur" cevabını da bu okur.
+yoksa: Yapay zekâ gece çalışır ama sana haber gelmez ve uzaktan durduramazsın.
+nereden: Mac'te ve çoğu Linux'ta kurulu gelir. Yoksa Mac'te "xcode-select --install", Linux'ta paket yöneticisi kurar.
+
+[caffeinate]
+sinif: secimli
+ozellik: gece çalışması
+arama: caffeinate
+aday: /usr/bin/caffeinate
+nedir: Mac'in bilgisayarı uykuya dalmaktan alıkoyan aracı.
+neden: Gece çalışma başlarken KEEL makineyi uyanık tutar, iş bitince bırakır.
+yoksa: Makine uyursa iş yarıda durur ve durduğu haberi de gitmez. KEEL bunu başlarken tek satırla söyler, ama engellemez.
+nereden: Mac'te kurulu gelir; Windows/Linux'ta karşılığı farklıdır ve KEEL bugün orada uyanık tutma yapmaz.
+
+[security]
+sinif: secimli
+ozellik: e-posta parolası
+arama: security
+aday: /usr/bin/security
+nedir: Mac'in parola kasasına (Anahtar Zinciri) komut satırından erişen araç.
+neden: E-posta parolan hiçbir dosyada açıkça durmasın diye kasada tutulur ve oradan okunur.
+yoksa: E-posta haberi kurulamaz — parolayı bir dosyaya yazmak KEEL'de yasaktır.
+nereden: Mac'te kurulu gelir. Mac dışında e-posta haberi için başka bir yol gerekir; bugün yoktur.
+
+[launchctl]
+sinif: secimli
+ozellik: watchdog (gece nöbetçisi)
+arama: launchctl
+aday: /bin/launchctl
+nedir: Mac'te arka planda düzenli aralıklarla iş çalıştıran sistem aracı.
+neden: Gece çalışması sessizce ölürse bunu fark edip sana haber veren nöbetçiyi buna bağlarız; nöbetçinin, izlediği şeyden bağımsız yaşaması gerekir.
+yoksa: Gece duran bir iş, sen sabah bakana kadar durduğunu kimseye söylemez.
+nereden: Mac'te kurulu gelir. Mac dışında nöbetçi bugün kurulmaz.
