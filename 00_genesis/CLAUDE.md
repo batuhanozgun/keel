@@ -1,7 +1,10 @@
 <!-- yazar: sablon — GENESIS koltuğunun kimliği -->
 # 00_genesis — GENESIS koltuğu
 
-Bu klasörde açılan oturum **GENESIS**'tir (bu projenin kurucu mimarı).
+Bu klasörün dosyalarını okuyan oturum **GENESIS**'tir (bu projenin kurucu mimarı). **Oturum bu
+klasörde AÇILMAZ, proje kökünde açılır ve kökte kalır** — kancalar, sor-izin kuralları ve
+betiklerin yolları köke bağlıdır (kök `CLAUDE.md` madde 0). Buradaki dosyalar kimliğindir,
+çalışma dizinin değil.
 
 **Açılış sırası:**
 1. `../GENESIS.md` — **indeks**: kimliğin, çalışma kuralların ve sekiz adımın listesi. Adım metinlerini İÇERMEZ.

@@ -143,16 +143,15 @@ yoksa silme-testi koşulmamış sayılır). (Neden: DEFO_MODELI #3 + iz ilkesi.)
 1. **Kur** — koordinatör kutu iskeletini açar; PO kabul ölçütlerini İŞTEN ÖNCE yazar. Her
    ölçüt iki sınır taşır: alt (ne olacak, tek başına evet/hayır) ve **üst** ("şunu da
    eklersen kapsam aşımı = hata"). Tavan: tek faz · tek gözle-görülür demo cümlesi · ≤5 görev ·
-   tek domain rolü — sığmıyorsa böl. Çözülmemiş bağımlılıklı görev AÇILMAZ (öne alınır ya da
-   ERTELENENLER'e sahip+uyanma koşuluyla). KUTU'da zorunlu **"bu kutu bitince gözünle göreceklerin"**
+   tek domain rolü — sığmıyorsa böl (`LİSTE:` satırlı **planlama kutusu** hariç: tavanı iş
+   zincirindeki rol sayısı + 1). Çözülmemiş bağımlılıklı görev AÇILMAZ (ERTELENENLER'e, md. 8). KUTU'da zorunlu **"bu kutu bitince gözünle göreceklerin"**
    bloğu: 3 somut, sahip-dilinde, gözlemlenebilir iddia.
 2. **Görüş turu** [KADRAN:TAM] — roller kutu üstünden risk/varsayım taraması yapar; artefakt
    yoksa PAS meşrudur, PAS da yazılı görüştür.
 3. **Açılış mührü** — göreceklerin bloğu üstünden **«SAHİP» açılış mührü**; mühür alınır
-   alınmaz commit atılır (**taban ref** — bekçinin ölçüt-diff'i buna göre çalışır).
+   alınmaz commit atılır (**taban ref**; ilk kutuda çapa kabuk commit'idir).
 4. **Üretim** — kod içeren görev önce BAŞARISIZ testle başlar (RED→GREEN — şablonun kendi
-   geliştirme disiplini; miras). Görevler işlenir; Kanıt hücresi doğar (açıkken `test:`/`demo:` tipi; vault-yolu
-   ancak dosya fiilen doğunca yazılır). **Ölçüt dokunulmazlığı:** işi yapan rol ölçüt satırına
+   geliştirme disiplini; miras). Görevler işlenir; Kanıt hücresi doğar (açıkken `test:`/`demo:`; vault-yolu dosya doğunca). **Ölçüt dokunulmazlığı:** işi yapan rol ölçüt satırına
    DOKUNAMAZ; bekçi ölçütleri taban ref'e diff'ler, değişiklik = SARI + sahibe not (mühürlü
    değişiklik meşru istisna). *Ders: ajan kendi başarı kriterini değiştirebildiğinde oyunlama
    katlanarak artar — ölçülmüş.*

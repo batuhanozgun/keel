@@ -80,8 +80,8 @@ esac
 [ -n "$A_DONEM" ] || A_DONEM="(dönem kimliği yok)"
 if [ "$OLAY" = "alarm" ]; then
   case "$A_CINS" in
-    sessizlik|sisme|kirmizi|kanal) : ;;
-    *) hata "alarm olayı --cins ister: sessizlik | sisme | kirmizi | kanal" ;;
+    sessizlik|sisme|kirmizi|kanal|tavan) : ;;
+    *) hata "alarm olayı --cins ister: sessizlik | sisme | kirmizi | kanal | tavan" ;;
   esac
 fi
 

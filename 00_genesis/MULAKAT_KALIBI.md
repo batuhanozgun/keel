@@ -1,4 +1,4 @@
-<!-- MÜLAKAT KALIBI (G0-G2, G4): GENESIS'in sahiple konuşma BİÇİMİ. Bu dosya kuruluma
+<!-- MÜLAKAT KALIBI (G0-G5: sahiple her konuşma): GENESIS'in sahiple konuşma BİÇİMİ. Bu dosya kuruluma
      kopyalanmaz — GENESIS okur ve uygular. Soru İÇERİĞİ burada değildir (soru-bankası
      bilinçli yok: sorular a priori inşa edilmez, gözlemden doğar — D-13 K10). -->
 # MÜLAKAT KALIBI — sahiple konuşma biçimi

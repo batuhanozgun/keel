@@ -5,12 +5,16 @@
      Kalıp metni SABİTTİR: kopyala, «alanları» doldur, bu bloğu sil. Alanlar: «SAHİP».
      EL_KITABI'na TEK HARF eklenmez (marj 44B; tavan sorusu sahibe gitmeden ek giremez) —
      otonom kural evi BU dosyadır; keşfi rol sözleşmelerinin "Açılış ek-okumaları" satırından.
-     Tavan: 14.464 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
+     Tavan: 14.848 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
      ölçer; kurulu bekçiye girmez — F3 tablosu EL_KITABI'nda ve ona dokunulmuyor).
      Tavan 14.336'dan çıkarıldı (2026-07-29, dil paketi): fren ateşledi ve sebebi ek KURAL
      değil, kelime uzunluğuydu — eski tek kelimenin altı anlamı altı gerçek ada ayrıldı ("otonom dönem",
      "alt-ajan çağrısı", "bekçi denetimi", …) ve aynı içerik 65 B büyüdü. Karar: metni
      sıkıştırıp kuralı törpülemek yerine tavan +128 B; yeni marj 598 B. Sıkıştırma seçilmedi
+     ÜÇÜNCÜ ARTIŞ (2026-07-30, Faz 2 sıra 5): 14.464 → 14.848 (+384 B). Sebep yine ek KURAL:
+     duruş sözleşmesine beşinci `LİSTE:` satırı girdi (planlama kutusu işareti; şişme çapası ve
+     görev tavanı ona bakıyor). Metin önce sıkıştırıldı, artış ondan sonra kaldı. Bu dosya sahip
+     yüzeyi değildir — tavan kararı danışmanındır, beyanı paketin raporundadır.
      çünkü E3'te sıkıştırılabilecek olan zaten çıkarıldı (§6 listesi koltuk dosyasına gitti).
      Tavan E3'te 12.288'den çıkarıldı (2026-07-27): E1'in sayısı içerik yazılmadan seçilmişti
      ve dört evreye 658 B pay bırakıyordu; E3 sıkıştırma sınırına geldi (§6'nın beş-kalem
@@ -55,6 +59,7 @@ BİTİŞ HÂLİ: <gözlemlenebilir; "bu kutu bitince gözünle göreceklerin" il
 KANIT:      <hangi komut koşulur, hangi çıktı görülür — kanıt-komutu zarfı emsali>
 KISIT:      <neye dokunulmaz — golden İÇERİK cinsleri dahil (yalnız yol değil)>
 BÜTÇE:      <dönem başına en çok N alt-ajan çağrısı · ilerleme-yok eşiği · toplam dönem tavanı>
+LİSTE:      <yalnız planlama kutusunda; değeri BİREBİR: dönem içinde doğar>
 ```
 
 - **Bitti tanımı iki iş yapar (K-H):** ne içeri girer + ne zaman biter. Dönem içinde doğan her
@@ -63,6 +68,10 @@ BÜTÇE:      <dönem başına en çok N alt-ajan çağrısı · ilerleme-yok e�
 - **BÜTÇE = "sahip bakmadan en fazla ne kadar şey kurulabilir"** (K-G) — kontrol vidası, para
   değil. İlk dönemlerde küçük başlar (dönem başına 3 alt-ajan çağrısı), veriyle gevşetilir.
   RAF'taki "Sert bütçe tavanı" (maliyet/zaman durdurucusu) AYRI kayıttır — birleştirilmez.
+- **LİSTE (beşinci, seçimli):** yalnız görev listesi dönem İÇİNDE doğan kutuda yazılır. İki
+  fren ona bağlı: şişme çapası liste doğana dek çakılmaz (yoksa plan doğar doğmaz alarm çalar) ·
+  görev tavanı 5 değil, iş zincirindeki rol sayısı + 1 olur. Değer kayarsa kutu sessizce sıradan
+  kutuya döner; kurulum kapısı bu yüzden değeri EŞLER.
 - **Mükemmeliyetçilik freni:** "hiç eksik kalmasın" dönem hedefi DEĞİLDİR. Hedef duruş
   sözleşmesidir: bitiş hâli + kanıt + yeşil karneler → kutu kapanışa gider; "bu kadarı yeter"
   hissi sahipte kalır (kapanış mührü onun).

@@ -21,6 +21,6 @@ G1	G1.md	Projenin kabaca haritasını çıkarıyorum
 G2	G2.md	Ekibi kuruyorum: hangi roller gerekli
 G3a	G3a.md	Ekibin el kitabını ve otomatik denetimini yazıyorum
 G3b	G3b.md	Kayıt düzenini, korumayı ve panoyu bağlıyorum
-G4	G4.md	İlk işi kuruyorum ve senin onayına getiriyorum
+G4	G4.md	Ekibin ilk işinin çerçevesini yerine koyuyorum
 G4.5	G4.5.md	Kurulumun eksiksiz olduğunu makineyle denetliyorum
-G5	G5.md	Kullanım kılavuzunu bırakıp çekiliyorum
+G5	G5.md	Kullanım kılavuzunu bırakıyorum, ilk işi onayına getirip çekiliyorum

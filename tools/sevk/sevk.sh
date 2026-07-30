@@ -151,6 +151,9 @@ const KIP = process.env.S_KIP || "interaktif";
 
 const loglar = [], metin = [], alarmlar = [];
 const kayit = (o) => loglar.push(JSON.stringify({ surum: 1, ts: new Date().toISOString(), donem: DONEM, ...o }));
+// BU TURUN kayitlari `loglar`dadir, `buKosu`da DEGIL (buKosu diskteki gecmisi okur). Ikisi
+// toplanmazsa 41 bulgu dusen bir turda sahip ekrani "0 bulgu" der (hasim turu 2026-07-30).
+const buTurBulgu = () => loglar.filter((l) => { try { return JSON.parse(l).tip === "bulgu"; } catch { return false; } }).length;
 const yaz = (s) => metin.push(s);
 let BEKCI_GEREK = 0;
 
@@ -174,6 +177,10 @@ const ucBlok = () => {
   return [b1, b2, b3];
 };
 const bitir = (karar) => {
+  // `buKosu` bu satirdan SONRA tanimlanir ve `dur()` cozumlemenin en basinda `bitir`i
+  // cagirabilir — bu yuzden burada YALNIZ bu turun kayitlari eklenir (gecmis sayi 298. satirda
+  // zaten yazildi; erken cagride OZET.bulgu sifirdir ve dogru sonuc yine bu turun sayisidir).
+  OZET.bulgu = (OZET.bulgu || 0) + buTurBulgu();
   console.log("KARAR\t" + karar);
   console.log("BEKCI\t" + BEKCI_GEREK);
   const bl = ucBlok();
@@ -306,9 +313,72 @@ OZET.bekleyen = bekletilen.size;
 // DURDURMAZ — haberdir. Esik burada SABITTIR: olculen sayi frene girerse fren fren olmaktan
 // cikar (E3 tavan dersi). Ilk gercek kutuda kalibre edilecek, bugun kalibre EDILMEMISTIR.
 const SISME_ORANI = 1.5;
+// PLANLAMA KUTUSU (Faz 2 sira 5 · B-11). Durus sozlesmesindeki `LİSTE: dönem içinde doğar`
+// satiri tek bir olguyu ilan eder: bu kutunun gorev listesi ACILISTA degil DONEM ICINDE dogar
+// (ilk kutu boyledir — kabukta tek gorev vardir ve o gorevin ISI listeyi uretmektir). Ayni
+// olgudan IKI sonuc cikar:
+//   (1) Sisme capasi ilk turda cakilmaz. Cakilsaydi capa 1 olurdu ve plan dogar dogmaz alarm
+//       calardi: alarm plan yapildi demis olurdu. Capa, kutunun ILK GOREVI KAPANDIGI turda
+//       cakilir — yani listeyi kim dogurduysa ona.
+//   (2) Mutlak gorev tavani 5 degil, kadro buyuklugunun turevidir (asagida).
+const listeSatir = (durusBlok || "").split("\n").find((s) => /^\s*LİSTE\s*:/.test(s));
+const PLAN_KUTUSU = /dönem\s+içinde\s+doğar/.test(listeSatir || "");
+// Liste DOGDU MU: kabuk tek gorevle gelir ve o gorevin isi listeyi uretmektir. Liste bir
+// gorevden buyudugu an ya da ilk gorev kapandigi an, olculecek bir "acilis sayisi" vardir.
+// (Ilk yazim yalnizca kapanmis goreve bakiyordu: kabuk geregi G-01 EN SON kapanir, yani
+// hicbir gorev kapanmayan bir plan kutusunda oransal fren omur boyu olu kalirdi.)
+const listeDogdu = gorevler.length > 1 || gorevler.some((k) => k.durum === "kapalı" || k.durum === "pas");
+
+// ── MUTLAK GOREV TAVANI (F1-7 karari, Faz 2 sira 5) ───────────────────────────────────────
+// EL_KITABI kutu-dongusu 1 "≤5 gorev" diyor ve bugune kadar KODDA SAYACI YOKTU: 40 gorevle
+// ACILAN kutu makineye hic gorunmuyordu. Oransal alarm onu GOREMEZ (capa da 40 olurdu) — iki
+// fren ayri kor noktalari kapatir. HABERDIR, durdurmaz: F3 sarisi uyarir, durdurmaz.
+// ILAN EDILMIS SINIR: bu sayac YALNIZ OTONOM DONEMDE kosar (sevk donem gostergesi yoksa hemen
+// cikar). El-surusluu kipte 40 gorevlik kutu hala gorunmez; oradaki gerçek çözüm bekciye bir
+// gorev-sayisi gozu koymaktir ve bekci kontratini degistirir — ayri paket.
+// Sayinin EVI: 00_genesis/EL_KITABI_KALIBI.md kutu-dongusu 1 maddesi. Ikisini test esler.
+const GOREV_TAVANI = 5;
+let gorevTavani = GOREV_TAVANI;
+let kadroNot = "";
+if (PLAN_KUTUSU) {
+  // Planlama kutusunun tavani: IS ZINCIRINDEKI her role bir gorev arti bir toplama gorevi.
+  // KADRONUN EVI `03_roller/<slug>/`dir, `.claude/agents/` DEGIL: ikincisi yazamaz koltuklari
+  // da (dogrulayici · catal-denetcisi · kurulum-denetcisi · disgoz) tasir ve onlar gorev
+  // ALAMAZ — o dizini saymak tavani gercek kadrodan bagimsiz kaydiriyordu (hasim turu
+  // 2026-07-30: 8 ajan + 9 gorev sessiz geciyordu, 3 ajan + 6 gorev yanlis alarm veriyordu).
+  // Yazamaz koltuk rol sozlesmesinden okunur (SOZLESME_KALIBI "Mod: **yazamaz**").
+  let kadro = 0;
+  try {
+    for (const e of readdirSync(join(KOK, "03_roller"), { withFileTypes: true })) {
+      if (!e.isDirectory()) continue;
+      let rol = "";
+      try { rol = readFileSync(join(KOK, "03_roller", e.name, "ROL.md"), "utf8"); } catch { rol = ""; }
+      if (/Mod:\s*\*\*yazamaz\*\*/.test(rol)) continue;
+      kadro++;
+    }
+  } catch { kadro = 0; }
+  if (kadro > 0) { gorevTavani = kadro + 1; kadroNot = "planlama kutusu: kadro " + kadro + " + toplama"; }
+  else {
+    // OLCEMEDIM ile OLCTUM ayni sey degildir: 5 burada bir OLCUM degil, fail-closed varsayilan.
+    kadroNot = "planlama kutusu: kadro OLCULEMEDI (03_roller okunamadi) — fail-closed varsayilan tavan";
+    kayit({ tip: "bulgu", cins: "kadro-olculemedi", detay: "03_roller okunamadi ya da bos; plan kutusunun tavani varsayilan " + GOREV_TAVANI });
+  }
+}
+if (gorevler.length > gorevTavani && !buKosu.some((r) => r.j.tip === "bulgu" && r.j.cins === "gorev-tavani")) {
+  const kaynak = PLAN_KUTUSU ? kadroNot : "EL_KITABI kutu-dongusu 1";
+  kayit({ tip: "bulgu", cins: "gorev-tavani", detay: "gorev sayisi " + gorevler.length + " > tavan " + gorevTavani + " (" + kaynak + ")" });
+  // Cins `tavan`: haber kanalinin alarm beyaz listesindeki ad. Beyaz listede olmayan bir cins
+  // haber.sh tarafindan REDDEDILIR ve gonderim `|| true` ile yutulurdu — alarm gunluge dusup
+  // sahibe HIC ulasmazdi (hasim turu 2026-07-30, kritik).
+  alarmlar.push("tavan\tKutuda " + gorevler.length + " gorev var; tavan " + gorevTavani + " (" + kaynak +
+    "). Bu bir DURDURMA degil, HABER: sigmiyorsa kutu bolunmeli. 01_kutular/" + KUTU + "/KUTU.md");
+}
+
 const capalar = kayitlar.filter((r) => r.j.tip === "gorev-sayaci" && r.j.kutu === KUTU && Number.isFinite(r.j.gorev_sayisi));
 if (!capalar.length) {
-  kayit({ tip: "gorev-sayaci", kutu: KUTU, gorev_sayisi: gorevler.length, cins: "capa" });
+  // Plan kutusunda capa ilk gorev kapanana kadar CAKILMAZ (yukaridaki gerekce); capasiz kutuda
+  // oransal alarm da yoktur; bilincli: olculecek bir acilis sayisi henuz dogmamistir.
+  if (!PLAN_KUTUSU || listeDogdu) kayit({ tip: "gorev-sayaci", kutu: KUTU, gorev_sayisi: gorevler.length, cins: PLAN_KUTUSU ? "capa-plan-sonrasi" : "capa" });
 } else {
   const capa = capalar[0].j.gorev_sayisi;
   const zatenSoylendi = buKosu.some((r) => r.j.tip === "bulgu" && r.j.cins === "sisme");

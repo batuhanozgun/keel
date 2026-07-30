@@ -13,7 +13,7 @@ Adı buradan gelir: *keel*, geminin omurgasıdır — en başta konulan, üstün
 Yapay zekâ ajanlarıyla iş yaparken en büyük sorun **dağınıklık ve unutkanlıktır**: her oturum sıfırdan başlar, kararlar kaybolur, kim neyi neden yaptı belirsizleşir. KEEL bunun panzehiri:
 
 - **Roller** — her işi sahiplenen belirli roller (ör. koordinatör, uygulayıcı, denetçi). Kimse "sahipsiz" iş bırakmaz.
-- **Kutular** — iş, uçtan uca *ince dilimler* (kutu) hâlinde ilerler; her kutunun bir kapısı ve ölçütü vardır.
+- **Kutular** — iş, uçtan uca *ince dilimler* (kutu) hâlinde ilerler; her kutunun bir kapısı ve ölçütü vardır. İlk kutu özeldir: ekibin bu projeyi nasıl yürüteceğini çıkardığı **plan kutusudur**.
 - **Mühürler** — kritik kararlarda **senin** onayın alınır. Sen görmeden ilerlemez.
 - **Kanon** — kararlar tek yerde kayıtlı kalır; "neden böyle yapıldı" her zaman bulunur.
 - **Kokpit** — tek ekrandan bütün sistemin sağlığını görürsün (aşağıda).
@@ -48,7 +48,7 @@ KEEL bir **şablondur**: indirdiğin klasör, kurulumdan sonra **senin projenin 
 
 **"Klasörü hazırlamak" ne demek?** `git clone` ile çektiysen klasör hâlâ KEEL'in deposuna bağlıdır. KEEL o bağı koparır ki (a) senin çalışman KEEL'in deposuna karışmasın, (b) KEEL'in geçmişi senin projene yapışıp sen kendi deponu paylaşınca onunla birlikte gitmesin. Bağı koparmadan **önce** indirdiğin hâlin tam bir kopyasını yan klasöre alır (`<proje>-KEEL-yedek`) ve sana nereye koyduğunu söyler — hiçbir şey kaybolmaz. ZIP ile indirdiysen koparılacak bağ yoktur; yalnız projen için boş bir değişiklik geçmişi açılır.
 
-Kurulum boyunca her önemli adımda **senin onayını (mühür)** ister. Acele etmez, seni sürüklemez.
+Kurulum boyunca her önemli adımda **senin onayını (mühür)** ister. Acele etmez, seni sürüklemez. Sonunda ekibin ilk işini de onayına getirir; onaylamazsan kurulum yine biter, yalnız ekip başlamaz.
 
 ---
 
@@ -59,8 +59,8 @@ GENESIS sabit bir plan izler (G0–G5):
 - **Seni tanır.** Adını, projenin ölçeğini ve riskini sorar; ritüel yoğunluğunu ona göre ayarlar — küçük proje = hafif; ERP gibi büyük/riskli iş = tam disiplin.
 - **Kabaca haritayı çıkarır.** Projeyi derinlemesine değil, *geniş* tanır; nereden başlanacağına gerekçesiyle karar verir.
 - **Ekibi kurar.** Hangi rollerin gerektiğini türetir; sahipsiz kalan işi sana jargonsuz, kırmızıyla gösterir.
-- **İlk kutuyu açar.** En ince uçtan-uca dilimi kurar ve senin açılış mührünle başlatır.
-- **Çekilir.** Sistem ayağa kalkıp ilk sevk verilir verilmez GENESIS resmen görevi bırakır. Bundan sonrası kalıcı ekibinin (koordinatör + roller) işidir.
+- **İlk işin çerçevesini bırakır.** Ne yapılacağını GENESIS seçmez: ekibe sabit metinli bir **ilk kutu** bırakır ve o kutunun tek işi, projenin nasıl yürütüleceğini ekibin kendisinin çıkarmasıdır. Onaylamak sana kalır.
+- **Çekilir.** Kurulum eksiksizse GENESIS resmen görevi bırakır — ilk kutuyu onaylamayı ertelesen bile. Bundan sonrası kalıcı ekibinin (koordinatör + roller) işidir.
 
 ---
 

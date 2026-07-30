@@ -130,7 +130,7 @@ fi
 #      DÖRT ŞEY: (a) sıra verisi ↔ adım dosyaları ÇİFT YÖNLÜ eşlik, (b) dosya başına tavan,
 #      (c) toplam tavan, (d) indeks ve bekçi-tarifi kontratı yerinde.
 ADIM_TAVANI=12288    # bayt · dosya başına (aşan adım ikiye bölünür: G3a/G3b emsali)
-ADIM_TOPLAM=60000    # bayt · indeks + adımlar + BEKCI_TARIFI. Bölmek büyümenin bahanesi olamaz —
+ADIM_TOPLAM=61500    # bayt · indeks + adımlar + BEKCI_TARIFI. Bölmek büyümenin bahanesi olamaz —
                      # asıl fren budur, dosya-başı tavan değil.
                      # ÇAPA VE BEYANLI ARTIŞ (2026-07-30): ilk değer 57.660 = bölmeden önceki
                      # GENESIS.md 48.050 B × 1,20 idi ve bölmenin kendisi ona sığdı. Hasım turu
@@ -142,6 +142,19 @@ ADIM_TOPLAM=60000    # bayt · indeks + adımlar + BEKCI_TARIFI. Bölmek büyüm
                      # Artışın sebebi kelime uzunluğu değil, EKLENEN KURAL: bölme sırasında
                      # bilinmeyen 11 kusurun mekanik karşılığı tarifin içinde yaşamak zorunda.
                      # Bu satır beyandır: sonraki artış yeniden beyan ister (D-27 emsali).
+                     # İKİNCİ BEYANLI ARTIŞ (2026-07-30, Faz 2 sıra 5 · ilk kutu): 60.000 → 61.500
+                     # (+%2,5). Yine hasım turu: 62 ham bulgunun 45'i ayakta kaldı ve 11'inin
+                     # karşılığı tarifin İÇİNDE yaşamak zorunda (G5.1'in erteleme dalı ve pano
+                     # satırı · G5.2'nin çekilme ilanının düzeltilmesi · G1'in "bu karar değil"
+                     # işareti · sahip kılavuzuna "ilk işin" kalemi · G3.3d). Bu paket önce
+                     # 1,6 KB'lık GERÇEK tekrarı sildi (G4'ün indeksle çakışan gerekçesi, kabuğun
+                     # kalıpta zaten yazan tavan ilanı); artış ondan SONRA kaldı.
+                     # YAPISAL SEBEP — sonraki paketin işi: `G5.md` bir ADIM dosyası olduğu hâlde
+                     # içinde ÜRETİLEN BİR DOSYANIN içerik sözleşmesini taşıyor (NASIL_KULLANILIR,
+                     # ~4,5 KB). O içerik cinsi kalıptır (EL_KITABI_KALIBI emsali) ve kalıplar bu
+                     # tavana girmez. Doğru çözüm sayıyı büyütmek değil, o sözleşmeyi ÖLÇÜLEN bir
+                     # kalıba (`00_genesis/KILAVUZ_KALIBI.md`) çıkarmaktır — bu pakette YAPILMADI
+                     # çünkü paket sonunda yapılacak bir yapı değişikliği değil.
 SIRA_TAVANI=4096     # bayt · sıra verisinin KENDİ tavanı. Toplama DAHİL DEĞİL, ayrı ölçülür:
                      # dahil edilmesi toplam tavan kararını yeniden almayı gerektirir (bugünkü
                      # tarif toplama girse marj 500B freninin altına inerdi) ve tavan kararı
@@ -202,9 +215,13 @@ else
   #     TAVANIN KAPSAMI (beyan): burada ölçülen şey TARİFTİR — indeks + adımlar + bekçi kontratı.
   #     `00_genesis/` KALIP dosyaları (EL_KITABI_KALIBI · OTONOM_DONEM_KALIBI · KARAR_ALANI_KALIBI …)
   #     bu toplama GİRMEZ ve girmemeleri bilinçlidir: onların kendi tavanları var ve ayrı ölçülüyor
-  #     (EL_KITABI 16KB burada, ötekiler kurulu-sim/otonom-sim testlerinde). Yani "tarif tavanı" ile
-  #     "kalıp tavanları" iki ayrı hat; bir paragrafı kalıba taşıyarak bu tavandan kaçan taraf
-  #     ötekine çarpar. Kalıpsız yeni bir dosya icat edilirse HİÇBİR tavana girmez — ilan edilmiş sınır.
+  #     (EL_KITABI 16KB burada · OTONOM_DONEM_KALIBI otonom-sim testinde · EL_KITABI kurulu-sim
+  #     testinde). ÖLÇÜLMEYENLER ADIYLA SAYILIR (ilan abartmayı kapatmak için — hasım turu
+  #     2026-07-30): `ILK_KUTU_KALIBI.md` · `KARAR_ALANI_KALIBI.md` · `SOZLESME_KALIBI.md` ·
+  #     `MULAKAT_KALIBI.md` · `RETRO_KALIBI.md` · `ROL_SKILL_KALIBI.md` · `DEFO_MODELI.md`
+  #     hiçbir tavana girmiyor. Yani "tarif tavanı" ile "kalıp tavanları" iki ayrı hat ve ikincisi
+  #     TAM DEĞİL; bir paragrafı ölçülmeyen bir kalıba taşıyarak bu tavandan kaçmak MÜMKÜNDÜR —
+  #     ilan edilmiş sınır, kapatılması ayrı bir ölçüm paketinin işi.
   KOK_INDEKS=""; ARSIV_INDEKS=""
   [ -r "$KOK/GENESIS.md" ] && KOK_INDEKS="$KOK/GENESIS.md"
   [ -r "$KOK/00_genesis/GENESIS.md" ] && ARSIV_INDEKS="$KOK/00_genesis/GENESIS.md"
@@ -407,15 +424,148 @@ if [ -f "$KOK/00_pano/PANO.md" ]; then
 else
   kirmizi "00_pano/PANO.md yok (pano bağlanmamış — G3.4)"
 fi
-KUTU_SAYISI=0
-# CANLI kutu sayılır (arşiv değil): G4.5 tek-seferlik çekilme kapısıdır, G4 hemen öncesinde
-# KT-001'i taze kurar — bu noktada daima ≥1 canlı kutu olur. (Olgun projede yalnız _arsiv
-# kalmışsa bu denetim tekrar koşulmaz; hasım turu 2026-07-16 notu.)
-for k in "$KOK"/01_kutular/KT-*/KUTU.md; do KUTU_SAYISI=$((KUTU_SAYISI + 1)); done
-if [ "$KUTU_SAYISI" -eq 0 ]; then
-  kirmizi "hiç kutu yok (01_kutular/KT-*/KUTU.md) — ilk kutu G4'te kurulmuş olmalı"
+# 8b · İLK KUTU KABUĞU — sayarak değil ADIYLA ve ŞEMASIYLA (Faz 2 sıra 5 · F1-2c/F1-2d).
+# ESKİ HÂL: "01_kutular/KT-*/KUTU.md kaç tane" diye SAYIYORDU. Sayı, kabuğun DOĞRU olduğunu
+# söylemez — boş bir KT-999/KUTU.md de sayıyı 1 yapardı ve kapı yeşil basardı.
+# ÖLÇÜLEN ŞEY BİÇİMDİR, İÇERİK DEĞİL — ama biçim, kabuğun HER MAKİNE OKUYUCUSUNUN aradığı
+# şeyleri kapsar: taşıyıcı başlıklar (sevk `## Bağımlılık ve risk` yoksa dönemi hiç açmaz;
+# kokpit `## Görevler` yoksa kutuyu boş gösterir), duruş sözleşmesinin beş satırı BLOĞUN İÇİNDE
+# (dosya genelinde aramak, satır bloğun dışına kaydığında sessiz yeşil üretiyordu — hasım turu
+# 2026-07-30), LİSTE'nin DEĞERİ (sevk yalnız o dizeyi tanır), doldurulan tek alanın karşılığı
+# ve sahibin mühür vereceği yüzey.
+KABUK_AD="KT-001-proje-plani"
+KABUK="$KOK/01_kutular/$KABUK_AD/KUTU.md"
+# Kabuğun mandat çapası: kalıptan kopyalandığının tek işareti.
+MANDAT="Bu kutunun işi, bu projenin nasıl yürütüleceğini çıkarmaktır"
+# Olgun projede kabuk arşive gitmiş olabilir: kapı elle yeniden koşturulabilir bir betiktir ve
+# tamamlanmış bir kurulumu geriye dönük KIRMIZI'ya düşürmemeli. AMA bu dal bir KAÇIŞ YOLU
+# olamaz: sıfır baytlık bir `_arsiv/KT-001-proje-plani/KUTU.md` "kutu tamamlanmış" saydırıp
+# çekilmeyi açıyordu (hasım turu 2026-07-30) — arşiv dalı da mandat çapasını arar.
+if [ ! -f "$KABUK" ] && [ -f "$KOK/01_kutular/_arsiv/$KABUK_AD/KUTU.md" ]; then
+  if grep -qF "$MANDAT" "$KOK/01_kutular/_arsiv/$KABUK_AD/KUTU.md"; then
+    gecti "ilk kutu kabuğu arşivde ($KABUK_AD) — kutu tamamlanmış"
+  else
+    kirmizi "arşivdeki $KABUK_AD kabuk değil (mandat metni yok) — 'kutu tamamlanmış' hükmü verilemez"
+  fi
+elif [ ! -f "$KABUK" ]; then
+  kirmizi "ilk kutu kabuğu yok: 01_kutular/$KABUK_AD/KUTU.md (G4 — 00_genesis/ILK_KUTU_KALIBI.md kopyalanmamış)"
 else
-  gecti "kutu taraması ($KUTU_SAYISI kutu)"
+  # (i) Mandat çapası: kopyala-doldur yerine serbest yazım yapıldıysa burada görünür.
+  if grep -qF "$MANDAT" "$KABUK"; then
+    gecti "ilk kutu kabuğu: mandat metni yerinde"
+  else
+    kirmizi "ilk kutu kabuğunda mandat metni yok — kalıp kopyalanmamış/yeniden yazılmış (00_genesis/ILK_KUTU_KALIBI.md)"
+  fi
+  # (ii) Doldurulmamış alan: kalıbın tek alanı «KOORDİNATÖR-SLUG».
+  if grep -q '«' "$KABUK"; then
+    kirmizi "ilk kutu kabuğunda doldurulmamış «alan» var: 01_kutular/$KABUK_AD/KUTU.md"
+  else
+    gecti "ilk kutu kabuğu: doldurulmamış alan yok"
+  fi
+  # (iii) TAŞIYICI BAŞLIKLAR — satır çapalı. Biri silinirse kapı eskiden YEŞİL basıyordu ama
+  #       ilk dönem baştan ölüydü: sevk `## Bağımlılık ve risk` yoksa `dur()` ile hiç açılmıyor.
+  for H in "## Görevler" "## Duruş sözleşmesi" "## Bağımlılık ve risk" \
+           "## Bu kutu bitince gözünle göreceklerin" "## Kabul kriterleri"; do
+    if grep -qF -- "$H" "$KABUK" && [ "$(grep -c "^$H" "$KABUK" 2>/dev/null || echo 0)" -gt 0 ]; then
+      gecti "ilk kutu kabuğu: başlık yerinde ($H)"
+    else
+      kirmizi "ilk kutu kabuğunda taşıyıcı başlık yok: '$H' — o bloğun okuyucusu kutuyu göremez"
+    fi
+  done
+  # (iv) G-01 satırı + SAHİP hücresi. Kapı GENESIS'in doldurduğu TEK alanı ölçmüyordu: slug
+  #      «KOORDİNATÖR-SLUG» olarak bırakılsa bile «alan» denetimi onu yakalar, ama YANLIŞ bir
+  #      slug yazılırsa kapı yeşil basıp sevk "sahibi kadroda yok" diye duruyordu (hasım turu).
+  G01_SAHIP="$(awk -F'|' '/^\|[[:space:]]*G-01[[:space:]]*\|/ { s=$4; gsub(/^[[:space:]]+|[[:space:]]+$/, "", s); print s; exit }' "$KABUK" 2>/dev/null || true)"
+  if [ -z "$G01_SAHIP" ]; then
+    kirmizi "ilk kutu kabuğunda G-01 görev satırı yok/okunamıyor — sevk görev listesini göremez"
+  else
+    gecti "ilk kutu kabuğu: G-01 görev satırı yerinde"
+    case "$G01_SAHIP" in
+      *[!a-z0-9_-]*|'') kirmizi "ilk kutu kabuğunda G-01 sahip hücresi slug değil: '$G01_SAHIP' (izinli: a-z 0-9 _ -)" ;;
+      *)
+        if [ -f "$KOK/03_roller/$G01_SAHIP/ROL.md" ]; then
+          gecti "ilk kutu kabuğu: G-01 sahibi kadroda ($G01_SAHIP)"
+        else
+          kirmizi "ilk kutu kabuğunda G-01 sahibi kadroda yok: 03_roller/$G01_SAHIP/ROL.md — sevk bu görevi hiç açamaz"
+        fi ;;
+    esac
+  fi
+  # (v) Duruş sözleşmesinin beş satırı BLOĞUN İÇİNDE. Dosya genelinde aramak, satır bloğun
+  #     dışına kaydığında kapıyı yeşil bırakıyordu; sevk ise bloğu okur ve kutuyu sıradan kutu
+  #     sayardı — iki göz ayrışıyordu.
+  DURUS_BLOK="$(awk '/^## Duruş sözleşmesi/ { f = 1; next } f && /^## / { exit } f' "$KABUK" 2>/dev/null || true)"
+  for S in "BİTİŞ HÂLİ" "KANIT" "KISIT" "BÜTÇE" "LİSTE"; do
+    if printf '%s\n' "$DURUS_BLOK" | grep -qE "^[[:space:]]*$S[[:space:]]*:[[:space:]]*[^[:space:]]"; then :; else
+      kirmizi "ilk kutu kabuğunda duruş sözleşmesi satırı eksik/boş (blok İÇİNDE aranır): $S"
+    fi
+  done
+  # (vi) LİSTE'nin DEĞERİ. Bu satır İKİ freni birden taşıyor (şişme çapasının ertelenmesi +
+  #      görev tavanının kadroya bağlanması) ve sevk yalnız TEK dizeyi tanır. Kapı "dolu mu"
+  #      diye bakarsa, değer değiştiğinde kabuk sessizce sıradan kutuya döner ve plan doğar
+  #      doğmaz yanlış şişme alarmı çalar (hasım turu 2026-07-30).
+  if printf '%s\n' "$DURUS_BLOK" | grep -qE "^[[:space:]]*LİSTE[[:space:]]*:.*dönem[[:space:]]+içinde[[:space:]]+doğar"; then
+    gecti "ilk kutu kabuğu: LİSTE satırı sevkin tanıdığı değeri taşıyor"
+  else
+    kirmizi "ilk kutu kabuğunda LİSTE satırı sevkin tanıdığı değeri taşımıyor (beklenen: 'dönem içinde doğar') — planlama kutusu muafiyeti sessizce düşer"
+  fi
+  # (vi-b) Bağımlılık/risk SATIRI: kurulum kapısının (tools/sevk/kurulum-kapisi.sh) ve sevkin
+  #        birebir aradığı biçim. Başlığın varlığı yetmez — blok boşsa sevk `dur()` ile durur.
+  if grep -qE '^[[:space:]]*G-01[[:space:]]*:[[:space:]]*onkosul=.*·[[:space:]]*risk=(düşük|riskli)[[:space:]]*—' "$KABUK"; then
+    gecti "ilk kutu kabuğu: bağımlılık/risk satırı biçimli"
+  else
+    kirmizi "ilk kutu kabuğunda G-01 için bağımlılık/risk satırı yok/biçimsiz (## Bağımlılık ve risk)"
+  fi
+  # (vii) Sahibin mühür vereceği yüzey: üç somut iddia (EL_KITABI kutu-döngüsü 1 zorunlu sayar).
+  GOR_SAYI="$(awk '/^## Bu kutu bitince gözünle göreceklerin/ { f = 1; next } f && /^## / { exit } f && /^[0-9]+\. / { n++ } END { print n + 0 }' "$KABUK" 2>/dev/null || true)"
+  case "$GOR_SAYI" in
+    ''|*[!0-9]*) kirmizi "ilk kutu kabuğunun 'göreceklerin' bloğu okunamadı" ;;
+    *) if [ "$GOR_SAYI" -ge 3 ]; then gecti "ilk kutu kabuğu: 'göreceklerin' bloğu $GOR_SAYI madde"
+       else kirmizi "ilk kutu kabuğunun 'göreceklerin' bloğunda $GOR_SAYI madde var (en az 3) — sahip mührü bu blok üstünden verilir"; fi ;;
+  esac
+  # (viii) Kilitli-tarih çapası: G4'ün İKİNCİ ürünü ve tek denetçisi bugüne dek kurulumcunun
+  #        KENDİ yazdığı bekçiydi (denetleyen ≠ denetlenenin yazarı ilkesinin dışında kalıyordu).
+  CAPA="$KOK/02_kanon/kilitli/.taban-ref"
+  if [ ! -f "$CAPA" ]; then
+    kirmizi "kilitli-tarih çapası yok: 02_kanon/kilitli/.taban-ref (G4 — koruma-hattı (iii) gözü onsuz açılmaz)"
+  elif [ "$(wc -l < "$CAPA" | tr -d ' ')" -gt 1 ]; then
+    kirmizi "kilitli-tarih çapası tek satır değil: 02_kanon/kilitli/.taban-ref"
+  elif grep -qE '^[0-9a-f]{40}$' "$CAPA"; then
+    gecti "kilitli-tarih çapası biçimli (40'lık commit-hash)"
+  else
+    kirmizi "kilitli-tarih çapası 40'lık commit-hash değil (sembolik ref kalıcı körlüktür): 02_kanon/kilitli/.taban-ref"
+  fi
+fi
+
+# 8c · İleriye bakan iki kanon iskeleti (G3.3d) — ilk kutunun dört çıktısından ikisinin EVİ.
+# Ev kurulumda doğmazsa ilk kutu "yeni dosya icat etme" yasağıyla çarpışır ve çıktı sahipsiz kalır.
+# Başlık SATIR ÇAPALI aranır: çapasız `grep -qF`, HTML yorumu içine yazılmış bir dizeyi de
+# "iskelet yerinde" sayıyordu (hasım turu 2026-07-30; aynı dosyanın kendi kuralı çapalı aramaydı).
+for I in "BITTI_TANIMI.md:# BİTTİ TANIMI" "KUTU_PLANI.md:# KUTU PLANI"; do
+  I_AD="${I%%:*}"; I_BAS="${I#*:}"
+  if [ ! -f "$KOK/02_kanon/$I_AD" ]; then
+    kirmizi "kanon iskeleti yok: 02_kanon/$I_AD (G3.3d — ilk kutunun çıktısı buraya yazılır)"
+  elif grep -q "^$I_BAS" "$KOK/02_kanon/$I_AD"; then
+    gecti "kanon iskeleti yerinde: 02_kanon/$I_AD"
+  else
+    kirmizi "kanon iskeletinin başlığı yanlış/çapasız: 02_kanon/$I_AD (beklenen satır başında: '$I_BAS …')"
+  fi
+done
+
+# 8d · Korunan yollar listesi: iki kanon dosyası [SORULUR] bölümünde mi. G3.3b bu listeyi
+# GENESIS'e güncelletiyor; iki satırın kurulumdan sağ çıktığını bugüne dek hiçbir göz ölçmüyordu
+# (file-guard kurulum penceresinde yazımı serbest bırakır — hasım turu 2026-07-30).
+KY="$KOK/tools/guard/korunan-yollar.txt"
+if [ ! -r "$KY" ]; then
+  kirmizi "korunan-yollar listesi okunamıyor: tools/guard/korunan-yollar.txt"
+else
+  KY_SORULUR="$(awk '/^\[SORULUR\]/ { f = 1; next } f && /^\[/ { exit } f' "$KY" 2>/dev/null || true)"
+  for Y in "02_kanon/BITTI_TANIMI.md" "02_kanon/KUTU_PLANI.md"; do
+    if printf '%s\n' "$KY_SORULUR" | grep -qxF "$Y"; then
+      gecti "korunan yol [SORULUR] listesinde: $Y"
+    else
+      kirmizi "korunan-yollar [SORULUR] bölümünde eksik: $Y — sahip mührüne bağlı dosya dönem içinde sessizce değişebilir"
+    fi
+  done
 fi
 
 if [ "$SORUN" -eq 0 ]; then

@@ -54,6 +54,16 @@ const blok = (baslik) => {
 const durus = blok("Duruş sözleşmesi");
 if (durus === null) cik.push("EKSIK\tdurus sozlesmesi blogu yok (## Duruş sözleşmesi) — bitti tanimi yazilmamis kutu otonom doneme giremez (K-H)");
 else {
+  // LİSTE (Faz 2 sıra 5): VARSA değeri sevkin tanıdığı dize olmalı. Bu satır İKİ freni birden
+  // taşır (şişme çapasının ertelenmesi + görev tavanının kadroya bağlanması) ve sevk yalnız TEK
+  // dizeyi tanır; değeri sessizce değişirse kutu planlama kutusu olmaktan çıkar ve plan doğar
+  // doğmaz yanlış şişme alarmı çalar. YOKLUK denetlenmez: sıradan kutuda satır zaten olmaz.
+  if (durus !== null) {
+    const l = durus.split("\n").find((x) => /^\s*LİSTE\s*:/.test(x));
+    if (l && !/dönem\s+içinde\s+doğar/.test(l)) {
+      cik.push("EKSIK\tLİSTE satiri sevkin tanidigi degeri tasimiyor (beklenen: dönem içinde doğar): " + l.trim().slice(0, 70));
+    } else if (l) cik.push("GECTI\tLİSTE: planlama kutusu isareti gecerli");
+  }
   for (const ad of ["BİTİŞ HÂLİ", "KANIT", "KISIT", "BÜTÇE"]) {
     const s = durus.split("\n").find((x) => new RegExp("^\\s*" + ad + "\\s*:").test(x));
     if (!s) { cik.push("EKSIK\tdurus sozlesmesi satiri yok: " + ad); continue; }

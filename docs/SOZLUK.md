@@ -107,6 +107,58 @@ uyarıyla okunuyor (21 görev) · `keel-tatbikat-faz3` numunesi de sıfır uyar�
 
 ---
 
+## 2b · İki ad doğuşta ayrıldı (GENESIS iskeleti, 2026-07-29)
+
+Bu iki karar §4'ün kuralının **önleyici** uygulamasıdır: kelimeler ürüne girmeden ayrıldı.
+
+### "sevk" ikinci bir anlam kazanmadı → **sürücü**
+
+Faz 1 tasarısı kurulum sırasını taşıyan betiğe `kurulum-sevk.sh` adını öneriyordu. Konmadı:
+**sevk** bu sözlükte *bir görevi alt-ajana vermek* demektir (`tools/sevk/sevk.sh` onu yapar) ve
+yeni betik alt-ajan çağırmaz — **adım sıralar**. Tasarının kendi gövdesi de ona zaten "sürücü"
+diyordu; ad gövdeye uyduruldu: **`tools/guard/kurulum-surucu.sh`**.
+
+| Ne yapar | Adı |
+|---|---|
+| Bir görevi alt-ajana verir, rol seçer, bütçe sayar | **sevk** — `tools/sevk/sevk.sh` |
+| Kurulum adımlarını sıraya dizer, bitmemiş adımla oturumu kapattırmaz | **kurulum sürücüsü** — `tools/guard/kurulum-surucu.sh` |
+
+Yeri de bilinçli: `tools/guard/` kurulum penceresinde de `[SERT]` korumalıdır, yani **kuran ajan
+bu betiği oturum içinde yeniden yazamaz**. `tools/genesis/` gibi yeni bir dizin o korumanın
+dışında kalırdı (ölçüldü). Kardeşleri aynı evde: `ortam-kontrol.sh` (G0.0) ·
+`klasor-hazirligi.sh` (G0.1) · `kurulum-denetimi.sh` (G4.5).
+
+### `## MEKANİK BLOK` adı ikinci bir sözleşmeye verilmedi → **`## KURULUM DURUMU`**
+
+`## MEKANİK BLOK` kokpitin PANO sözleşmesine aittir (`tools/kokpit/PANO_SOZLESMESI.md`) ve kendi
+alan dilbilgisi vardır (`Işıklar:` · `Görevler:` · `Son denetim:`). `GENESIS_DURUM.md`'nin makine
+bloğu **başka** alanlar taşır (`Adım:` · `Durum:` · `Tamamlanan:`). Aynı adı iki ayrı sözleşmeye
+vermek, aynı adı iki şeye vermektir — §4 tam bunu yasaklar. Biçim (başlık + fenced blok +
+`Ad: değer`) aynen devralındı, **ad ayrıldı**.
+
+| Dosya | Başlık | Alanlarını okuyan |
+|---|---|---|
+| `00_pano/PANO.md` | `## MEKANİK BLOK` | kokpit (`tools/kokpit/lib/status.mjs`) |
+| `00_genesis/GENESIS_DURUM.md` | `## KURULUM DURUMU` | kurulum sürücüsü + açılış kancası |
+
+**Durum alanının dört değeri** (birebir, Türkçe harflerle; tanınmayan değer fail-closed):
+`başlamadı` · `açık` · `bekliyor` · `bitti`.
+
+## 2c · İlk kutuyla doğan iki ad (Faz 2 sıra 5, 2026-07-30)
+
+`4 · Bu dosyanın kuralı` gereği: ürüne giren her yeni kelime buraya bir satır düşer.
+
+| Kelime | Ne demek | Nerede yaşıyor |
+|---|---|---|
+| **kabuk** | GENESIS'in kurulumda bıraktığı, **metni sabit** kutu dosyası. İçini ekip doldurur; GENESIS ürün planı yapmaz. "İskelet" DEĞİL (o, kanon dosyalarının boş hâli için kullanılıyor) ve "şablon" DEĞİL (o, KEEL'in kendisi) | `00_genesis/ILK_KUTU_KALIBI.md` → `01_kutular/KT-001-proje-plani/KUTU.md` |
+| **planlama kutusu** | Görev listesi **dönem içinde doğan** kutu: ilk görevinin İŞİ, kalan görevleri üretmektir. Ürün dilimi kutusundan iki noktada ayrılır — ≤5 görev tavanı ona uygulanmaz (tavanı iş zincirindeki rol sayısı + 1) ve şişme çapası liste doğana dek çakılmaz | Kutu bunu `## Duruş sözleşmesi` bloğundaki `LİSTE: dönem içinde doğar` satırıyla ilan eder; okuyanlar: `tools/sevk/sevk.sh` · `tools/sevk/kurulum-kapisi.sh` · `tools/guard/kurulum-denetimi.sh` · bekçi |
+
+**Neden yeni kelime gerekti:** "ilk kutu" bir SIRA bildiriyor, bir CİNS değil. Kural ("tavanı
+farklıdır") sıraya değil cinse bağlı — ikinci bir planlama kutusu da açılabilir (`KUTU_PLANI`
+boşaldığında ve proje bitmediğinde). Sıraya bağlanan kural, ikinci örnekte sessizce kırılırdı.
+
+---
+
 ## 3 · Değişmeyenler — bilerek
 
 | Ne | Neden |

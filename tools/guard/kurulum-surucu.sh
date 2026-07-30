@@ -55,7 +55,7 @@ SAYAC="$DIZIN/.kurulum-surucu-durum"
 FREN_TAVANI=3
 
 # ── En ucuz elemeler — dördü de "bu kancanın işi yok" demektir ────────────────────────────
-# 1) Kurulum bitti: işaret G5.3.c'de doğar, o andan sonra sürücü yok hükmündedir.
+# 1) Kurulum bitti: işaret G5.3.d'de doğar, o andan sonra sürücü yok hükmündedir.
 #    AMA İŞARET SESSİZ BİR KAPATMA DÜĞMESİ OLAMAZ (hasım turu 2026-07-29, kritik): kurulum
 #    penceresinde bu işaret file-guard'ın çekirdek istisnasının DIŞINDADIR, yani kuran ajan ya da
 #    bir `touch` onu ortada yaratabilir. Yaratırsa sürücü, açılış hatırlatması ve G4.5'in kurulum

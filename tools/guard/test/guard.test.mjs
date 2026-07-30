@@ -380,7 +380,7 @@ test('çapa-dikişi: .taban-ref içeren Bash komutu kurulum bitmişken → sahib
   assert.match(j.hookSpecificOutput.permissionDecisionReason, /taban-ref/);
 });
 
-test('çapa-dikişi: kurulum sürerken .taban-ref komutu sorulmaz (G4.3 doğumu sürtünmesiz)', () => {
+test('çapa-dikişi: kurulum sürerken .taban-ref komutu sorulmaz (çapanın G4\'te doğuşu sürtünmesiz)', () => {
   const kok = kurulum({ kurulumTamam: false });
   const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git rev-parse HEAD > 02_kanon/kilitli/.taban-ref' } });
   assert.equal(r.status, 0);

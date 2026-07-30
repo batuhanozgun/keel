@@ -1,13 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, chmodSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const BURASI = dirname(fileURLToPath(import.meta.url));
 const BETIK = join(BURASI, '..', 'kurulum-denetimi.sh');
+const KOK_REPO = join(BURASI, '..', '..', '..');
+
+// İlk kutu KABUĞU (Faz 2 sıra 5): kapı onu SAYMAZ, ADIYLA ve ŞEMASIYLA arar. Fixture kabuğu
+// GERÇEK kalıptan üretir — uydurma bir kutu metni, kapının gerçekte gördüğü şeyi sınamazdı.
+const KABUK_AD = 'KT-001-proje-plani';
+function kabukMetni(slug = 'koordinator') {
+  const satirlar = readFileSync(join(KOK_REPO, '00_genesis', 'ILK_KUTU_KALIBI.md'), 'utf8').split('\n');
+  const yorumSonu = satirlar.findIndex((x) => x.trimEnd().endsWith('-->'));
+  return satirlar.slice(yorumSonu + 1).join('\n').replaceAll('«KOORDİNATÖR-SLUG»', slug);
+}
 
 const EK_TAM = `# EL KİTABI — işletim disiplini
 Bu belge ekibin çalışma anayasasıdır. Ağırlık kadranı: **TAM RİTÜEL**.
@@ -64,7 +74,8 @@ function tarifKur(kok, { adimlar = true, kontrat = true, indeks = true, gdurum =
   }
 }
 
-function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null, tarif = {}, altAjan = true } = {}) {
+function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, kanon = true, kabukSahip = 'koordinator', capa = '0123456789abcdef0123456789abcdef01234567\n',
+                  korunanYollar = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null, tarif = {}, altAjan = true } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
   // Kurulu bir KEEL projesi her zaman bir git deposudur (G0.1 klasör hazırlığı bunu garanti
   // eder; tarih çapası, koruma-hattı ve geri-alma güvencesi buna dayanır). Fixture bunu
@@ -112,8 +123,32 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
     writeFileSync(join(kok, '00_pano', 'PANO.md'), '# Pano\n- **Aktif kutu:** KT-001\n');
   }
   if (kutu) {
-    mkdirSync(join(kok, '01_kutular', 'KT-001-cekirdek'), { recursive: true });
-    writeFileSync(join(kok, '01_kutular', 'KT-001-cekirdek', 'KUTU.md'), '# KT-001 — Çekirdek\n## Görevler\n');
+    mkdirSync(join(kok, '01_kutular', KABUK_AD), { recursive: true });
+    writeFileSync(join(kok, '01_kutular', KABUK_AD, 'KUTU.md'), kabukMetni(kabukSahip));
+    // Kabuğun G-01 sahibinin kadroda karşılığı olmalı (kapı bunu arar).
+    mkdirSync(join(kok, '03_roller', kabukSahip), { recursive: true });
+    writeFileSync(join(kok, '03_roller', kabukSahip, 'ROL.md'), '# ROL — Koordinatör\nMod: **yazar**.\n');
+    // Rol taraması her `03_roller/<slug>` için beceri + DURUM da arar (G3.3c/G3.4).
+    writeFileSync(join(kok, '03_roller', kabukSahip, 'DURUM.md'), '# DURUM — Koordinatör\nHenüz oturum açılmadı\n');
+    mkdirSync(join(kok, '.claude', 'skills', 'rol-' + kabukSahip), { recursive: true });
+    writeFileSync(join(kok, '.claude', 'skills', 'rol-' + kabukSahip, 'SKILL.md'),
+      '---\ndescription: t\ndisable-model-invocation: true\n---\ntören\n');
+  }
+  // G4'ün ikinci ürünü: kilitli-tarih çapası (40'lık commit-hash, tek satır).
+  if (capa) {
+    mkdirSync(join(kok, '02_kanon', 'kilitli'), { recursive: true });
+    writeFileSync(join(kok, '02_kanon', 'kilitli', '.taban-ref'), capa);
+  }
+  // Korunan yollar listesi şablonla gelir; kapı iki kanon dosyasını [SORULUR]'da arar.
+  if (korunanYollar) {
+    copyFileSync(join(BURASI, '..', 'korunan-yollar.txt'), join(kok, 'tools', 'guard', 'korunan-yollar.txt'));
+  }
+  // İleriye bakan iki kanon iskeleti (G3.3d) — ilk kutunun dört çıktısından ikisinin evi.
+  if (kanon) {
+    writeFileSync(join(kok, '02_kanon', 'BITTI_TANIMI.md'),
+      '<!-- yazar: koordinator -->\n# BİTTİ TANIMI — bu proje ne zaman biter\n(iskelet)\n');
+    writeFileSync(join(kok, '02_kanon', 'KUTU_PLANI.md'),
+      '<!-- yazar: koordinator -->\n# KUTU PLANI — sıradaki kutular\n(iskelet)\n');
   }
   return kok;
 }
@@ -317,10 +352,17 @@ test('C1: 00_pano/PANO.md yoksa → KIRMIZI (pano bağlanmadan çekilme serbest 
   assert.match(r.stdout, /00_pano\/PANO\.md yok/);
 });
 
-test('C1: hiç kutu yoksa → KIRMIZI (ilk kutu G4\'te kurulmuş olmalı)', () => {
+test('C1: ilk kutu KABUĞU yoksa → KIRMIZI (G4 kalıbı kopyalanmamış)', () => {
   const r = kos(kurulum({ kutu: false }));
   assert.equal(r.status, 2);
-  assert.match(r.stdout, /hiç kutu yok/);
+  assert.match(r.stdout, /ilk kutu kabuğu yok: 01_kutular\/KT-001-proje-plani\/KUTU\.md/);
+});
+
+test('C1: ileriye bakan iki kanon iskeleti yoksa → KIRMIZI (ilk kutunun çıktısı evsiz kalır)', () => {
+  const r = kos(kurulum({ kanon: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /kanon iskeleti yok: 02_kanon\/BITTI_TANIMI\.md/);
+  assert.match(r.stdout, /kanon iskeleti yok: 02_kanon\/KUTU_PLANI\.md/);
 });
 
 test('C1: rol sözleşmesi (ROL.md) yoksa → KIRMIZI', () => {

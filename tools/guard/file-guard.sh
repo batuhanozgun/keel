@@ -177,7 +177,7 @@ if ((j.tool_name || "") === "Bash") {
   // Capa-dikisi (V2 Obek-1 duzeltmesi 2026-07-23, hasim bulgusu wf_e35b1e11): kilitli-tarih
   // capasina (.taban-ref) dokunan Bash komutu kurulum BITMISKEN sahibe SORULUR — capayi
   // ilerletmek kilitli-ihlal sinyalini sondurur; "ilerletme sahip-onayli" guvencesinin mekanik
-  // kapisi budur. Kurulum surerken sorulmaz (G4.3 dogumu surtunmesiz). Metin-es sinir
+  // kapisi budur. Kurulum surerken sorulmaz (capanin G4te dogusu surtunmesiz). Metin-es sinir
   // damga-dikisiyle aynidir (bilinen sinir).
   if (komut.includes(".taban-ref") && existsSync(resolve(ROOT, ".kurulum-tamam"))) { console.log("SOR-TABAN\t02_kanon/kilitli/.taban-ref"); process.exit(0); }
   // Isaret-dikisi (soguk-denetim E2 + hasim turu 2026-07-16): kurulum isareti MEVCUTKEN ona

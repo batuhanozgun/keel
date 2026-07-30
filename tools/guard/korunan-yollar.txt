@@ -26,3 +26,7 @@ tools/sevk/
 # Sahibin karar alanı (E3): hangi sorunun sahibe gideceğinin yazılı evi (soru çizgisi + profil).
 # Ajan kendi soru alanını genişletemez/daraltamaz — değişikliği sahibin kararıdır.
 02_kanon/KARAR_ALANI.md
+# İlk kutunun iki ürünü (G3.3d): projenin bitti tanımı + mühürlenmiş kutu planı.
+# İkisi de sahip mührüne bağlıdır; değişiklikleri "neyi çıkardık" satırı ister.
+02_kanon/BITTI_TANIMI.md
+02_kanon/KUTU_PLANI.md

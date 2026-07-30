@@ -26,6 +26,9 @@ Mod: **«MOD»**. (yazamaz = dosya-yazma araçların kancayla kilitli; engel ARI
 
 ## Açılış ek-okumaları
 ROL.md + DURUM.md + PANO "SIRADAKİ OTURUM" töreni zaten ister; role özel ek: «EK-OKUMALAR».
+<!-- İlk hâlini GENESIS yazar ve BİR DAHA kimse dokunmuyordu (K5-5). Bu satır ilk kutuda
+     güncellenir: KT-001-proje-plani'nın "kayıt düzeni" çıktısı hangi bilginin hangi MEVCUT
+     dosyada yaşayacağını kesinleştirir; toplama görevi bu satırı ona göre yeniler. -->
 
 ## İş akışı
 «İŞ-AKIŞI — rolün olağan döngüsü, adım adım; EL_KITABI kurallarına ID ile atıf yap, KOPYALAMA.»
