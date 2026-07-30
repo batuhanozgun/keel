@@ -21,7 +21,7 @@ tools/sevk/
 # Sahibe sorulur (ask): golden güncellemesi meşru olabilir, karar sahibindir.
 02_kanon/golden/
 00_genesis/
-# Otonom kipin kural evi (E1): kurulu projede elle kopyalanır; dönem içinde sessizce değiştirilemez.
+# Otonom kipin kural evi (E1): kurulumda G3.3f kurar; dönem içinde sessizce değiştirilemez.
 02_kanon/OTONOM_DONEM.md
 # Sahibin karar alanı (E3): hangi sorunun sahibe gideceğinin yazılı evi (soru çizgisi + profil).
 # Ajan kendi soru alanını genişletemez/daraltamaz — değişikliği sahibin kararıdır.

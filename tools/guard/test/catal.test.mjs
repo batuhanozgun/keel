@@ -19,14 +19,22 @@ const KARAR = (kok) => join(kok, '02_kanon', 'KARAR_ALANI.md');
 
 // ── Karar alanı: kalıptan kurulu-sim üretimi (Bölüm A aynen, Bölüm B doldurulmuş) ──────────
 const KARAR_KALIP = readFileSync(join(KOK_REPO, '00_genesis', 'KARAR_ALANI_KALIBI.md'), 'utf8');
+// DÖRT GÖVDE FARKLI (kalıp-dolgu freni, hasım turu 2026-07-30): dört başlığa aynı metni yazan
+// profil kapıdan döner — aynı cümle, profilin sahiple konuşulmadığının işaretidir. Fixture da
+// dürüst olmak zorunda: eskiden dördüne de tek jenerik cümle yazılıyordu.
+const KARAR_GOVDE = [
+  '- Kahve dükkânının günlük nakit akışını ve hangi ürünün kaç sattığını yalnız ben bilirim.',
+  '- Kodun nasıl yazıldığı, dosya adları ve karar numaraları beni ilgilendirmiyor; sorulmasın.',
+  '- Fiyat değişikliği ve müşteriye görünen her yazı benim kararım; teknik sıralama değil.',
+  '- Soruları tek tek getir, önerini de yaz; uzun döküm gönderirsen kaçırıyorum.',
+];
 function kararAlaniMetni({ profil = true } = {}) {
   let s = KARAR_KALIP.split('\n');
   const yorumSonu = s.findIndex((l) => l.trimEnd().endsWith('-->'));
   s = s.slice(yorumSonu + 1).join('\n').replaceAll('«SAHİP»', 'Deneme');
   if (!profil) return s;                                   // «alanlar» duruyor → profil BOŞ
-  return s.replace(/«[^»]*»/gs, () =>
-    '- Kendi hayatı, parası ve kart kullanımı; ürünün amacı ve "bu kadarı yeter" hissi.\n' +
-    '- Kapsam tercihi: bu özellik şimdi mi, sonra mı.');
+  let i = 0;
+  return s.replace(/«[^»]*»/gs, () => KARAR_GOVDE[i++ % KARAR_GOVDE.length]);
 }
 
 function kurulum({ donem = true, kadro = ['po', 'catal-denetcisi'], profil = true, kararAlani = true } = {}) {

@@ -1,9 +1,13 @@
 # kanal.conf — haber kanalının yapılandırması (E5). VERİ dosyasıdır, kod DEĞİLDİR:
 # hiçbir zaman `source` edilmez, satır satır ayrıştırılır (kabuk enjeksiyonu kapalı).
 #
-# ŞABLONDA BOŞTUR. Kurulu projede sahibin kendi eliyle doldurulur ve .gitignore içindedir:
-# alıcı adresi kişisel veridir, depoya girmez. Dosyanın kendisi tools/sevk/ altındadır,
-# yani [SERT] korumadadır — hiçbir ajan bu dosyayı araç katmanından okuyamaz/yazamaz.
+# ŞABLONDA BOŞTUR. Kurulumda G5.0c doldurur: sahip adresini söyler, kurulum satırları yazar.
+# .gitignore içindedir — alıcı adresi kişisel veridir, depoya girmez.
+# Dosyanın kendisi tools/sevk/ altındadır, yani [SERT] korumadadır: kurulum BİTTİKTEN sonra
+# hiçbir ajan bu dosyaya araç katmanından YAZAMAZ. Kurulum penceresinde (yani .kurulum-tamam
+# doğmadan önce) bu TEK dosya istisnadır — kod değil VERİ olduğu ve hiç `source` edilmediği için
+# (file-guard "kanalAyari" istisnası). Koruma yalnız YAZMAYA karşıdır; okuma hiçbir zaman
+# engellenmiyordu.
 #
 # PAROLA BU DOSYAYA YAZILMAZ. Parola yalnız macOS Keychain'de durur ve oradan okunur:
 #   security add-generic-password -s "<KEYCHAIN_SERVIS>" -a "<HESAP>" -w   (parolayı sorar)

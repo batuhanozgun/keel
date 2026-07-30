@@ -107,7 +107,7 @@ LIST="$ROOT/tools/guard/korunan-yollar.txt"
 [ -r "$LIST" ] || engel "korunan-yollar.txt okunamadı ($LIST) — koruma tanımsız (fail-closed)"
 
 KARAR="$(printf '%s' "$INPUT" | GUARD_ROOT="$ROOT" GUARD_LIST="$LIST" "$NODE_BIN" --input-type=module -e '
-import { readFileSync, existsSync, realpathSync } from "node:fs";
+import { readFileSync, existsSync, realpathSync, lstatSync } from "node:fs";
 import { resolve, dirname, join, sep } from "node:path";
 
 // Diskin gercek yazimina coz: var olan en derin ataya kadar in, realpath al, kalani ekle.
@@ -324,23 +324,61 @@ const altinda = (dizinYolu) => {
 };
 
 const kurulumSuruyor = !existsSync(resolve(KOKE, ".kurulum-tamam"));
+// ISTISNA REFERANSI SYMLINK ISE ISTISNA YOKTUR (hasim bulgusu 2026-07-30). kanonik() hem hedefi
+// hem referansi diskin gercek yazimina cozer; bu yuzden `.claude/agents -> tools/guard` gibi tek
+// bir sembolik bag, kurulum-penceresi istisnasini bagin isaret ettigi BUTUN agaca yayiyordu
+// (olculdu: koruma kodunun tamami yazilabilir hale geliyordu). Ayni delik `.claude/skills` icin
+// b268adc oncesinden beri acikti; ayni sinif oldugu icin ucu birlikte kapaniyor.
+// Yolun HER PARCASI denetlenir: ara dizinin bag olmasi da yeter.
+const bagsiz = (yol) => {
+  let p = KOKE;
+  for (const parca of yol.split("/")) {
+    p = join(p, parca);
+    try { if (lstatSync(p).isSymbolicLink()) return false; } catch { return true; }
+  }
+  return true;
+};
+let sertMuaf = false;
 const sert = kurallar.find((k) => k.bolum === "[SERT]" && eslesir(k));
 if (sert) {
   if (kurulumSuruyor) {
     // Cekirdekli istisna: kurulum surerken yalniz tools/guard/ + .claude/ + tools/sevk/ sert
     // kalir; onun icinde de korunan-yollar.txt yazilabilir (GENESIS veri doldurur).
-    // tools/sevk cekirdege E1 hasim bulgusu A5 ile girdi: sevk betikleri SABLONLA SABIT gelir,
-    // GENESIS sevk alanina yazmaz (OTONOM_DONEM kurulumu elle/ayri is) — kuran ajan koruma/sevk
-    // kodunu ve damgalar/ tatbikat damgalarini kurulum penceresinde yeniden yazamasin.
+    // tools/sevk cekirdege E1 hasim bulgusu A5 ile girdi: sevk betikleri SABLONLA SABIT gelir —
+    // kuran ajan koruma/sevk KODUNU ve damgalar/ prova fislerini kurulum penceresinde yeniden
+    // yazamasin. (Otonom kipin KURAL EVI artik elle kopyalanmiyor ama o dosya 02_kanon/ altinda
+    // [SORULUR]dur, bu cekirdegin icinde degil — G3.3f.)
     const cekirdekte = altinda("tools/guard") || altinda(".claude") || altinda("tools/sevk");
     const listeDosyasi = hedef === kanonik(resolve(KOKE, "tools/guard/korunan-yollar.txt"));
     // GENESIS gercek-veri isaret listesini kurulumda doldurabilmeli (korunan-yollar.txt emsali —
     // ikisi de tools/guard/ altinda VERI dosyasidir; hasim bulgusu: doldurma yolu mekanikce kapaliydi).
     const veriDosyasi = hedef === kanonik(resolve(KOKE, "tools/guard/gercek-veri-isaretleri.txt"));
-    const beceriAlani = altinda(".claude/skills"); // GENESIS rol becerilerini kurulumda buraya yazar (G3.3c)
-    if (!cekirdekte || listeDosyasi || veriDosyasi || beceriAlani) { console.log("GEC"); process.exit(0); }
+    const beceriAlani = altinda(".claude/skills") && bagsiz(".claude/skills"); // rol becerileri (G3.3c)
+    // GENESIS kadronun alt-ajan koltuklarini kurulumda uretir (G3.3e) — bu yol bugune dek
+    // mekanikce KAPALIYDI ve otonom donem "sahibi kadroda yok" diye duruyordu. Istisna DAR:
+    // sablonla gelen UC SABIT yazamaz koltuk bunun DISINDADIR — bagimsiz gozun arac listesini
+    // kuran ajan yeniden yazamaz (yazabilse `tools:` satirina Write ekleyip "yazamayan
+    // dogrulayici" guvencesini sessizce oldururdu). Listenin diskteki gercekle esligini
+    // sablon testi tutar: yeni bir sabit koltuk eklenip buraya yazilmazsa test KIRMIZI.
+    // Karsilastirma AD ile degil COZULMUS YOL ile: kanonik() diskin gercek yazimina iner,
+    // yani buyuk/kucuk harfe duyarsiz dosya sisteminde "dogrulayici.MD" ile sabit koltugu
+    // ezme yolu da kapanir (listeDosyasi/veriDosyasi emsali).
+    const SABIT_KOLTUKLAR = ["dogrulayici", "catal-denetcisi", "kurulum-denetcisi"];
+    const kadroAlani = altinda(".claude/agents") && bagsiz(".claude/agents") &&
+      !SABIT_KOLTUKLAR.some((s) => hedef === kanonik(resolve(KOKE, ".claude/agents/" + s + ".md")));
+    // Haber kanalinin yapilandirmasi (G5.0c): tools/sevk/ kurulumda cekirdektir cunku sevk KODU
+    // ve prova fisleri kurulum penceresinde yeniden yazilmasin. Bu TEK dosya kod DEGIL VERIdir
+    // (hicbir zaman source edilmez, satir satir ayristirilir) ve gitignore listesindedir —
+    // NOT: bu blok bash tek-tirnagi icinde yasiyor, yorumda KESME ISARETI kullanilamaz.
+    // korunan-yollar.txt ile gercek-veri-isaretleri.txt emsali.
+    const kanalAyari = hedef === kanonik(resolve(KOKE, "tools/sevk/kanal.conf")) && bagsiz("tools/sevk/kanal.conf");
+    if (!cekirdekte || listeDosyasi || veriDosyasi || beceriAlani || kadroAlani || kanalAyari) sertMuaf = true;
   }
-  console.log("ENGEL\t" + sert.yol); process.exit(0);
+  // MUAF DAL ARTIK BURADA CIKMIYOR (hasim bulgusu 2026-07-30): eskiden dogrudan "GEC" basip
+  // process.exit yapiyordu ve rol kafesi bu yollarda HIC kosmuyordu — yani `yazamaz` damgali bir
+  // oturum sıradan bir is dosyasini yazamazken alt-ajan koltugunu ve haber kanalini yazabiliyordu.
+  // Ilan edilen oncelik "[SERT] > rol-kafesi > [SORULUR]"dir; muaf yol kafesi ATLAMAZ.
+  if (!sertMuaf) { console.log("ENGEL\t" + sert.yol); process.exit(0); }
 }
 // Rol kafesi (Faz 2): tören (rol-ac.sh) .aktif-rol damgasini bastiysa ve mod "yazamaz" ise,
 // YAZMA sinifi rolun kendi klasoru disinda kesilir; ROL.md sozlesme dosyasi istisnanin
@@ -364,6 +402,8 @@ if (existsSync(damgaYolu)) {
   }
 }
 
+// Kurulum-penceresi muafiyeti kafesten SONRA gecer (yukaridaki not).
+if (sertMuaf) { console.log("GEC"); process.exit(0); }
 const sor = kurallar.find((k) => k.bolum === "[SORULUR]" && eslesir(k));
 if (sor) { console.log(kurulumSuruyor ? "GEC" : "SOR\t" + sor.yol); process.exit(0); }
 console.log("GEC");

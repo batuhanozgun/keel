@@ -1,7 +1,7 @@
 <!-- KARAR ALANI KALIBI (E3, 2026-07-27): sahibe hangi sorunun gideceğinin yazılı evi.
-     Kurulu projede hedef yol 02_kanon/KARAR_ALANI.md (korunma [SORULUR]). KURULUM ADIMI
-     HENÜZ GENESIS'E BAĞLI DEĞİL — GENESIS-derinleştirme işine dek bu kalıp ELLE kopyalanır
-     (tasarım §13). BÖLÜM A KEEL-GENELDİR: kopyalanır, doldurulmaz, DEĞİŞTİRİLMEZ (değişimi
+     Kurulu projede hedef yol 02_kanon/KARAR_ALANI.md (korunma [SORULUR]). KURULUM ADIMI:
+     G3.3f — kurulum bu dosyayı kendisi kurar ve Bölüm B'yi G0-G2 konuşmasından doldurur
+     (Faz 2 sıra 6, 2026-07-30; o güne dek ELLE kopyalanıyordu). BÖLÜM A KEEL-GENELDİR: kopyalanır, doldurulmaz, DEĞİŞTİRİLMEZ (değişimi
      kural değişikliğidir → retro + sahip onayı). BÖLÜM B projeye özeldir: «alanları» doldur.
      Alanlar: «SAHİP» «BİLİR» «BİLMEZ» «KARAR» «TARZ». Bu yorum bloğunu sil.
      « » İŞARETİ ŞABLONA AİTTİR: doldurulan metinde tırnak olarak KULLANILMAZ (kurulum

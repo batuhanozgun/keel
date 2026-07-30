@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, chmodSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, copyFileSync, chmodSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,7 +42,7 @@ Muğlak mesaj onay sayılmaz; yorumla onay üretme yasak.
 function disGozKur(kok, { koltuk = true, brifing = true, skill = '---\ndescription: t\ndisable-model-invocation: true\n---\ntören\n' } = {}) {
   if (!koltuk) return;
   mkdirSync(join(kok, '03_roller', 'disgoz'), { recursive: true });
-  writeFileSync(join(kok, '03_roller', 'disgoz', 'ROL.md'), '# ROL — Dış göz\nSınırlar: iş yapmam.\n');
+  writeFileSync(join(kok, '03_roller', 'disgoz', 'ROL.md'), '# ROL — Dış göz\nMod: **yazamaz**.\nSınırlar: iş yapmam.\n');
   writeFileSync(join(kok, '03_roller', 'disgoz', 'DURUM.md'), '# DURUM — Dış göz\nHenüz oturum açılmadı\n');
   if (brifing) writeFileSync(join(kok, '03_roller', 'disgoz', 'BRIFING.md'), '# DIŞ GÖZ — brifing\nTarih: 2026-07-25\n');
   mkdirSync(join(kok, '.claude', 'skills', 'rol-disgoz'), { recursive: true });
@@ -54,7 +54,7 @@ function disGozKur(kok, { koltuk = true, brifing = true, skill = '---\ndescripti
 // Fixture bunu yansıtmazsa 4d/4e kapıları gerçek dünyada hiç görülmeyecek bir hâl üzerinden
 // sınanmış olur. SIRA listesi bilerek KISA (iki adım): kapı sayıya değil EŞLİĞE bakar; kısa
 // liste onu yeterince sınar ve testi gerçek adım metinlerine bağlamaz.
-function tarifKur(kok, { adimlar = true, kontrat = true, indeks = true, gdurum = 'açık' } = {}) {
+function tarifKur(kok, { adimlar = true, kontrat = true, indeks = true, gdurum = 'açık', teyit = true } = {}) {
   mkdirSync(join(kok, '00_genesis', 'adimlar'), { recursive: true });
   // İndeks, sıradaki HER adımın işaretçisini taşır (4d ikinci tanık): iki liste ayrışırsa
   // çekilme kilitlenir. Fixture bunu yansıtmazsa o kapı hiç sınanmamış olur.
@@ -70,12 +70,15 @@ function tarifKur(kok, { adimlar = true, kontrat = true, indeks = true, gdurum =
   if (gdurum != null) {
     writeFileSync(join(kok, '00_genesis', 'GENESIS_DURUM.md'),
       '# GENESIS DURUM\n\n## KURULUM DURUMU — makine okur\n```\n' +
-      `Adım: G5\nDurum: ${gdurum}\nTamamlanan: G0\n` + '```\n');
+      `Adım: G5\nDurum: ${gdurum}\nTamamlanan: G0\n` + '```\n' +
+      // Karar alanı teyit damgası (7d2): kurulu bir projede VARDIR; fixture bunu yansıtmazsa
+      // "tam kurulum YEŞİL" senaryosu gerçeği yansıtmaz.
+      (teyit ? '\n## Karar alanı teyidi\nKarar alanı teyidi: Deneme · 2026-07-30\n' : ''));
   }
 }
 
 function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, kanon = true, kabukSahip = 'koordinator', capa = '0123456789abcdef0123456789abcdef01234567\n',
-                  korunanYollar = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null, tarif = {}, altAjan = true } = {}) {
+                  korunanYollar = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null, tarif = {}, altAjan = true, kadroAjan = true, otonom = true } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
   // Kurulu bir KEEL projesi her zaman bir git deposudur (G0.1 klasör hazırlığı bunu garanti
   // eder; tarih çapası, koruma-hattı ve geri-alma güvencesi buna dayanır). Fixture bunu
@@ -116,7 +119,7 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
   );
   // İşletim yüzeyi (soğuk-denetim C1): rol sözleşmesi + başlangıç DURUM'u + pano + ilk kutu.
   if (acikAlan) writeFileSync(join(kok, '03_roller', slug, 'ROL.md'), '# «ROL-ADI» doldurulmamış\n');
-  else if (rolmd) writeFileSync(join(kok, '03_roller', slug, 'ROL.md'), '# ROL — Denetçi\nSınırlar: dolu.\n');
+  else if (rolmd) writeFileSync(join(kok, '03_roller', slug, 'ROL.md'), '# ROL — Denetçi\nMod: **tam**.\nSınırlar: dolu.\n');
   if (durum) writeFileSync(join(kok, '03_roller', slug, 'DURUM.md'), '# DURUM — Denetçi\nHenüz oturum açılmadı\n');
   if (pano) {
     mkdirSync(join(kok, '00_pano'), { recursive: true });
@@ -127,7 +130,7 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
     writeFileSync(join(kok, '01_kutular', KABUK_AD, 'KUTU.md'), kabukMetni(kabukSahip));
     // Kabuğun G-01 sahibinin kadroda karşılığı olmalı (kapı bunu arar).
     mkdirSync(join(kok, '03_roller', kabukSahip), { recursive: true });
-    writeFileSync(join(kok, '03_roller', kabukSahip, 'ROL.md'), '# ROL — Koordinatör\nMod: **yazar**.\n');
+    writeFileSync(join(kok, '03_roller', kabukSahip, 'ROL.md'), '# ROL — Koordinatör\nMod: **tam**.\n');
     // Rol taraması her `03_roller/<slug>` için beceri + DURUM da arar (G3.3c/G3.4).
     writeFileSync(join(kok, '03_roller', kabukSahip, 'DURUM.md'), '# DURUM — Koordinatör\nHenüz oturum açılmadı\n');
     mkdirSync(join(kok, '.claude', 'skills', 'rol-' + kabukSahip), { recursive: true });
@@ -150,7 +153,56 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
     writeFileSync(join(kok, '02_kanon', 'KUTU_PLANI.md'),
       '<!-- yazar: koordinator -->\n# KUTU PLANI — sıradaki kutular\n(iskelet)\n');
   }
+  // Otonom tarafın dosyaları (Faz 2 sıra 6 · G3.3e/G3.3f) — kurulumdan ÇIKAR, elle konmaz.
+  // En SONA yazılır: kadro koltukları 03_roller'ın tamamı doğduktan sonra taranmalı, yoksa
+  // fixture kapının gerçekte gördüğü dünyayı taklit etmez (sıra 5'in fixture dersi).
+  if (kadroAjan) kadroAjanKur(kok);
+  if (otonom) otonomDosyalarKur(kok);
   return kok;
+}
+
+// Her `03_roller/<slug>` için alt-ajan koltuğu.
+// MOD, KAPININ REGEX'İYLE TÜRETİLMİYOR (hasım bulgusu 2026-07-30): ilk yazımda fixture modu
+// ROL.md'den kapının kendi deseniyle okuyordu — desen bozulsa fixture da onunla birlikte bozulur
+// ve "tam kurulum YEŞİL" senaryosu kilidin KAPALI olduğu bir dünyayı modellemeye devam ederdi.
+// Artık mod AÇIK BİR TABLODAN gelir; kapı ile fixture aynı kaynağa bakmaz.
+const YAZAMAZ_ROLLER = new Set(['disgoz']);   // dış göz her kadranda yazamaz (G2.1.5)
+const ARAC = { yazamaz: 'Read, Grep, Glob', tam: 'Read, Grep, Glob, Edit, Write, Bash' };
+function kadroAjanKur(kok) {
+  mkdirSync(join(kok, '.claude', 'agents'), { recursive: true });
+  for (const e of readdirSync(join(kok, '03_roller'), { withFileTypes: true })) {
+    if (!e.isDirectory() || e.name.startsWith('_')) continue;
+    const mod = YAZAMAZ_ROLLER.has(e.name) ? 'yazamaz' : 'tam';
+    writeFileSync(join(kok, '.claude', 'agents', e.name + '.md'),
+      `---\nname: ${e.name}\ntools: ${ARAC[mod]}\n---\nsen ${e.name}sin\n`);
+  }
+}
+
+// Otonom kipin kural evi + sahibin karar alanı: ikisi de GERÇEK kalıptan üretilir (uydurma bir
+// metin, kapının ve karar-alani.sh'ın gerçekte aradığı çapaları sınamazdı). karar-alani.sh de
+// kopyalanır: kapı o denetimi DEVREDER, kopyalamaz — betik yokken hüküm "ölçülemedi"dir.
+const KARAR_GOVDE = [
+  '- Kahve dükkânının günlük nakit akışını ve hangi ürünün kaç sattığını yalnız ben bilirim.',
+  '- Kodun nasıl yazıldığı, dosya adları ve karar numaraları beni ilgilendirmiyor; sorulmasın.',
+  '- Fiyat değişikliği ve müşteriye görünen her yazı benim kararım; teknik sıralama değil.',
+  '- Soruları tek tek getir, önerini de yaz; uzun döküm gönderirsen kaçırıyorum.',
+];
+function otonomDosyalarKur(kok) {
+  const kalipSim = (ad) => {
+    const s = readFileSync(join(KOK_REPO, '00_genesis', ad), 'utf8').split('\n');
+    const y = s.findIndex((x) => x.trimEnd().endsWith('-->'));
+    return s.slice(y + 1).join('\n').replaceAll('«SAHİP»', 'Deneme');
+  };
+  writeFileSync(join(kok, '02_kanon', 'OTONOM_DONEM.md'), kalipSim('OTONOM_DONEM_KALIBI.md'));
+  // DÖRT GÖVDE FARKLI (kalıp-dolgu freni, hasım bulgusu 2026-07-30): ilk yazımda dördüne de aynı
+  // jenerik cümle yazılıyordu ve kapı HAZIR diyordu — yani fixture, profilin sahiple hiç
+  // konuşulmadığı bir dünyayı "tam kurulum" diye modelliyordu.
+  let ka = kalipSim('KARAR_ALANI_KALIBI.md');
+  let i = 0;
+  ka = ka.replace(/«[^»]+»/gs, () => KARAR_GOVDE[i++ % KARAR_GOVDE.length]);
+  writeFileSync(join(kok, '02_kanon', 'KARAR_ALANI.md'), ka);
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
+  copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'karar-alani.sh'), join(kok, 'tools', 'sevk', 'karar-alani.sh'));
 }
 
 const kos = (kok) => spawnSync('bash', [BETIK, kok], { encoding: 'utf8' });
@@ -243,7 +295,9 @@ test('6b: hiç alt-ajan dosyası yoksa → KIRMIZI (yokluk körlüğü yok)', ()
   // `nullglob` altında döngü hiç koşmuyor, altındaki "geçti" koşulsuz basıyordu: "ölçemedim"
   // ile "hepsi yerinde" karışıyordu (hasım turu 2026-07-30). Betiğin kendi ilkesi zaten
   // "sıfır rol = KIRMIZI" diyor; aynı ilke burada uygulanmamıştı.
-  const r = kos(kurulum({ altAjan: false }));
+  // kadroAjan da kapatılır: 7c koltukları da .claude/agents/ altına yazıyor, açık kalırsa
+  // dizin boş olmaz ve bu testin ölçtüğü YOKLUK hâli hiç oluşmaz.
+  const r = kos(kurulum({ altAjan: false, kadroAjan: false }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /hiç alt-ajan dosyası yok/);
 });

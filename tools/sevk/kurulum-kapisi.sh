@@ -132,7 +132,7 @@ EOF_RAPOR
 if [ -f "$KOK/02_kanon/OTONOM_DONEM.md" ]; then
   gecti "otonom kural evi yerinde (02_kanon/OTONOM_DONEM.md)"
 else
-  eksik "02_kanon/OTONOM_DONEM.md yok — otonom kipin kural evi kurulmamış (kalıp: 00_genesis/OTONOM_DONEM_KALIBI.md, elle kopyalanır)"
+  eksik "02_kanon/OTONOM_DONEM.md yok — otonom kipin kural evi kurulmamış (kurulum G3.3f'de kurar; kalıp: 00_genesis/OTONOM_DONEM_KALIBI.md)"
 fi
 
 # ── K6 · sahibin karar alanı (D-25 ③ proje katmanı) ────────────────────────────────────────

@@ -59,10 +59,14 @@ else
   gecti "kadran okundu: $KADRAN"
 fi
 
-# 3 · Doldurulmamış «alan» kalmadı (canlı yüzey: kanon + roller + beceriler; _arsiv muaf)
-#     Fail-closed: taranamayan dosya (grep rc>=2) sessiz-temiz SAYILMAZ.
+# 3 · Doldurulmamış «alan» kalmadı (canlı yüzey: kanon + roller + beceriler + kadro koltukları;
+#     _arsiv muaf). Fail-closed: taranamayan dosya (grep rc>=2) sessiz-temiz SAYILMAZ.
+#     `.claude/agents` bu listeye Faz 2 sıra 6'da girdi: o dizin ilk kez KALIPTAN doldurulan
+#     dosyalar taşıyor (G3.3e) ve yarım doldurulmuş bir «ARAÇLAR» satırı koltuğu bozar.
+#     Kökteki NASIL_KULLANILIR.md bu taramada YOK ve olamaz — onu G5.0 yazar, bu kapı G4.5'te
+#     yani G5'ten ÖNCE koşar; kalan «alan» denetimi G5.0'ın kendi KANIT satırındadır.
 ACIK_ALAN=""
-for d in "$KOK/02_kanon" "$KOK/03_roller" "$KOK/.claude/skills"; do
+for d in "$KOK/02_kanon" "$KOK/03_roller" "$KOK/.claude/skills" "$KOK/.claude/agents"; do
   if [ -d "$d" ]; then
     RC=0
     CIKTI=$(grep -Rl --exclude-dir=_arsiv '«' "$d" 2>/dev/null) || RC=$?
@@ -73,6 +77,14 @@ for d in "$KOK/02_kanon" "$KOK/03_roller" "$KOK/.claude/skills"; do
     fi
   fi
 done
+# Kökteki sahip kılavuzu: G4.5 koşusunda HENÜZ YOKTUR (onu G5.0 yazar) ama G5.3.c'nin ikinci
+# koşusunda vardır — "varsa tara" bu yüzden gerçek bir kalem, gösteriş değil. Kılavuz bu pakette
+# ilk kez kalıptan doğuyor, yani ilk kez «alan» taşıyabiliyor; doldurulmamış «PROJE-ADI» sahibin
+# kokpit panelinde basılır (hasım bulgusu 2026-07-30).
+KILAVUZ="$KOK/NASIL_KULLANILIR.md"
+if [ -f "$KILAVUZ" ] && grep -qF '«' "$KILAVUZ"; then
+  ACIK_ALAN="$ACIK_ALAN NASIL_KULLANILIR.md"
+fi
 if [ -n "$ACIK_ALAN" ]; then kirmizi "doldurulmamış «alan» var:$ACIK_ALAN"; else gecti "«alan» taraması temiz"; fi
 
 # 4 · Bilinç + retro kalıbı kopyaları (omurga her kuruluma iner)
@@ -130,7 +142,7 @@ fi
 #      DÖRT ŞEY: (a) sıra verisi ↔ adım dosyaları ÇİFT YÖNLÜ eşlik, (b) dosya başına tavan,
 #      (c) toplam tavan, (d) indeks ve bekçi-tarifi kontratı yerinde.
 ADIM_TAVANI=12288    # bayt · dosya başına (aşan adım ikiye bölünür: G3a/G3b emsali)
-ADIM_TOPLAM=61500    # bayt · indeks + adımlar + BEKCI_TARIFI. Bölmek büyümenin bahanesi olamaz —
+ADIM_TOPLAM=64500    # bayt · indeks + adımlar + BEKCI_TARIFI. Bölmek büyümenin bahanesi olamaz —
                      # asıl fren budur, dosya-başı tavan değil.
                      # ÇAPA VE BEYANLI ARTIŞ (2026-07-30): ilk değer 57.660 = bölmeden önceki
                      # GENESIS.md 48.050 B × 1,20 idi ve bölmenin kendisi ona sığdı. Hasım turu
@@ -155,6 +167,39 @@ ADIM_TOPLAM=61500    # bayt · indeks + adımlar + BEKCI_TARIFI. Bölmek büyüm
                      # tavana girmez. Doğru çözüm sayıyı büyütmek değil, o sözleşmeyi ÖLÇÜLEN bir
                      # kalıba (`00_genesis/KILAVUZ_KALIBI.md`) çıkarmaktır — bu pakette YAPILMADI
                      # çünkü paket sonunda yapılacak bir yapı değişikliği değil.
+                     # ÜÇÜNCÜ BEYANLI ARTIŞ (2026-07-30, Faz 2 sıra 6 · otonom dosyalar):
+                     # 61.500 → 64.500 (+%4,9). Sayı paketin SONUNDAKİ hâlidir; paket içinde iki
+                     # kez ateşledi ve ikisi de aynı beyanda toplandı (iki ayrı beyan satırı,
+                     # freni okunamaz kılan çelişkinin ta kendisi olurdu):
+                     #   · ilk yazımda 62.000 yetiyordu (marj 997 B);
+                     #   · HASIM TURU (30 ham bulgu, 25'i ayakta) 13 mekanik kural daha getirdi ve
+                     #     hepsi tarifin İÇİNDE yaşamak zorunda: G3.3e'nin dört KANIT kalemi +
+                     #     fazla-koltuk/rezerve-ad yasağı · G3.3f-ii'nin "Bölüm B'yi SEN YAZMAZSIN,
+                     #     SAHİBE SORARSIN" + teyit damgası · G5.0c'nin parola cümlesi + yazma-aracı
+                     #     şartı · G5.0d (işaret listesinin SIRA gerekçesiyle taşınması) ·
+                     #     G5.3.c'nin ikinci kapı koşusu. Sıkıştırma ilk uygulandı (üç gerçek
+                     #     tekrar), kalan 2,3 KB yeni kuraldır.
+                     # SIRA: (1) yukarıdaki yapısal iş YAPILDI —
+                     # NASIL_KULLANILIR sözleşmesi `KILAVUZ_KALIBI.md`ye çıktı ve tavandan
+                     # ~4,0 KB düştü; kaçış yolu olmasın diye yeni kalıp kendi ÖLÇÜLEN tavanıyla
+                     # (+marj freni) doğdu. (2) Sonra GERÇEK TEKRAR silindi — hepsi, kurulumcunun
+                     # o anda zaten açtığı dosyanın kendi başlığında yazan şeylerdi (kalıp yorumları ·
+                     # kanal.conf.ornek başlığı · işaret listesinin biçim tarifi). BU KALEM COMMIT'TEN
+                     # ÖLÇÜLEMEZ ve ilk yazımında "~0,9 KB" diye SAYIYLA ilan edilmişti — hasım turu
+                     # haklı çıktı: diff'te görünen tek sayı NET değişimdir (60.377 → 61.003 = +626 B),
+                     # ara sıkıştırma düzenleme geçmişinde yaşar. Ölçülemeyen tasarrufu sayıyla ilan
+                     # etmek "ilan abartması" sınıfıdır; kalem sayısız yazılıyor.
+                     # (3) Kalan baskı YENİ MEKANİK KURAL: kurulum ilk kez otonom tarafın
+                     # dosyalarını üretiyor (G3.3e kadro koltukları · G3.3f kural evi + karar
+                     # alanı + işaret listesi · G5.0c haber kanalı + watchdog) ve bu kuralların
+                     # tarifin İÇİNDE yaşaması zorunlu. Marj sıkıştırmadan sonra 497 B'ye indi —
+                     # frenin 3 B altı; o üç baytı tıraşlamak frenin engellediği şeyin kendisi
+                     # olurdu, o yüzden artış BEYANLA alındı.
+                     # SIRADAKİ YAPISAL ADAY (sonraki paketin işi): `G5.0b` de aynı sınıf —
+                     # `kokpit.config.json`ın ALAN SÖZLEŞMESİNİ taşıyor (~1,1 KB) ve o da bir
+                     # ADIM dosyasında yaşamamalı. Bu pakette yapılmadı: kokpit config'i şablonla
+                     # HAZIR gelen bir dosyadır, yani kalıp kategorisi (kopyalanan metin) ona
+                     # birebir oturmuyor — kategori kararı ayrı bir iş.
 SIRA_TAVANI=4096     # bayt · sıra verisinin KENDİ tavanı. Toplama DAHİL DEĞİL, ayrı ölçülür:
                      # dahil edilmesi toplam tavan kararını yeniden almayı gerektirir (bugünkü
                      # tarif toplama girse marj 500B freninin altına inerdi) ve tavan kararı
@@ -215,13 +260,20 @@ else
   #     TAVANIN KAPSAMI (beyan): burada ölçülen şey TARİFTİR — indeks + adımlar + bekçi kontratı.
   #     `00_genesis/` KALIP dosyaları (EL_KITABI_KALIBI · OTONOM_DONEM_KALIBI · KARAR_ALANI_KALIBI …)
   #     bu toplama GİRMEZ ve girmemeleri bilinçlidir: onların kendi tavanları var ve ayrı ölçülüyor
-  #     (EL_KITABI 16KB burada · OTONOM_DONEM_KALIBI otonom-sim testinde · EL_KITABI kurulu-sim
+  #     (EL_KITABI 16KB burada · OTONOM_DONEM_KALIBI + KARAR_ALANI_KALIBI otonom-sim testinde ·
+  #     KILAVUZ_KALIBI + ROL_ALT_AJAN_KALIBI otonom-dosyalar testinde · EL_KITABI kurulu-sim
   #     testinde). ÖLÇÜLMEYENLER ADIYLA SAYILIR (ilan abartmayı kapatmak için — hasım turu
-  #     2026-07-30): `ILK_KUTU_KALIBI.md` · `KARAR_ALANI_KALIBI.md` · `SOZLESME_KALIBI.md` ·
-  #     `MULAKAT_KALIBI.md` · `RETRO_KALIBI.md` · `ROL_SKILL_KALIBI.md` · `DEFO_MODELI.md`
-  #     hiçbir tavana girmiyor. Yani "tarif tavanı" ile "kalıp tavanları" iki ayrı hat ve ikincisi
-  #     TAM DEĞİL; bir paragrafı ölçülmeyen bir kalıba taşıyarak bu tavandan kaçmak MÜMKÜNDÜR —
-  #     ilan edilmiş sınır, kapatılması ayrı bir ölçüm paketinin işi.
+  #     2026-07-30): `ILK_KUTU_KALIBI.md` · `SOZLESME_KALIBI.md` · `MULAKAT_KALIBI.md` ·
+  #     `RETRO_KALIBI.md` · `ROL_SKILL_KALIBI.md` · `DEFO_MODELI.md` hiçbir tavana girmiyor.
+  #     Yani "tarif tavanı" ile "kalıp tavanları" iki ayrı hat ve ikincisi TAM DEĞİL; ölçülmeyen
+  #     bir kalıba paragraf taşıyarak bu tavandan kaçmak MÜMKÜNDÜR — ilan edilmiş sınır,
+  #     kapatılması ayrı bir ölçüm paketinin işi. (Faz 2 sıra 6'da bu tavandan İÇERİK ÇIKARILDI:
+  #     G5.0'ın NASIL_KULLANILIR sözleşmesi KILAVUZ_KALIBI'na taşındı — yukarıdaki "yapısal sebep"
+  #     notunun istediği iş. Kaçış yolu olmasın diye yeni kalıp ölçülen tavanla + marj freniyle
+  #     doğdu. TAVAN YİNE DE ARTTI: 61.500 → 64.500, beyanı yukarıdaki ADIM_TOPLAM notunda.
+  #     İlk yazımda burada "tavan ARTIRILMADI" yazıyordu ve aynı dosyanın 170. satırıyla
+  #     ÇELİŞİYORDU — hasım turu bulgusu; bu evde tavan artışının tek denetimi beyan satırı
+  #     olduğu için iki yerde çelişen kayıt, freni okunamaz kılar.)
   KOK_INDEKS=""; ARSIV_INDEKS=""
   [ -r "$KOK/GENESIS.md" ] && KOK_INDEKS="$KOK/GENESIS.md"
   [ -r "$KOK/00_genesis/GENESIS.md" ] && ARSIV_INDEKS="$KOK/00_genesis/GENESIS.md"
@@ -414,6 +466,175 @@ if [ -d "$KOK/03_roller/disgoz" ]; then
   fi
 else
   kirmizi "zorunlu koltuk eksik: 03_roller/disgoz/ (dış göz her kadranda kurulur — G2.1.5)"
+fi
+
+# 7c · KADRONUN ALT-AJAN KOLTUKLARI (Faz 2 sıra 6 · F1-2e · G3.3e). Otonom dönemde sevk bir
+#      görevi ancak sahibinin `.claude/agents/<slug>.md` dosyası varsa sevk eder (sevk.sh:562);
+#      o dosyaları kurulum ÜRETMİYORDU ve kimse yokluğunu ölçmüyordu — madde 6b yalnız "hiç
+#      dosya var mı" diye bakıyor, şablonun üç sabit koltuğu o şartı tek başına karşılıyordu.
+#      ÜÇ KALEM: (a) her kadro rolünün dosyası var; (b) `name:` alanı slug'la BİREBİR aynı
+#      (dosya adı doğru, alan yanlışsa sevk kapısı geçer ama çağrı hedefini bulamaz);
+#      (c) `yazamaz` rolün araç listesinde YAZMA ARACI YOK. (c) bu paketin en kritik kalemi:
+#      rol kafesi (file-guard) tören damgasına bakar, otonom dönemde tören YOKTUR ⇒ o dönemde
+#      yazamaz modun TEK kilidi bu satırdır. Kalem olmasa "yazamayan doğrulayıcı" güvencesi
+#      otonom kipte sessizce ölürdü.
+# ARAÇ LİSTESİNİN İKİ MEŞRU DEĞERİ — evi 00_genesis/ROL_ALT_AJAN_KALIBI.md'nin ilanıdır; buradaki
+# iki dize onun BİREBİR karşılığıdır ve eşliği şablon testi tutar (TAVANLAR emsali: sayı/dize
+# değişikliği İKİ dosyada bilinçli edim ister). Regex ile "yazma aracı var mı" aramak yerine
+# BİREBİR EŞLEŞME aranıyor — hasım turu iki yönlü kusur gösterdi: alt-dize eşleşmesi hem yanlış
+# KIRMIZI üretiyor (TodoWrite · BashOutput) hem gerçek bir yazma yolunu kaçırıyor (Task/Agent).
+ARAC_YAZAMAZ="Read, Grep, Glob"
+ARAC_TAM="Read, Grep, Glob, Edit, Write, Bash"
+# Şablonun SABİT koltukları: kadro slug'ı olarak REZERVEDİR. Çakışırsa 7c şablonun kendi dosyasına
+# bakıp "geçti" basardı, oysa o koltuk salt-okurdur; kadro rolünün görevi hiç kapanmaz ve dosyayı
+# düzeltmek kancada engellidir (hasım bulgusu 2026-07-30).
+SABIT_KOLTUK_ADLARI="dogrulayici catal-denetcisi kurulum-denetcisi"
+KADRO_SAYISI=0
+KADRO_SLUGLARI=""
+for r in "$KOK"/03_roller/*/; do
+  AD=$(basename "$r")
+  case "$AD" in _*) continue ;; esac
+  KADRO_SAYISI=$((KADRO_SAYISI + 1))
+  KADRO_SLUGLARI="$KADRO_SLUGLARI $AD "
+  for S in $SABIT_KOLTUK_ADLARI; do
+    if [ "$AD" = "$S" ]; then
+      kirmizi "kadro slug'ı şablonun SABİT koltuğuyla çakışıyor: 03_roller/$AD (rezerve adlar: $SABIT_KOLTUK_ADLARI) — o koltuk salt-okurdur, bu rolün görevi hiç kapanmaz"
+    fi
+  done
+  AJAN="$KOK/.claude/agents/$AD.md"
+  if [ ! -f "$AJAN" ]; then
+    kirmizi "kadro rolünün alt-ajan koltuğu yok: .claude/agents/$AD.md (G3.3e — sevk bu rolün görevini sevk edemez, kutu otonom döneme giremez)"
+    continue
+  fi
+  # (a) FRONTMATTER GERÇEKTEN FRONTMATTER MI — ilk satır '---'. Kalıp, frontmatter'ın ÜSTÜNE
+  #     kullanım yorumu koyuyor ve onu kurulumcu ELLE siliyor; tepede tek boş satır kalması bile
+  #     frontmatter'ı ayrıştırılamaz yapar. Aşağıdaki name/tools kalemleri dosyanın HER YERİNDE
+  #     arıyordu, yani gövdeye kaymış bir 'tools:' satırı kapıyı YEŞİL bırakıyordu (hasım bulgusu
+  #     2026-07-30). Bu betiğin madde 6'sı SKILL.md için tam bu kontrolü yapıyor ve gerekçesi
+  #     "yaşanmış kırılma" olarak yazılı — ders kardeş artefakta taşınmamıştı.
+  if [ "$(head -n1 "$AJAN")" = "---" ]; then :; else
+    kirmizi "alt-ajan koltuğunun ilk satırı '---' değil: .claude/agents/$AD.md — kalıp-yorumu tam silinmemiş, frontmatter ayrıştırılamaz (araç kısıtı hiç uygulanmaz)"
+    continue
+  fi
+  # (b) name alanı — satır başında, slug'la birebir (frontmatter alanı; kalıpta «SLUG» doldurulur)
+  if grep -qE "^name:[[:space:]]*$AD[[:space:]]*$" "$AJAN"; then :; else
+    kirmizi "alt-ajan koltuğunun name alanı slug'la eşleşmiyor: .claude/agents/$AD.md ('name: $AD' satırı yok) — sevk dosyayı bulur, çağrı hedefini bulamaz"
+  fi
+  # (c) MOD SÖZLÜĞÜ FAIL-CLOSED. Eskiden yalnız "Mod: **yazamaz**" aranıyordu ve eşleşmeyen HER
+  #     hâl (mod yok · 'Mod: yazamaz' · '**Yazamaz**' · '**yazar**' · ROL.md hiç yok) koşulsuz
+  #     'geçti'ye düşüyordu: "mod tam" ile "modu okuyamadım" aynı yeşil satırdı ve paketin
+  #     "en kritik kalemi" (yazamaz koltukta yazma aracı yasağı) hiç koşmuyordu.
+  # İKİ AYRI grep: BRE'de `\|` alternasyonu GNU eklentisidir, macOS BSD sed onu LİTERAL sayar ve
+  # desen hiç eşleşmez — yani mod HER ZAMAN "okunamadı" olurdu (fixture düzeltilince sahada
+  # yakalandı). Bu betikte kadran da aynı biçimde, iki ayrı grep'le okunuyor.
+  MOD=""
+  if [ -f "$r/ROL.md" ]; then
+    if grep -qE 'Mod:[[:space:]]*\*\*yazamaz\*\*' "$r/ROL.md"; then MOD="yazamaz"
+    elif grep -qE 'Mod:[[:space:]]*\*\*tam\*\*' "$r/ROL.md"; then MOD="tam"
+    fi
+  fi
+  if [ -z "$MOD" ]; then
+    kirmizi "rolün araç-profili okunamadı: 03_roller/$AD/ROL.md ('Mod: **yazamaz**' ya da 'Mod: **tam**' satırı yok) — profil belirsizken araç kısıtı ölçülemez (fail-closed; sevkin kadro sayımı da bu satıra bakar)"
+    continue
+  fi
+  # (c2) SABİT MODLU KOLTUK: dış göz her kadranda YAZAMAZ (G2.1.5, D-20 parça 2). Tarifte sabit
+  #      olan tek moda çapa yoktu; 'Mod: **tam**' yazılınca kapı sessizce geçiyordu.
+  if [ "$AD" = "disgoz" ] && [ "$MOD" != "yazamaz" ]; then
+    kirmizi "dış göz koltuğunun modu 'yazamaz' değil (okunan: $MOD) — G2.1.5 bu koltuğun profilini SABİT ilan ediyor; iş yapmayan koltuk yazma aracı devralamaz"
+  fi
+  # (d) ARAÇ LİSTESİ: değeri moda göre BİREBİR eşleşmeli.
+  # Değer YALNIZ frontmatter'ın içinden okunur (ilk '---' ile ikinci '---' arası): gövdeye
+  # yazılmış bir 'tools:' satırı harness tarafından okunmaz, kapı da onu okumamalı.
+  ARAC=$(awk 'NR==1 && $0=="---" { fm=1; next }
+              fm && /^---[[:space:]]*$/ { exit }
+              fm && /^tools:/ { sub(/^tools:[[:space:]]*/, ""); sub(/[[:space:]]+$/, ""); print; exit }' "$AJAN")
+  if [ -z "$ARAC" ]; then
+    kirmizi "alt-ajan koltuğunda araç listesi yok: .claude/agents/$AD.md (frontmatter içinde satır başında 'tools:' olmalı)"
+    continue
+  fi
+  BEKLENEN="$ARAC_TAM"
+  [ "$MOD" = "yazamaz" ] && BEKLENEN="$ARAC_YAZAMAZ"
+  if [ "$ARAC" = "$BEKLENEN" ]; then
+    gecti "alt-ajan koltuğu: $AD ($MOD — araç listesi kalıbın ilan ettiği dize)"
+  elif [ "$MOD" = "yazamaz" ]; then
+    kirmizi "yazamaz rolün alt-ajan koltuğunda araç listesi kalıbın dizesi DEĞİL: .claude/agents/$AD.md → '$ARAC' (beklenen birebir: '$BEKLENEN') — otonom dönemde rol kafesi susar (tören damgası yok), kilit YALNIZ bu satırdır"
+  else
+    kirmizi "alt-ajan koltuğunun araç listesi kalıbın dizesi DEĞİL: .claude/agents/$AD.md → '$ARAC' (mod $MOD için beklenen birebir: '$BEKLENEN')"
+  fi
+done
+[ "$KADRO_SAYISI" -gt 0 ] || kirmizi "kadro sayılamadı (03_roller boş) — alt-ajan koltuğu denetimi 'ölçemedim'dir, 'hepsi yerinde' değil"
+
+# 7c2 · TERS YÖNLÜ SAYIM (hasım bulgusu 2026-07-30): yukarıdaki döngü yalnız 03_roller üstünden
+#       koşuyordu, yani sözleşmesi ve modu OLMAYAN fazladan bir koltuk kurulumdan çıkabiliyordu —
+#       ve sevk ona görev sevk eder (sevk.sh 'ajanVar' yalnız dosya varlığına bakar). Alt dizinler
+#       de taranır: '.claude/agents/alt/x.md' kancanın istisnasından geçiyor.
+if [ -d "$KOK/.claude/agents" ]; then
+  FAZLA=""
+  while IFS= read -r a; do
+    [ -n "$a" ] || continue
+    B=$(basename "$a" .md)
+    UST=$(dirname "$a")
+    if [ "$UST" != "$KOK/.claude/agents" ]; then FAZLA="$FAZLA ${a#$KOK/}"; continue; fi
+    KAYITLI=0
+    for S in $SABIT_KOLTUK_ADLARI; do
+      if [ "$B" = "$S" ]; then KAYITLI=1; fi
+    done
+    case "$KADRO_SLUGLARI" in *" $B "*) KAYITLI=1 ;; esac
+    if [ "$KAYITLI" -ne 1 ]; then FAZLA="$FAZLA ${a#$KOK/}"; fi
+  done <<EOF_AJANLAR
+$(find "$KOK/.claude/agents" -name '*.md' 2>/dev/null | sort)
+EOF_AJANLAR
+  if [ -n "$FAZLA" ]; then
+    kirmizi "kadroda karşılığı olmayan alt-ajan koltuğu var:$FAZLA — sevk dosya varlığına bakıp görev sevk eder; sözleşmesiz/modsuz koltuk denetlenemez (alt dizin de meşru değil: kanca istisnası oraya kadar geniş)"
+  else
+    gecti "alt-ajan koltukları ↔ kadro eşliği (fazla/sahipsiz koltuk yok)"
+  fi
+fi
+
+# 7d · OTONOM KİPİN İKİ KANON DOSYASI (Faz 2 sıra 6 · F1-2e · G3.3f). İkisi de bugüne dek ELLE
+#      kopyalanıyordu: kurulumdan çıkan projede yoklardı, `/donem` "kural evi kurulmamış" ve
+#      "profil boş" diye duruyordu — yani kurulum, kullanılamaz bir otonom kip bırakıyordu.
+#      KARAR_ALANI denetimi KOPYALANMADI, DEVREDİLDİ: tek kaynak tools/sevk/karar-alani.sh
+#      (Bölüm A çapaları + Bölüm B dört başlığın doluluğu orada yaşıyor). Aynı kör noktayı iki
+#      kapıya birden yazmak sıra 3'ün dersiydi.
+OD="$KOK/02_kanon/OTONOM_DONEM.md"
+if [ ! -f "$OD" ]; then
+  kirmizi "02_kanon/OTONOM_DONEM.md yok — otonom kipin kural evi kurulmamış (G3.3f; kalıp: 00_genesis/OTONOM_DONEM_KALIBI.md)"
+else
+  if grep -qF '«' "$OD"; then kirmizi "02_kanon/OTONOM_DONEM.md doldurulmamış «alan» taşıyor"; fi
+  if grep -qF 'OTONOM_DONEM KALIBI' "$OD"; then kirmizi "02_kanon/OTONOM_DONEM.md kalıp-yorumunu hâlâ taşıyor (kopyalarken silinmeli)"; fi
+  # Taşıyıcı iki başlık: duruş sözleşmesini kurulum kapısı, dönüş zarfını biçim kapısı ve rol
+  # koltukları işaretçi olarak gösterir. Biri eksikse dosya var ama işaret ettiği kural yok.
+  for CAPA in 'Duruş sözleşmesi' 'Dönüş zarfı'; do
+    grep -qF "$CAPA" "$OD" || kirmizi "02_kanon/OTONOM_DONEM.md taşıyıcı bölümü eksik: $CAPA (kural evi yarım kopyalanmış)"
+  done
+  gecti "otonom kipin kural evi yerinde (02_kanon/OTONOM_DONEM.md)"
+fi
+if [ -r "$KOK/tools/sevk/karar-alani.sh" ]; then
+  KA="$(bash "$KOK/tools/sevk/karar-alani.sh" "$KOK" 2>/dev/null | head -n1 || true)"
+  if [ "$KA" = "HAZIR" ]; then
+    gecti "sahibin karar alanı HAZIR (02_kanon/KARAR_ALANI.md — soru kanalı açık)"
+  else
+    kirmizi "sahibin karar alanı hazır değil: ${KA:-ölçülemedi} (G3.3f — profil boşken çatal sahibe gidemez, otonom kip baştan kapalıdır)"
+  fi
+else
+  kirmizi "tools/sevk/karar-alani.sh yok/okunamıyor — karar alanı ölçülemedi (fail-closed)"
+fi
+# 7d2 · KARAR ALANININ PROVENANS ÇAPASI (hasım turu 2026-07-30 · en sert ikinci bulgu).
+#       KARAR_ALANI Bölüm B, sahibe HANGİ SORUNUN GİDECEĞİNİ belirler — yani ajanın sahibe sorma
+#       yükümlülüğünü DARALTIR (kalıp: «BİLMEZ» başlığındaki konu sahibe GİDEMEZ) ve
+#       korunan-yollar.txt ilanı "ajan kendi soru alanını genişletemez/daraltamaz" der. Bu paket
+#       dosyayı ilk kez kurulumun İÇİNE aldı; yani metni artık kuran ajan yazıyor ve tek makine
+#       kapısı gövde uzunluğu sayıyordu. Çapa: profil sahibe okunup teyit alınmadan çekilme YOK.
+#       SINIR BEYANLI: damgayı da ajan yazar. Ölçülen şey "teyit alındığı BEYAN edildi mi";
+#       "gerçekten alındı mı" repo içinden kanıtlanamaz — G0/G2 mühür damgalarıyla aynı sınıf.
+GD="$KOK/00_genesis/GENESIS_DURUM.md"
+if [ -f "$GD" ]; then
+  if grep -qE '^Karar alanı teyidi:[[:space:]]*[^[:space:]]' "$GD"; then
+    gecti "karar alanı teyit damgası yerinde (profil sahibe okundu, onayı damgalandı)"
+  else
+    kirmizi "karar alanı teyit damgası yok: GENESIS_DURUM.md içinde 'Karar alanı teyidi: <ad> · <tarih>' satırı olmalı (G3.3f-ii) — yoksa sahibe hangi sorunun gideceğini kuran ajan kendi kalemiyle yazmış olur"
+  fi
 fi
 
 # 8 · İşletim yüzeyi: pano bağlanmış + ilk kutu kurulmuş (G4.5, G3.4 ve G4'ten SONRA koşar —

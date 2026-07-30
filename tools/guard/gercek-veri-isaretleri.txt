@@ -5,6 +5,6 @@
 # Biçim: satır başına BİR dize; eşleşme birebir BAYTTIR (büyük/küçük harf dönüşümü YOK —
 # Türkçe İ/ı güvenliği); "#" ile başlayan satır yorumdur; 4 karakterden KISA satır yok sayılır
 # (aşırı-engelleme freni — "Ali" gibi kısa dize her metni keserdi).
-# DOLDURAN: kurulumda sahip/GENESIS (GENESIS bağlanması ayrı iş — o güne dek elle).
+# DOLDURAN: kurulum — GENESIS sahibe sorar ve satırları yazar (G3.3f iii).
 # Boşken süzgeç yalnız jenerik desenlerle koşar; doluluğu E4 kurulum denetçisi arar (kalem 7).
 # ÖRNEK GERÇEK DEĞER BU DOSYAYA ŞABLONDAN GİRMEZ (bu dosya kurulu projede sahip verisidir).

@@ -1,10 +1,13 @@
 <!-- OTONOM_DONEM KALIBI (E1, 2026-07-27): otonom kipin kural evi. Kurulu projede hedef yol
-     02_kanon/OTONOM_DONEM.md (korunma [SORULUR]). KURULUM ADIMI HENÜZ GENESIS'E BAĞLI DEĞİL —
-     GENESIS-derinleştirme işine dek bu kalıp ELLE kopyalanır (tasarım §13; otonom döneme
-     girecek her kutu için kurulum denetçisi bu dosyanın varlığını arar — E4).
+     02_kanon/OTONOM_DONEM.md (korunma [SORULUR]). KURULUM ADIMI: G3.3f — kurulum bu dosyayı
+     kendisi kurar (Faz 2 sıra 6, 2026-07-30; o güne dek ELLE kopyalanıyordu ve kurulumdan
+     çıkan projede YOKTU). Varlığını iki kapı arar: çekilme kapısı (kurulum-denetimi 7d) ve
+     otonom döneme girecek her kutu için kurulum kapısı (E4).
      Kalıp metni SABİTTİR: kopyala, «alanları» doldur, bu bloğu sil. Alanlar: «SAHİP».
      EL_KITABI'na TEK HARF eklenmez (marj 44B; tavan sorusu sahibe gitmeden ek giremez) —
-     otonom kural evi BU dosyadır; keşfi rol sözleşmelerinin "Açılış ek-okumaları" satırından.
+     otonom kural evi BU dosyadır. Keşfi ÜÇ yoldan: sevkin devir metnindeki `kural:` işaretçisi ·
+     rolün alt-ajan koltuğundaki açılış okuma listesi (G3.3e) · rol sözleşmesinin "Açılış
+     ek-okumaları" satırı. İlk ikisi mekaniktir, üçüncüsü serbest metin.
      Tavan: 14.848 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
      ölçer; kurulu bekçiye girmez — F3 tablosu EL_KITABI'nda ve ona dokunulmuyor).
      Tavan 14.336'dan çıkarıldı (2026-07-29, dil paketi): fren ateşledi ve sebebi ek KURAL

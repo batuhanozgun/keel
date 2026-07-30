@@ -18,7 +18,7 @@ trap 'printf "HAZIR DEĞİL · karar-alani denetçisi kendi içinde hata verdi (
 KOK="${1:-${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}}"
 DOSYA="$KOK/02_kanon/KARAR_ALANI.md"
 
-[ -f "$DOSYA" ] || hazir_degil "02_kanon/KARAR_ALANI.md yok (kalıp: 00_genesis/KARAR_ALANI_KALIBI.md — elle kopyalanır)"
+[ -f "$DOSYA" ] || hazir_degil "02_kanon/KARAR_ALANI.md yok (kurulum G3.3f'de kurar; kalıp: 00_genesis/KARAR_ALANI_KALIBI.md)"
 [ -r "$DOSYA" ] || hazir_degil "02_kanon/KARAR_ALANI.md okunamıyor"
 
 # ── Bölüm A · soru çizgisi bütün mü ───────────────────────────────────────────────────────
@@ -67,6 +67,33 @@ Soru sorma tarzı
 EOF_BASLIKLAR
 
 [ -z "$EKSIK" ] || hazir_degil "sahip profili doldurulmamış:$EKSIK — profil boşken çatal sahibe gidemez (tasarım §10/E3)"
+
+# ── KALIP-DOLGU FRENİ (hasım turu 2026-07-30) ──────────────────────────────────────────────
+# Yukarıdaki kalemler yalnız UZUNLUK ölçüyordu (≥40B) ve bu, profilin sahiple konuşulduğunu hiçbir
+# biçimde göstermiyor: dört başlığa AYNI jenerik cümleyi yazan bir kurulum HAZIR alıyordu (iki
+# bağımsız hasım ajanı bunu kum havuzunda fiilen koştu ve HAZIR/exit 0 aldı). Dört başlık dört
+# AYRI soruya cevap verir; ikisinin gövdesi birebir aynıysa o cevaplar sahibin değil, dolgunun.
+# Bu fren, metnin sahibin ağzından çıktığını KANITLAMAZ — repo içinden kanıtlanamaz, beyanlı sınır
+# (provenans çapası GENESIS_DURUM teyit damgasıdır; kurulum-denetimi 7d onu arar). Gösterilmiş TEK
+# sömürü yolunu kapatır ve fixture'ı da dürüst olmaya zorlar.
+# Karşılaştırma boşluk-normalize gövde üzerindedir; harf dönüşümü YOK (Türkçe güvenliği).
+GOVDELER=""
+while IFS= read -r baslik; do
+  G="$(awk -v b="### $baslik" '
+    $0 == b { icinde = 1; next }
+    icinde && (/^#/ || /^---[[:space:]]*$/) { icinde = 0 }
+    icinde { print }
+  ' "$DOSYA" | tr -d ' \n\t')"
+  case "$GOVDELER" in
+    *"|$G|"*) hazir_degil "sahip profilinde iki başlığın gövdesi BİREBİR aynı — dört başlık dört ayrı soruya cevap verir; aynı metin, profilin sahiple konuşulmadığının işaretidir (kalıp-dolgu freni)" ;;
+  esac
+  GOVDELER="$GOVDELER|$G|"
+done <<'EOF_GOVDE'
+Ne bilir (sorular yalnız buradan çekilebilir)
+Ne bilmez / bilmek istemez
+Neye karar vermek ister
+Soru sorma tarzı
+EOF_GOVDE
 
 printf 'HAZIR\n'
 exit 0

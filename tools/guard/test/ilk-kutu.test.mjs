@@ -93,7 +93,7 @@ function kuruluFixture(bozma = () => {}) {
   writeFileSync(join(kok, '01_kutular', KABUK_AD, 'KUTU.md'), kabukMetni());
   // G-01 sahibinin kadroda karşılığı + G4'ün ikinci ürünü (kilitli-tarih çapası) + korunan
   // yollar listesi: kapı üçünü de arıyor (hasım turu 2026-07-30).
-  writeFileSync(join(kok, '03_roller', 'koordinator', 'ROL.md'), '# ROL — Koordinatör\nMod: **yazar**.\n');
+  writeFileSync(join(kok, '03_roller', 'koordinator', 'ROL.md'), '# ROL — Koordinatör\nMod: **tam**.\n');
   writeFileSync(join(kok, '02_kanon', 'kilitli', '.taban-ref'), '0123456789abcdef0123456789abcdef01234567\n');
   copyFileSync(join(GUARD, 'korunan-yollar.txt'), join(kok, 'tools', 'guard', 'korunan-yollar.txt'));
   writeFileSync(join(kok, '02_kanon', 'BITTI_TANIMI.md'),
@@ -295,11 +295,21 @@ const SEVK_BETIKLERI = ['ortak.sh', 'kilit.sh', 'zarf-ekle.sh', 'zarf-bicim-kapi
                         'karar-alani.sh', 'catal-kuyruk.sh', 'donem-ac.sh', 'sevk.sh',
                         'devir-kapisi.sh', 'kurulum-kapisi.sh'];
 const KARAR_KALIP = readFileSync(join(KOK_REPO, '00_genesis', 'KARAR_ALANI_KALIBI.md'), 'utf8');
+// DÖRT GÖVDE FARKLI (kalıp-dolgu freni, hasım turu 2026-07-30): dört başlığa aynı metni yazan
+// profil kapıdan döner — aynı cümle, profilin sahiple konuşulmadığının işaretidir. Fixture da
+// dürüst olmak zorunda: eskiden dördüne de tek jenerik cümle yazılıyordu.
+const KARAR_GOVDE = [
+  '- Kahve dükkânının günlük nakit akışını ve hangi ürünün kaç sattığını yalnız ben bilirim.',
+  '- Kodun nasıl yazıldığı, dosya adları ve karar numaraları beni ilgilendirmiyor; sorulmasın.',
+  '- Fiyat değişikliği ve müşteriye görünen her yazı benim kararım; teknik sıralama değil.',
+  '- Soruları tek tek getir, önerini de yaz; uzun döküm gönderirsen kaçırıyorum.',
+];
 function kararAlaniMetni() {
   const s = KARAR_KALIP.split('\n');
   const yorumSonu = s.findIndex((l) => l.trimEnd().endsWith('-->'));
+  let i = 0;
   return s.slice(yorumSonu + 1).join('\n').replaceAll('«SAHİP»', 'Deneme')
-    .replace(/«[^»]*»/gs, () => '- Kendi işi, parası ve ürünün amacı.\n- Kapsam tercihi: şimdi mi, sonra mı.');
+    .replace(/«[^»]*»/gs, () => KARAR_GOVDE[i++ % KARAR_GOVDE.length]);
 }
 
 // Koordinatörün G-01 altında doğurduğu görevler: her rol bir satır + bir risk satırı.
@@ -338,7 +348,7 @@ function sevkFixture({ kutu = kabukMetni(), kadro = ['koordinator', 'uretici'],
   for (const a of [...kadro, ...koltuk]) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), `---\nname: ${a}\ntools: Read\n---\n# ajan\n`);
   for (const r of kadro) {
     mkdirSync(join(kok, '03_roller', r), { recursive: true });
-    writeFileSync(join(kok, '03_roller', r, 'ROL.md'), `# ROL — ${r}\n\n## Yazma yetkisi (beyaz-liste)\nMod: **yazar**.\n`);
+    writeFileSync(join(kok, '03_roller', r, 'ROL.md'), `# ROL — ${r}\n\n## Yazma yetkisi (beyaz-liste)\nMod: **tam**.\n`);
   }
   for (const d of ['T0', 'T1', 'T2', 'T3']) writeFileSync(join(kok, 'tools', 'sevk', 'damgalar', d), '2026-07-30 · damga\n');
   writeFileSync(join(kok, '03_roller', 'disgoz', 'BRIFING.md'), '# DIŞ GÖZ — brifing\n');
@@ -559,8 +569,13 @@ test('G5.1 erteleme dalı kör bırakmıyor: pano satırı + kalıcı kuyruk', (
 });
 
 test('sahip kılavuzunda "ilk işin" kalemi var (kurulumdan çıkan sahip ne yapacağını bilsin)', () => {
-  const g5 = readFileSync(join(KOK_REPO, '00_genesis', 'adimlar', 'G5.md'), 'utf8');
-  assert.match(g5, /\*\*İlk işin:\*\*/, 'NASIL_KULLANILIR zorunlu kalem listesinde ilk kutu yok');
+  // Kalemin evi 2026-07-30'da (Faz 2 sıra 6) `adimlar/G5.md`'nin içinden `KILAVUZ_KALIBI.md`'ye
+  // taşındı: bir ADIM dosyası, ÜRETİLEN bir dosyanın içerik sözleşmesini taşıyordu ve tarif
+  // tavanının asıl büyüme sebebiydi. Kalem aynı, evi farklı — bu test onu yeni evinde arar
+  // (kalıbın tam kalem listesi: tools/guard/test/otonom-dosyalar.test.mjs).
+  const kilavuz = readFileSync(join(KOK_REPO, '00_genesis', 'KILAVUZ_KALIBI.md'), 'utf8');
+  assert.match(kilavuz, /^## İlk işin$/m, 'sahip kılavuzu kalıbında "İlk işin" bölümü yok');
+  assert.match(kilavuz, /bir \*\*plan\*\* çıkaracak/, 'ilk işin bir PLAN olduğu yazılı değil');
 });
 
 test('G1 ilk dilimi SEÇTİRMİYOR (indeksin "Sınır" bölümüyle çelişki kapandı)', () => {

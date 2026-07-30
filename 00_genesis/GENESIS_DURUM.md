@@ -38,5 +38,10 @@ Tamamlanan: —
 ## Son mühür
 (henüz yok)
 
+## Karar alanı teyidi
+(G3.3f-ii'de doldurulur. Sahip profili sahibe geri okunup onaylandığında buraya satır başında
+"Karar alanı teyidi: <sahip adı> · <tarih>" biçiminde TEK satır yaz. Çekilme kapısı bu satırı
+arar: yoksa KIRMIZI — sahibe hangi sorunun gideceğini kuran ajanın kendi kalemi belirlemiş olur.)
+
 ## Format spec (G3b'de doldurulur)
 (henüz yok)

@@ -16,9 +16,10 @@ bu modelden türet, kural uydurma.
 Ayrı bir örnek proje yoktur (gizlilik + domain sızmasını önler). Üç otoriten var:
 
 1. **Biçim (format kilidi):** `tools/kokpit/test/fixtures/tekfaz/` (tek-faz) ve `tools/kokpit/test/fixtures/ikifaz/` (çok-faz) = kokpitin **birebir doğru** okuduğu minik örnek vault'lar (testler onları parser'a senkron tutar). Makine-format kararlarında (pano `## MEKANİK BLOK`, `Işıklar:` satırı, kutu `## Görevler` tablosu, `# DURUM — <Ad>` biçimi) bu fixture'ları + `tools/kokpit/PANO_SOZLESMESI.md` sözleşmesini **birebir** izle — biçim uydurma. **Türkçe diakritikler load-bearing:** fixture'daki yazımı harfi harfine kopyala (ASCII'ye çevirme).
-2. **Disiplin (kalıplar):** EL_KITABI, rol sözleşmeleri, mülakat biçimi ve retro `00_genesis/`
-   kalıplarından gelir: `EL_KITABI_KALIBI.md` · `SOZLESME_KALIBI.md` · `MULAKAT_KALIBI.md` ·
-   `RETRO_KALIBI.md` · `ROL_SKILL_KALIBI.md`. **Kalıp metni SABİTTİR: kopyala, «alanları»
+2. **Disiplin (kalıplar):** EL_KITABI, rol sözleşmeleri, rol becerileri, kadronun alt-ajan
+   koltukları, mülakat, retro, ilk kutu kabuğu, otonom kipin kural evi, sahibin karar alanı ve
+   sahip kılavuzu **`00_genesis/*_KALIBI.md`** dosyalarından gelir; hangisi hangi adımda
+   kullanılır, adım dosyası söyler. **Kalıp metni SABİTTİR: kopyala, «alanları»
    doldur, kadran uygula — DERLEME/YENİDEN-YAZMA YOK.** (Serbest üretim buharlaşma kapısıdır;
    iki kurulumda tarifte var olan kategoriler sessizce kayboldu — kalıp bu yüzden var.)
 3. **Bilinç:** `DEFO_MODELI.md` — kuralların "neden"i; yukarıda okudun.
@@ -45,10 +46,10 @@ tarif değildir.
 | 2 | **G1** | `00_genesis/adimlar/G1.md` | Brief · kabaca-harita · VIZYON + tohum kararlar | — |
 | 3 | **G2** | `00_genesis/adimlar/G2.md` | Rol türetme · dış göz koltuğu · kapsam yüzeyi · kadro tablosu | G2.5 |
 | 4 | **G3a** | `00_genesis/adimlar/G3a.md` | EL_KITABI (3.1) · bekçi (3.2) — yazım kuralları: `00_genesis/BEKCI_TARIFI.md` | — |
-| 5 | **G3b** | `00_genesis/adimlar/G3b.md` | Kanon (3.3) · koruma (3.3b) · rol becerileri (3.3c) · pano (3.4) · kapı (3.5) | — |
+| 5 | **G3b** | `00_genesis/adimlar/G3b.md` | Kanon (3.3) · koruma (3.3b) · rol becerileri (3.3c) · ileriye bakan iki kanon (3.3d) · kadronun alt-ajanları (3.3e) · otonom kipin dosyaları (3.3f) · pano (3.4) · kapı (3.5) | — |
 | 6 | **G4** | `00_genesis/adimlar/G4.md` | İlk kutu KABUĞU (sabit metin: `00_genesis/ILK_KUTU_KALIBI.md`) + kilitli-tarih çapası | — |
 | 7 | **G4.5** | `00_genesis/adimlar/G4.5.md` | Aktarım öz-denetimi — SABİT KAPI (`tools/guard/kurulum-denetimi.sh`) | — |
-| 8 | **G5** | `00_genesis/adimlar/G5.md` | Sahip kılavuzu · kokpit · kutunun açılış mührü · ÇEKİLME | G5.1 → kutunun |
+| 8 | **G5** | `00_genesis/adimlar/G5.md` | Sahip kılavuzu · kokpit · otonom kipin makine ayarı (0c) · kutunun açılış mührü · ÇEKİLME | G5.1 → kutunun |
 
 Madde numaraları bölmeden ETKİLENMEDİ: `G3.2` hâlâ "G3'ün 2. maddesi"dir ve `G3a.md`'de yaşar;
 `G3.3b` `G3b.md`'dedir. Metne yapılan bütün eski atıflar geçerlidir.
