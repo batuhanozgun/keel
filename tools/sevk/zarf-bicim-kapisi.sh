@@ -83,7 +83,7 @@ fi
 CIKTI="$(printf '%s' "$GIRDI" | KAPI_KOK="$KOK" KAPI_DONEM="$DONEM_ID" KAPI_KUTU="$DONEM_KUTU" \
   KAPI_KARAR_ALANI="$KARAR_ALANI_DURUM" KAPI_KUYRUK="$KUYRUK_DURUM" KAPI_KUYRUK_HATA="$KUYRUK_HATA" \
   "$NODE_BIN" --input-type=module -e '
-import { readFileSync, existsSync, readdirSync, writeFileSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, writeFileSync, lstatSync } from "node:fs";
 import { resolve, join } from "node:path";
 
 const KOK = process.env.KAPI_KOK || ".";
@@ -158,13 +158,28 @@ const GOZLEMCILER = new Set(["disgoz"]);
 // Dış göz de buradadır: işi zaten sapma aramaktır, "ÇATAL" kelimesini görmek beklenendir.
 const HUKUM_SINIFI = new Set([...DENETCILER, ...KARNECILER, ...GOZLEMCILER]);
 const alan = {};
+// COK SATIRLI ALANLAR (hasim bulgusu 2026-07-30): brifing sozlesmesi bes basligin her birinde
+// coklu madde ve her maddenin arkasinda kanit istiyor, ama ayristirici YALNIZ etiketin kendi
+// satirini aliyordu — devam satirlari sessizce dusuyordu. Sonuc: sozlesmeye UYAN brifing ya
+// kirpiliyor ya da (kanit devam satirindaysa) "kanitsiz sapma" sayilip geri ceviriliyordu.
+// Devam birikimi YALNIZ BRIFING-* etiketlerinde aciktir: otekiler tek satirlik sozlesmelerdir
+// (BİTEN/ÇATAL/HÜKÜM…) ve orada birikim, sonraki serbest paragrafi alana yapistirirdi.
+const COK_SATIRLI = /^BRIFING-[1-5]$/;
+let acikEtiket = null;
 for (const satirHam of (metin || "").split("\n")) {
   const satir = satirHam.replace(/^[\s>*+-]*(?:\d+[.)])?\s*/, "").replace(/\*\*/g, "");
+  let eslesti = false;
   for (const e of ETIKETLER) {
     if (satir.startsWith(e) && /^\s*:/.test(satir.slice(e.length))) {
       if (!(e in alan)) alan[e] = satir.slice(e.length).replace(/^\s*:\s*/, "").trim();
+      acikEtiket = COK_SATIRLI.test(e) ? e : null;
+      eslesti = true;
     }
   }
+  if (eslesti) continue;
+  // Devam satiri: bos satir birikimi BITIRMEZ (madde listeleri arasinda bos satir olagandir);
+  // yeni bir etiket satiri bitirir (ustteki dal acikEtiket alanini sifirlar ya da degistirir).
+  if (acikEtiket && satirHam.trim()) alan[acikEtiket] += "\n" + satirHam.trim();
 }
 const UST = ["BİTEN", "ÇATAL", "DEĞERLENDİRMEDİKLERİM", "SIRADAKİ", "TÜRETME-İZİ", "GERİ-ÇEKİLEN"];
 const eksik = UST.filter((e) => !(e in alan));
@@ -493,18 +508,35 @@ if (karneciMi) {
         "karneyi işe dokunmamış bir koltuk verir — «kimse kendi işine yeşil diyemez» kuralının mekanik yüzü budur");
   }
   dikisGorev = gorev;
-  karneKaydi = { tip: "karne", ajan: tipHam, gorev, hukum: hukumK, maddeler: maddeler.slice(0, 400) };
+  // MADDELER kirpmasi ARTIK SESSIZ DEGIL (hasim bulgusu 2026-07-30): kapanis KIRMIZI dalinda
+  // bu alan duzeltmeyi yapacak rolun gordugu TEK icerik kanalidir ve 400 baytta kelime
+  // ortasindan kesiliyordu — role yarim bir bulgu listesi gidiyor, kesildigi hicbir yerde
+  // yazmiyordu. Kirpma sürüyor (gunluk satiri tavansiz buyuyemez) ama artik ISARETLI.
+  const maddelerTam = String(maddeler || "");
+  const KIRPMA = 400;
+  const kirpildi = maddelerTam.length > KIRPMA;
+  karneKaydi = { tip: "karne", ajan: tipHam, gorev, hukum: hukumK,
+                 maddeler: kirpildi ? maddelerTam.slice(0, KIRPMA) + " …[KIRPILDI: toplam " + maddelerTam.length + " B, ilk " + KIRPMA + " B yazildi]" : maddelerTam,
+                 maddeler_bayt: maddelerTam.length, maddeler_kirpildi: kirpildi };
 
   // ── F1-5b · KAPANIS karnesi KIRMIZI ise DUZELTILECEK GOREV ADIYLA yazilir ───────────────
   // Gerekce: kirmizi kapanis karnesi bugune kadar donemi KILITLIYORDU (bulgulari kapatmak uretim
   // isidir ama kapanis evresinde uretim acilmaz ⇒ sahip ucuncu bir komut yazmak zorundaydi, B-15).
   // Cozum, sevkin gorev ICAT ETMESI DEGIL: hukmu veren goz hangi gorevin acilacagini SOYLER.
   // Boylece "sevk kendi gorev acmaz" siniri korunur ve kilit mekanik olarak cozulur.
-  if (gorev === "KAPANIS" && hukumK !== "YEŞİL") {
+  // DOGRULANAMADI, KIRMIZI DEGILDIR (hasim bulgusu 2026-07-30). Sart `!== "YEŞİL"` idi, yani
+  // "doğrulayamadım" diyen goz de BULGU-GOREV yazmak ZORUNDAYDI — oysa onun elinde adres yoktur:
+  // ya adres UYDURACAK (bulgu icat yasaginin tam ihlali) ya da satiri yazmayacak ve kapi zarfi
+  // geri cevirdigi icin karne kaydi HIC dusmeyecekti — yani hukum kaybolurdu. Uc hal ayrildi:
+  // YEŞİL kapatir · KIRMIZI adres ister · DOGRULANAMADI adres ISTEMEZ ve donemi sahibe birakir.
+  if (gorev === "KAPANIS" && hukumK === "DOĞRULANAMADI") {
+    karneKaydi.dogrulanamadi = true;
+  }
+  if (gorev === "KAPANIS" && hukumK === "KIRMIZI") {
     const bulguHam = (alan["BULGU-GOREV"] || "").trim();
     if (!bulguHam) {
       red("kapanis karnesi " + hukumK + " ama BULGU-GOREV satiri yok",
-          "hangi gorevin altinda duzeltilecegini yaz: «BULGU-GOREV: G-07 G-09» — kutunun VAR OLAN gorevlerinden en az biri (sevk yeni gorev acamaz)");
+          "hangi gorevin altinda duzeltilecegini yaz: «BULGU-GOREV: G-07 G-09» — kutunun VAR OLAN gorevlerinden en az biri (sevk yeni gorev acamaz). Adresi bilmiyorsan hukum KIRMIZI degil «DOĞRULANAMADI»dir");
     }
     const bulguGorevler = bulguHam.match(/G-\d+/g) || [];
     if (!bulguGorevler.length) {
@@ -547,12 +579,30 @@ if (gozlemciMi) {
         "beş başlığın hepsi AYRI satırın başında ve dolu olmalı: BRIFING-1 (ne yapılıyor) · BRIFING-2 (neden) · BRIFING-3 (normal mi) · BRIFING-4 (sırada ne var) · BRIFING-5 (bakamadığım). Boş bırakılamaz — «bakamadığım» yoksa açıkça yaz");
   }
   const sapmaMetni = alan["BRIFING-3"].trim();
-  const normalMi = /^normal\b/i.test(sapmaMetni);
-  const kanitVar = /(?:00_pano|01_kutular|02_kanon|03_roller|00_genesis|tools|\.claude)\/\S+/.test(sapmaMetni) ||
-                   /(?:^|\s)[0-9a-f]{7,40}(?:$|\s)/.test(sapmaMetni);
-  if (!normalMi && !kanitVar) {
-    red("BRIFING-3 sapma sayıyor ama arkasında kanıt yok",
-        "her sapma maddesinin arkasına tek satır kanıt koy (dosya:satır ya da commit); sapma yoksa satırı «normal» diye başlat — bulgu icat etmek yasak, kanıtsız sapma da bulgu sayılmaz");
+  // SAPMA BEYANI KAPALI JETONDUR (hasim bulgusu 2026-07-30, YUKSEK). Eskiden beyan serbest
+  // metnin ILK KELIMESINDEN okunuyordu: `/^normal\b/i`. Turkcede sapma bildirmenin en dogal
+  // acilislari («Normal degil …», «NORMAL DEĞİL: …») bu desene UYUYOR — yani sapma ILAN EDEN
+  // brifing "normal" sayiliyor, kanit kapisi hic aranmiyor ve gunluge `sapma: "yok"` dusuyordu.
+  // Kapinin dogru ifadede calisiyor olmasi tehlikeyi buyutuyordu: fren yalniz en dogal
+  // ifadede oluydu. Artik iki KAPALI jeton var; ucuncu bir hal (jetonsuz) geri cevrilir.
+  const ilkSatir = sapmaMetni.split("\n")[0].trim();
+  const olumsuz = /^normal\s*(değil|degil|d[eı]ğ[iı]l)\b/i.test(ilkSatir);
+  const normalMi = !olumsuz && /^normal\b/i.test(ilkSatir);
+  const sapmaBeyani = olumsuz || /^sapma\s*(var)?\b/i.test(ilkSatir);
+  if (!normalMi && !sapmaBeyani) {
+    red("BRIFING-3 sapma beyanı çözülmüyor: " + ilkSatir.slice(0, 60),
+        "satır iki kapalı açılıştan biriyle BAŞLAMALI: «normal — …» (sapma yok) ya da «sapma var — …» / «normal değil — …». Serbest cümle beyan sayılmaz: kapı ne yazdığını değil ne İLAN ettiğini okur");
+  }
+  // Kanit: sapma ILAN EDILDIYSE zorunlu. Isaretcinin VARLIGI da denetlenir (BİTEN satirindaki
+  // kanit icin zaten yapiliyordu; brifingde yapilmiyordu — ayni sozlesmenin iki ucu farkliydi).
+  // Hex-commit deseni 7 haneden UZUN sozcuklerde yanlis-pozitif veriyordu (yalniz a-f harfleri
+  // ve rakamlardan olusan Turkce/Ingilizce sozcukler); artik en az bir RAKAM sart.
+  const yolEs = sapmaMetni.match(/(?:00_pano|01_kutular|02_kanon|03_roller|00_genesis|tools|\.claude)\/\S+/g) || [];
+  const yolVar = yolEs.some((y) => existsSync(resolve(KOK, satirEkiniSoy(y.replace(/[.,;:)\]"»]+$/, "")))));
+  const commitVar = /(?:^|\s)(?=[0-9a-f]{7,40}(?:$|\s))(?=[0-9a-f]*[0-9])[0-9a-f]{7,40}(?:$|\s)/.test(sapmaMetni);
+  if (sapmaBeyani && !yolVar && !commitVar) {
+    red("BRIFING-3 sapma sayıyor ama arkasında ÇÖZÜLEN kanıt yok" + (yolEs.length ? " (işaretçi kopuk: " + yolEs[0] + ")" : ""),
+        "her sapma maddesinin arkasına tek satır kanıt koy — VAR OLAN bir dosya:satır ya da commit; sapma yoksa satırı «normal» diye başlat. Bulgu icat etmek yasak, kanıtsız sapma da bulgu sayılmaz");
   }
   const d = new Date(), p2 = (n) => String(n).padStart(2, "0");
   const govde = "<!-- yazar: disgoz (dönüş zarfından mekanik yazıldı — koltuk yazamaz) -->\n" +
@@ -569,9 +619,23 @@ if (gozlemciMi) {
   if (!existsSync(join(KOK, "03_roller", tipHam))) {
     red("dış göz koltuğunun klasörü yok: 03_roller/" + tipHam + "/", "brifing yazılacak yer yok — kurulum eksik (G3.4)");
   }
+  // BAG IZLENMEZ (hasim bulgusu 2026-07-30): bu kapi bir KANCA surecidir, arac katmanindan
+  // gecmez — yani file-guard onu durduramaz. writeFileSync sembolik bagi IZLER; donem icinde
+  // `ln -s ../../tools/guard/file-guard.sh 03_roller/disgoz/BRIFING.md` kuran bir ajan, bu
+  // kapiyi korunan yollara keyfi yazan bir arac haline getirirdi (`ln` hicbir yazim dikisinde
+  // degil). Ayni sinif delik sira 6 turunda symlink icin kapatilmisti; yeni yazma yetkisi onu geri
+  // acmis. Hedef GERCEK bir dosya (ya da hic yok) olmak zorunda; degilse yazilmaz.
+  try {
+    const st = lstatSync(brifingYol);
+    if (st.isSymbolicLink() || !st.isFile()) {
+      red("brifing yolu gerçek bir dosya değil (sembolik bağ ya da dizin): 03_roller/" + tipHam + "/BRIFING.md",
+          "bağı kaldır — kapı bağ izleyerek yazmaz (bağ, bu kapıyı korunan yollara yazma aracına çevirirdi)");
+    }
+  } catch (e) { if (!e || e.code !== "ENOENT") red("brifing yolu okunamadı: " + String(e && e.message), "03_roller/" + tipHam + "/BRIFING.md durumuna bak"); }
   try { writeFileSync(brifingYol, govde); }
   catch (e) { red("brifing diske yazılamadı: " + String(e && e.message), "03_roller/" + tipHam + "/BRIFING.md yazılabilir mi, bak"); }
-  brifingKaydi = { tip: "brifing", ajan: tipHam, yol: "03_roller/" + tipHam + "/BRIFING.md", bayt, sapma: normalMi ? "yok" : "var" };
+  // `sapma` alani artik BEYAN JETONUNDAN turetilir, ilk kelimenin sekline gore degil.
+  brifingKaydi = { tip: "brifing", ajan: tipHam, yol: "03_roller/" + tipHam + "/BRIFING.md", bayt, sapma: sapmaBeyani ? "var" : "yok" };
 }
 // ═══ F1-5c sonu ═════════════════════════════════════════════════════════════════════════
 

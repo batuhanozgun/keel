@@ -60,14 +60,23 @@ test('kurulu kabuk makine-okur blokların hepsini taşıyor', () => {
     '"göreceklerin" bloğunda üç madde olmalı (mühür bu blok üstünden verilir)');
 });
 
-test('kabuğun BÜTÇE sayısı bir görevi doğrulamasıyla birlikte taşıyacak kadar büyük', () => {
-  // Ölçülmüş kısıt (tools/sevk/README.md): bir görev TİPİK olarak İKİ alt-ajan çağrısı yer
-  // (üretim + doğrulayıcı). Planlama kutusu kadro başına bir görev doğurur; 3'lük bütçe dönemi
-  // 1,5 görevde bitirir ve sahibi arka arkaya `/donem` yazmaya zorlardı — makro ölçüte ters.
+test('kabuğun BÜTÇE sayısı planlama kutusunun görev sayısını taşır (kadro + 1)', () => {
+  // GEREKÇE 2026-07-30 hasım turunda DÜZELTİLDİ. Eski gerekçe eski bütçe anlamını kodluyordu
+  // ("bir görev İKİ çağrı yer" → 2×3=6) ve o anlam bu paketle değişmişti: bütçe artık YALNIZ
+  // üretim çağrılarını sayar. Testin sayısı doğruydu ama sebebi yanlıştı — sayıyı değiştiren
+  // bir sonraki paket, yanlış sebebi okuyup yanlış karar verirdi.
+  // Doğru kısıt: planlama kutusu iş zincirindeki HER role bir görev doğurur, artı G-01 →
+  // görev sayısı `kadro + 1`. Bütçe bundan küçükse kutu mekanik olarak bitirilemez.
   const b = kabukMetni().match(/^BÜTÇE:\s*.*?(\d+)/m);
   assert.ok(b, 'BÜTÇE satırında sayı yok — sevk fail-closed 3 varsayar');
-  assert.ok(Number(b[1]) >= 6, `BÜTÇE ${b[1]}: en az üç görev (2 çağrı × 3) bir döneme sığmalı`);
+  assert.ok(Number(b[1]) >= 6, `BÜTÇE ${b[1]}: G-01 + beş rollük iş zinciri bir döneme sığmalı (kadro+1)`);
+  assert.match(kabukMetni(), /^BÜTÇE:.*ÜRETİM/m, 'satır bütçenin NE saydığını söylemeli (üretim çağrısı)');
 });
+
+// NOT: "BÜTÇE < kadro+1 ise çekilme kapısı KIRMIZI" kuralının testi BURADA DEĞİL,
+// kurulum-denetimi.test.mjs içindedir (`hasım-14` / `hasım-14b`) ve kapıyı KOŞTURUR.
+// Buraya betiğin kaynak metnini grepleyen bir test yazmak, hasım turunun kendi bulgusunu
+// tekrarlamak olurdu: kural silinse test yeşil kalırdı.
 
 test('LİSTE satırı sevkin aradığı dizeyi taşıyor (iki fren tek satıra bağlı)', () => {
   const l = kabukMetni().split('\n').find((s) => /^LİSTE:/.test(s));

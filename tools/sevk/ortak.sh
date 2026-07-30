@@ -98,9 +98,12 @@ donem_oku() {
 # pahalı ders sınıfı dosyada duran ölü kuraldı — bu denetim işaretin gösterdiği launchd işini
 # `launchctl print` ile arar ve son nabız damgasının tazeliğine bakar. Kanal da aynı hatta:
 # haber kanalı kırıkken gerçek bir kutu koşarsa, gece sessiz geçer ve kimse bilmez.
-# T6 PROVA FİŞİ ŞARTI KALKTI (F1-5h, 2026-07-30): o dosya KEEL sürümünün provasını kanıtlıyordu,
-# KULLANICININ kurulumunu değil — ve şablonla DOLU geldiği için kapı baştan mühürlü geçiyordu
-# (B-06). Yerini alan şey daha sert: aşağıdaki üç ölçüm bu makinede, bu an koşuyor.
+# T6 PROVA FİŞİ ŞARTI KALKTI (F1-5h, 2026-07-30): o dosya KEEL sürümünün E5 kanal provasını
+# kanıtlıyordu, KULLANICININ kurulumunu değil. GEREKÇE HASIM TURUNDA DÜZELTİLDİ (aynı gün):
+# T6, kardeşleri T0-T4 gibi şablonla DOLU gelmiyordu — dağıtımda hiç yoktu. Yani kusur
+# "baştan mühürlü kapı" DEĞİL, tam tersiydi: şart her kurulumda gerçek dönemi kilitliyordu ve
+# karşılığı o kurulumda hiçbir zaman üretilemiyordu. Yerini alan şey daha sert: aşağıdaki üç
+# ölçüm bu makinede, bu an koşuyor (dosya varlığı değil, işin CANLILIĞI).
 gercek_kutu_eksikleri() { # $1: sevk dizini
   local D="${1:-$ORTAK_DIZIN}" E="" ETIKET="" YAS=""
   if [ ! -s "$D/watchdog-kurulu" ]; then

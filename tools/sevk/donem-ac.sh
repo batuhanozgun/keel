@@ -26,6 +26,13 @@ trap 'hata "tören betiği kendi içinde durdu (satır $LINENO) — fail-closed"
 KOK="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 DIZIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GOSTERGE="$DIZIN/.donem-acik"
+# İzin/bütçe ÇAPASI (hasım turu 2026-07-30): kancanın ve sevkin okuduğu izin listesi ile bütçe
+# tavanı, eskiden doğrudan `01_kutular/<kutu>/KUTU.md`den okunuyordu. O dosya korunan-yolların
+# hiçbir bölümünde değil ve dönem içinde ajanın ona yazması tasarımın kendi gereğidir (görev
+# listesini G-01 doğurur) — yani kafesteki taraf kendi anahtarını ve kendi tavanını
+# yazabiliyordu. Değerler artık BURADA, sahip klavyedeyken, kapalı sözlükle ayrıştırılır ve
+# `tools/sevk/` altına (yani [SERT] + Bash dikişi arkasına) yazılır.
+CAPA="$DIZIN/.donem-capa"
 
 [ -r "$DIZIN/ortak.sh" ] || hata "ortak kitaplık yok ($DIZIN/ortak.sh) — sevk ailesi eksik (fail-closed)"
 # shellcheck source=/dev/null
@@ -36,6 +43,9 @@ if [ "${1:-}" = "kapat" ]; then
   if [ ! -e "$GOSTERGE" ]; then printf 'DÖNEM YOK: kapatılacak açık dönem bulunmadı.\n'; exit 0; fi
   donem_oku "$KOK" || true
   rm -f "$GOSTERGE"
+  # Çapa göstergeyle BİRLİKTE ölür: dönemi bitmiş bir izin listesinin diskte kalması,
+  # bir sonraki dönemin kendi çapasını yazana kadar eski izinle koşması demek olurdu.
+  rm -f "$CAPA"
   # Uyanık-tutma savını BIRAK (E5): sızan sav Mac'i hiç uyutmaz — ayrı bir arızadır.
   if [ -f "$DIZIN/.caffeinate-pid" ]; then
     kill "$(head -n1 "$DIZIN/.caffeinate-pid" 2>/dev/null)" 2>/dev/null || true
@@ -82,6 +92,46 @@ if [ -e "$GOSTERGE" ]; then
     YAS=" · damga: ${DONEM_DAMGA}"
   fi
   hata "bu depoda zaten açık bir dönem var (${DONEM_ID:-okunamadı} · kutu ${DONEM_KUTU:-?}${YAS}). Dönem anormal bittiyse gösterge BAYAT kalmış olabilir: '/donem kapat' ile temizle. Damga üstüne YAZILMAZ."
+fi
+
+# ── 2b · İzin ve bütçe: KAPALI SÖZLÜKLE ayrıştır (hasım turu 2026-07-30) ──────────────────
+# Neden BURADA: bu satırların okunacağı tek güvenli an, sahibin klavyede olduğu andır. Dönem
+# içinde okunurlarsa ölçtükleri tarafın yazabildiği bir dosyadan okunmuş olurlar.
+# Neden SERT: sözlük dışı jeton eskiden sessizce "izin yok"a düşüyordu (yazım hatası = sessiz
+# daralma) ve toplayıcı ayrıştırıcı yüzünden «İZİN: yok (disa gerekmiyor)» satırı `disa`yı
+# fiilen VERİYORDU — cümlenin anlamının tam tersi. Burada ikisi de dönemin açılmasını durdurur.
+# Blok SINIRI: satır YALNIZ «## Duruş sözleşmesi» bloğunun içinde aranır — kurulum kapısı da
+# orada arıyordu; kanca ise dosyanın TAMAMINDA arıyordu, yani blok dışına konan bir İZİN satırı
+# iki denetimden de görünmeden kancayı eziyordu (aynı bulgunun ikinci yüzü).
+KUTU_MD="$KOK/01_kutular/$KUTU/KUTU.md"
+DURUS="$(awk '/^##[[:space:]]/{ic=0} /^##[[:space:]]*Duruş sözleşmesi/{ic=1;next} ic' "$KUTU_MD" 2>/dev/null || true)"
+[ -n "$DURUS" ] || hata "kutunun duruş sözleşmesi bloğu yok ya da boş (## Duruş sözleşmesi · 01_kutular/$KUTU/KUTU.md) — izin ve bütçe okunamadan dönem açılmaz (fail-closed)"
+
+IZIN_HAM="$(printf '%s\n' "$DURUS" | sed -n 's/^[[:space:]]*İZİN[[:space:]]*:[[:space:]]*//p' | head -n1)"
+[ -n "$IZIN_HAM" ] || hata "duruş sözleşmesinde İZİN satırı yok (01_kutular/$KUTU/KUTU.md) — otonom dönemde izin penceresi açılmaz; hiçbir sınıf serbest değilse «İZİN: yok» yaz"
+case "$IZIN_HAM" in *«*) hata "İZİN satırı doldurulmamış (yer tutucu «…» duruyor) — serbest sınıf yoksa «İZİN: yok» yaz" ;; esac
+IZIN_JETONLARI=""
+case "$IZIN_HAM" in
+  yok|yok\ *)  : ;;   # kapalı değer: hiçbir sınıf önceden serbest değil
+  *)
+    for JETON in $(printf '%s' "$IZIN_HAM" | tr ',·' '  '); do
+      case "$JETON" in
+        git-obje|disa|mcp|yazim|korumali-yol|kutu-ciktilari) IZIN_JETONLARI="$IZIN_JETONLARI $JETON" ;;
+        *) hata "İZİN satırında sözlük dışı jeton: '$JETON' (izinli: git-obje · disa · mcp · yazim · korumali-yol · kutu-ciktilari; hiçbiri istenmiyorsa «İZİN: yok»). Sessizce yok sayılmaz — yazım hatası izin sanılmaz." ;;
+      esac
+    done ;;
+esac
+IZIN_JETONLARI="$(printf '%s' "$IZIN_JETONLARI" | sed 's/^ *//')"
+
+# BÜTÇE aynı bloktan okunur ve çapaya yazılır; sevk dönem içinde KUTU.md'ye bir daha bakmaz.
+# Satır yoksa sevkin bugünkü fail-closed varsayılanı (3) çapaya yazılır — davranış değişmez,
+# yalnız değerin evi ajanın yazamayacağı yere taşınır.
+BUTCE_HAM="$(printf '%s\n' "$DURUS" | sed -n 's/^[[:space:]]*BÜTÇE[[:space:]]*:[[:space:]]*//p' | head -n1)"
+BUTCE_SAYI="$(printf '%s' "$BUTCE_HAM" | sed -n 's/[^0-9]*\([0-9][0-9]*\).*/\1/p' | head -n1)"
+BUTCE_NOT=""
+if [ -z "$BUTCE_SAYI" ]; then
+  BUTCE_SAYI=3
+  BUTCE_NOT="UYARI: duruş sözleşmesinde sayılı BÜTÇE satırı yok — fail-closed varsayılan 3 kullanılıyor."
 fi
 
 # ── 3 · Kurulum bitmiş mi ─────────────────────────────────────────────────────────────────
@@ -154,6 +204,13 @@ SIMDI="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 DONEM="K$(date -u '+%Y%m%d-%H%M%S')-$$"
 printf '%s\t%s\t%s\t%s\ndamga\t%s\n' "$DONEM" "$KUTU" "$TUR" "$SINIF" "$SIMDI" > "$GOSTERGE" \
   || hata "gösterge yazılamadı: $GOSTERGE"
+# ÇAPA: kancanın izin listesi + sevkin bütçe tavanı. Göstergeyle aynı dizinde ([SERT]) ve aynı
+# Bash dikişinin arkasında. Yazılamazsa dönem AÇILMAZ ve gösterge geri alınır — çapasız dönem,
+# izin listesi boş (fail-closed) ama bütçesi kutudan okunan bir dönem olurdu; yarım güvence
+# ilan edilmiş güvenceden beterdir.
+printf 'izin\t%s\nbutce\t%s\nkutu\t%s\ndonem\t%s\n' \
+  "$IZIN_JETONLARI" "$BUTCE_SAYI" "$KUTU" "$DONEM" > "$CAPA" \
+  || { rm -f "$GOSTERGE"; hata "izin/bütçe çapası yazılamadı: $CAPA — dönem açılmadı"; }
 
 # ── 7 · İzin zemini (E1 ölçümünün kararı — tasarı §4) ─────────────────────────────────────
 # settings.json'a `allow` listesi YAZILMAZ: başsız alt-ajanda ÖLÜ olduğu ölçüldü (E1 §3) ve
@@ -162,8 +219,10 @@ printf '%s\t%s\t%s\t%s\ndamga\t%s\n' "$DONEM" "$KUTU" "$TUR" "$SINIF" "$SIMDI" >
 # KİP BAYRAĞI KALKTI (F1-5e): bayrak yalnız aşağıdaki NOT dizesini değiştiriyordu, davranışı
 # değil. İzin penceresi artık hiçbir kipte açılmaz (F1-5f) — not da tek ve doğru hâline indi.
 ZEMIN='--allowedTools "Read,Write,Edit,Grep,Glob,Bash,Agent"'
-IZIN_SATIRI="$(sed -n 's/^[[:space:]]*İZİN[[:space:]]*:[[:space:]]*//p' "$KOK/01_kutular/$KUTU/KUTU.md" 2>/dev/null | head -n1)"
-ZEMIN_NOT="izin penceresi AÇILMAZ: kutunun İZİN satırında yazmayan sınıf engellenir, adım atlanır ve kuyruğa not düşer (dönem sürer). Bu kutunun İZİN satırı: ${IZIN_SATIRI:-YOK — hiçbir sınıf önceden serbest değil}"
+# Sahip yüzeyine basılan değer, kancanın FİİLEN okuyacağı çapadan gelir — «ekranda gördüğüm»
+# ile «kapının uyguladığı» ayrı iki şey olamaz (hasım turu dersi: ilan ≠ kod).
+IZIN_SATIRI="${IZIN_JETONLARI:-yok}"
+ZEMIN_NOT="izin penceresi AÇILMAZ: çapada yazmayan sınıf engellenir, adım atlanır ve kuyruğa not düşer (dönem sürer). Bu dönemin serbest sınıfları: ${IZIN_JETONLARI:-YOK — hiçbir sınıf önceden serbest değil}"
 
 J_tip=donem-acilis J_donem="$DONEM" J_kutu="$KUTU" J_tur="$TUR" J_sinif="$SINIF" \
   J_izin="${IZIN_SATIRI:-yok}" \
@@ -177,7 +236,7 @@ J_tip=donem-acilis J_donem="$DONEM" J_kutu="$KUTU" J_tur="$TUR" J_sinif="$SINIF"
 # Dönem İÇİNDEKİ sonraki gönderimler fail-OPEN'dır (tasarı §3.3): geceyi bir yönlendirici
 # arızasına rehin vermeyiz. Asimetri bilinçlidir.
 geri_al() {
-  rm -f "$GOSTERGE"
+  rm -f "$GOSTERGE" "$CAPA"
   [ -f "$DIZIN/.caffeinate-pid" ] && { kill "$(head -n1 "$DIZIN/.caffeinate-pid" 2>/dev/null)" 2>/dev/null || true; rm -f "$DIZIN/.caffeinate-pid"; }
   hata "$1"
 }

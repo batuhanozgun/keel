@@ -83,13 +83,24 @@ yazılmışsa kapalı sayar. Üç mekanik ayrıntı:
 
 ## Dönem sınıfı, bütçe ve bilinen sınırlar (hasım turu 2026-07-28)
 
-- **Dönem sınıfı** göstergenin 5. alanıdır: `gercek` (varsayılan) ya da `tatbikat`. `gercek`
-  dönem, OTONOM_DONEM §10'un iki EK şartını arar — **T6 damgası** (E5 kanal tatbikatı) ve
-  **kurulu watchdog** (`tools/sevk/watchdog-kurulu`). Bugün ikisi de yoktur: yani gerçek bir
-  kutu E5 kurulmadan sahipsiz koşamaz. Tatbikat dönemleri muaftır (döngüsel bağımlılık olmasın).
-- **BÜTÇE üretim + doğrulama çağrılarının TOPLAMIDIR:** karne şartı yüzünden bir görev tipik
-  olarak **iki** alt-ajan çağrısı yer (üretim + doğrulayıcı). Duruş sözleşmesindeki sayıyı buna
-  göre seç; küçük bütçe dönemi doğrulamanın ortasında duran kapıya sokar.
+- **Dönem sınıfı** göstergenin **4. alanıdır** (kip bayrağı F1-5e ile kalktı): `gercek`
+  (varsayılan) ya da `tatbikat`. `gercek` dönem, OTONOM_DONEM §10'un ek şartlarını **ölçerek**
+  arar: kurulu watchdog (`tools/sevk/watchdog-kurulu`) + taze nabız + hazır haber kanalı.
+  Prova fişi (T6) şartı F1-5h ile **kalktı** — o dosya KEEL sürümünün provasını kanıtlıyordu,
+  bu kurulumun hazırlığını değil. Tatbikat dönemleri muaftır (döngüsel bağımlılık olmasın).
+- **BÜTÇE YALNIZ ÜRETİM ÇAĞRILARINI SAYAR** (F1-5a düzeltmesi; bu üç satır 2026-07-30 hasım
+  turunda düzeltildi — eski hâli "üretim + doğrulama toplamıdır" diyordu, yani kutu sahibini
+  gereken sayının **iki katını** yazmaya yönlendiriyordu). Sayılan iki iş tipi: sıradaki görevin
+  sevki (`uretim`) ve kapanış karnesi KIRMIZI çıkınca açılan düzeltme (`kapanis-duzeltme`).
+  Doğrulama, çatal süzgeci, dış göz brifingi ve kapanış denetimi **bir şey kurmaz** — onların
+  freni tur tavanı ve gidiş-dönüş tavanıdır. **Sayıyı seçerken:** bütçe en az `kadro + 1` olmalı
+  (ilk kutuda G-01 + iş zincirindeki her role bir görev) ve düşen bir çağrının yeniden sevki de
+  bütçeden yer.
+- **Dönem çapası** (`tools/sevk/.donem-capa`): izin listesi ve bütçe tavanı, dönem açılışında
+  kutunun duruş sözleşmesinden **kapalı sözlükle** ayrıştırılıp buraya yazılır; koruma kancası
+  ve sevk **yalnız burayı** okur. Gerekçe (2026-07-30 hasım turu): `01_kutular/` korunan
+  yollarda değildir ve dönem içinde ajanın kutuya yazması tasarımın kendi gereğidir — kafesin
+  anahtarı ile üretim tavanı orada duramaz.
 - **Miras görev:** karne mekaniği E4'te doğdu; dönemden ÖNCE kapanmış görevlerin karnesi olamaz.
   Sevk onları yeniden doğrulatmaz (bütçeyi yerdi), tabloya güvenir ve `miras-gorev` bulgusu düşer.
 - **Tur-tavanı şüphesi mekaniği:** `maxTurns` kesmesi işaretsizdir (E0 ölçümü); zarfı hiç
@@ -105,7 +116,7 @@ yazılmışsa kapalı sayar. Üç mekanik ayrıntı:
 ## Dönem turu, tek bakışta
 
 ```
-/donem KT-… yapim bassiz     → gösterge + donem-acilis kaydı
+/donem                        → gösterge + çapa + donem-acilis kaydı (kutu adı seçimli)
    Stop → sevk → SEVK talimatı (exit 2) → ana oturum Agent açar
                                    ↓ devir-kapisi (şema + talimat↔fiil)
                               alt-ajan çağrısı

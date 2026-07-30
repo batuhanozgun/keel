@@ -560,3 +560,30 @@ test('git PATH\'te yokken → KIRMIZI (giriş betiğiyle aynı hüküm)', () => 
   assert.equal(r.status, 2, r.stdout + r.stderr);
   assert.match(r.stdout, /git bulunamadı/);
 });
+
+// ── Hasım turu 2026-07-30 · BÜTÇE ile kadro karşılaştırması (DAVRANIŞSAL) ─────────────────
+// Bulgu iki katmanlıydı: (1) kabuğun SABİT bütçesi (6) değişken görev sayısıyla (kadro+1) hiç
+// karşılaştırılmıyordu; (2) bu paketin İZİN kapısı yalnız betiğin KENDİ KAYNAK METNİNE regex
+// eşlemesiyle "test" edilmişti — kural silinse test yeşil kalırdı. İkisi de burada kapanır:
+// aşağıdaki iki test kapıyı KOŞTURUR ve çıktısına bakar.
+
+test('hasım-14: BÜTÇE kadroya yetmiyorsa çekilme kapısı KIRMIZI (davranışsal)', () => {
+  const kok = kurulum();
+  // Kadroyu büyüt: yedi yazar koltuk → planlama kutusu 8 üretim çağrısı ister, kabuğun bütçesi 6.
+  for (const ad of ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7']) {
+    mkdirSync(join(kok, '03_roller', ad), { recursive: true });
+    writeFileSync(join(kok, '03_roller', ad, 'ROL.md'), `# ROL — ${ad}\n\nMod: **tam**.\n`);
+    writeFileSync(join(kok, '03_roller', ad, 'DURUM.md'), `# DURUM — ${ad}\n`);
+    writeFileSync(join(kok, '.claude', 'agents', ad + '.md'), `---\nname: ${ad}\ntools: Read, Write, Edit, Bash\n---\n# ${ad}\n`);
+  }
+  const r = kos(kok);
+  assert.match(r.stdout, /BÜTÇE değeri \(6\) kadroya yetmiyor/,
+    'kutu mekanik olarak bitirilemez hâlde teslim edilmemeli: ' + r.stdout.slice(-600));
+});
+
+test('hasım-14b: kadro kabuğun bütçesine sığıyorsa kapı GEÇER (yanlış-pozitif yok)', () => {
+  const kok = kurulum();
+  const r = kos(kok);
+  assert.doesNotMatch(r.stdout, /BÜTÇE değeri .* kadroya yetmiyor/, 'varsayılan kadroda alarm çalmamalı');
+  assert.match(r.stdout, /BÜTÇE \(6\) kadro\+1/, 'kapı ölçtüğünü söylemeli: ' + r.stdout.slice(-400));
+});

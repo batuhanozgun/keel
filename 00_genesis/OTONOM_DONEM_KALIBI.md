@@ -85,9 +85,9 @@ LİSTE:      <yalnız planlama kutusunda; değeri BİREBİR: dönem içinde doğ
   yeni iş bu süzgeçten geçer: *bitti tanımına hizmet ediyor mu?* — tek satır beyanla görev
   tablosuna girer; etmiyorsa ERTELENENLER'e. Yazılmamışsa kurulum denetçisi kurulumu geçirmez.
 - **BÜTÇE = "sahip bakmadan en fazla ne kadar şey kurulabilir"** (K-G) — kontrol vidası, para
-  değil. **Yalnız ÜRETİM çağrılarını sayar:** doğrulama, çatal süzgeci, brifing ve kapanış
-  denetimi bir şey KURMAZ; onların freni tur tavanı ve gidiş-dönüş tavanıdır. (Hepsi sayılınca
-  3 bütçeli kutuda 1,5 görev koşulabiliyordu — kutu mekanik olarak kapanamıyordu.)
+  değil. **Yalnız ÜRETİM çağrılarını sayar:** görev sevki ve kapanış bulgusunun düzeltmesi.
+  Doğrulama, çatal süzgeci, brifing ve kapanış denetimi bir şey KURMAZ; onların freni tur tavanı
+  ve gidiş-dönüş tavanıdır. Sayı en az **kadro + 1** olmalıdır (G-01 + her role bir görev).
 - **İZİN = sahibin kutu açılışında verdiği önceden-izin listesi.** Kapalı sözlük: `git-obje` ·
   `disa` · `mcp` · `yazim` · `korumali-yol` ([SORULUR] yol, golden dahil) · `kutu-ciktilari`
   (`BITTI_TANIMI.md` · `KUTU_PLANI.md`); hiçbiri gerekmiyorsa `yok`. **Kural evi (`00_genesis/` ·

@@ -23,6 +23,9 @@ tools/guard/.kurulum-surucu-durum
 tools/guard/.kurulum-denetimi-son
 # dönem-AÇIK göstergesi (E1) — dönem-durumu, izlenmez (.aktif-rol emsali; yazarı /donem, sileni sevk)
 tools/sevk/.donem-acik
+# izin/bütçe çapası (hasım turu 2026-07-30) — göstergeyle aynı ömür: açılış töreni yazar,
+# kapanış siler. Dönem-durumudur, izlenmez; değerleri kutunun duruş sözleşmesinden ayrıştırılır.
+tools/sevk/.donem-capa
 # DUR işareti (E4) — dönem-durumu; sevkin okuduğu tek satır, izlenmez (dönem-göstergesi emsali)
 tools/sevk/.dur
 # watchdog kaydı (E5'te doğar) — makineye özel kurulum izi, depoya girmez

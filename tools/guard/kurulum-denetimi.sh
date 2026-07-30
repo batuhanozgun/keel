@@ -739,6 +739,26 @@ else
   else
     kirmizi "ilk kutu kabuğunun İZİN satırında 'kutu-ciktilari' yok — ekip 02_kanon/BITTI_TANIMI.md ve 02_kanon/KUTU_PLANI.md dosyalarını yazamaz; kutunun dört çıktısının ikisi sessizce doğmaz (F1-5f)"
   fi
+  # (vi-a2) BÜTÇE ile KADRO karşılaştırılır (hasım turu 2026-07-30). Kabuğun BÜTÇE değeri SABİT
+  #         metindir (6), planlama kutusunun görev sayısı ise DEĞİŞKENDİR: G-01 + iş zincirindeki
+  #         her role bir görev = kadro + 1. İkisi hiçbir yerde karşılaştırılmıyordu; kadro 6 olan
+  #         bir kurulumda 7. üretim sevki bütçeye takılır, sevk erken döner ve o dönemde ne dış
+  #         göz brifingi ne kapanış karnesi üretilir — kutu SESSİZCE bitirilemez hâle gelir.
+  #         Kadro: 03_roller altındaki `Mod: **yazamaz**` OLMAYAN koltuklar (F1-7 sayımıyla aynı).
+  BUTCE_SAYI="$(printf '%s\n' "$DURUS_BLOK" | sed -n 's/^[[:space:]]*BÜTÇE[[:space:]]*:.*/&/p' | sed -n 's/[^0-9]*\([0-9][0-9]*\).*/\1/p' | head -n1)"
+  KADRO_SAYI=0
+  for r in "$KOK"/03_roller/*/; do
+    [ -f "$r/ROL.md" ] || continue
+    grep -q 'Mod:[[:space:]]*\*\*yazamaz\*\*' "$r/ROL.md" && continue
+    KADRO_SAYI=$((KADRO_SAYI + 1))
+  done
+  if [ -z "$BUTCE_SAYI" ]; then
+    kirmizi "ilk kutu kabuğunun BÜTÇE satırında sayı yok — sevk fail-closed 3 varsayar ve planlama kutusu bitirilemez"
+  elif [ "$KADRO_SAYI" -gt 0 ] && [ "$BUTCE_SAYI" -lt $((KADRO_SAYI + 1)) ]; then
+    kirmizi "ilk kutu kabuğunun BÜTÇE değeri ($BUTCE_SAYI) kadroya yetmiyor: planlama kutusu G-01 + $KADRO_SAYI rol görevi = $((KADRO_SAYI + 1)) üretim çağrısı ister. Kutu mekanik olarak bitirilemez (bütçe YALNIZ üretim sayar — tools/sevk/README.md)"
+  else
+    gecti "ilk kutu kabuğu: BÜTÇE ($BUTCE_SAYI) kadro+1 ($((KADRO_SAYI + 1))) şartını karşılıyor"
+  fi
   # (vi-b) Bağımlılık/risk SATIRI: kurulum kapısının (tools/sevk/kurulum-kapisi.sh) ve sevkin
   #        birebir aradığı biçim. Başlığın varlığı yetmez — blok boşsa sevk `dur()` ile durur.
   if grep -qE '^[[:space:]]*G-01[[:space:]]*:[[:space:]]*onkosul=.*·[[:space:]]*risk=(düşük|riskli)[[:space:]]*—' "$KABUK"; then

@@ -733,9 +733,12 @@ test('dönüş dikişi: BAŞKA dönemin sevk kararı bugünkü sapmayı örtmez 
 
 test('mutlak tur tavanı ERİŞİLEBİLİR: sevk-kararsız nabız yığını dönemi durdurur', () => {
   // Hasım bulgusu: fren ilan ediliyordu ama testi yoktu ve normal akışta bütçe hep önce
-  // dolduğu için "ölü kod" şüphesi vardı. Tavan = 3×BÜTÇE+5; bütçe 3 → 14 tur.
+  // dolduğu için "ölü kod" şüphesi vardı.
+  // Tavan = 3×BÜTÇE + 5 + KAPANIS_TUR_PAYI (2 + 3×2 = 8); bütçe 3 → 22 tur. Pay 2026-07-30
+  // hasım turunda eklendi: kapanış evresinin turları hesaba katılmıyordu, yani küçük kutuda
+  // "en çok iki gidiş-dönüş" ilanı kâğıtta vardı, kodda ULAŞILAMIYORDU.
   const kok = kurulum({ donem: true, kutu: kutuMetni({ butce: '3' }) });
-  for (let i = 1; i <= 15; i++) ekle(kok, { tip: 'nabiz', tur_no: i, zarf_sayisi: i });
+  for (let i = 1; i <= 23; i++) ekle(kok, { tip: 'nabiz', tur_no: i, zarf_sayisi: i });
   const r = sevk(kok);
   assert.equal(r.status, 0);
   assert.match(r.stdout, /mutlak tur tavani asildi/);

@@ -162,6 +162,9 @@ const TUR = process.env.S_TUR || "yapim";
 
 const loglar = [], metin = [], alarmlar = [], eylemler = [];
 let EVRE_HEDEF = "";   // dolu ise kabuk gostergenin tur alanini bununla degistirir (F1-5a)
+// KAPAT kararinin SEBEBI: kabuk bunu sahip ekranina ve gunluge yazar. Varsayilan bilerek
+// notrdur — kosmamis bir denetimin adini varsayilan yapmak, bu paketin kendi hatasiydi.
+let KAPANIS_SEBEP = "donem kapandi";
 const kayit = (o) => loglar.push(JSON.stringify({ surum: 1, ts: new Date().toISOString(), donem: DONEM, ...o }));
 // BU TURUN kayitlari `loglar`dadir, `buKosu`da DEGIL (buKosu diskteki gecmisi okur). Ikisi
 // toplanmazsa 41 bulgu dusen bir turda sahip ekrani "0 bulgu" der (hasim turu 2026-07-30).
@@ -199,6 +202,11 @@ const bitir = (karar) => {
   console.log("KARAR\t" + karar);
   console.log("EVRE\t" + EVRE_HEDEF);
   console.log("BEKCI\t" + BEKCI_GEREK);
+  // KAPANIS SEBEBI CAGIRANDAN GELIR (hasim bulgusu 2026-07-30): kabuk tarafi KAPAT kararinda
+  // SABIT olarak "kapanis denetimi YEŞİL" basiyordu — ama ayni karari KURULUM donemi de
+  // kullaniyor ve orada kapanis denetimi HIC KOSMAZ. Sahip ekranina ve gunluge kosmamis bir
+  // denetimin yesili yaziliyordu (`J_sinif=kapanis-denetimi-yesil`). Sebep artik tasinir.
+  console.log("KAPANIS\t" + KAPANIS_SEBEP);
   const bl = ucBlok();
   for (let i = 0; i < 3; i++) console.log("BLOK\t" + (i + 1) + "\t" + bl[i].replace(/\t/g, " "));
   for (const a of alarmlar) console.log("ALARM\t" + a);
@@ -246,13 +254,32 @@ const blok = (baslik) => {
   return govde.join("\n");
 };
 
-// BUTCE: durus sozlesmesinin BUTCE satirindaki ilk sayi. Yoksa fail-closed varsayilan 3 + bulgu.
+// BUTCE: donem ACIKKEN CAPADAN okunur, kutudan DEGIL (hasim bulgusu 2026-07-30). Gerekce:
+// `01_kutular/<kutu>/KUTU.md` korunan-yollarin hicbir bolumunde degil ve donem icinde ajanin
+// ona yazmasi tasarimin kendi geregi — yani uretim tavanini (ve ondan turetilen tur tavanini
+// 3×BUTCE+5) olctugu taraf serbestce degistirebiliyordu. Capayi acilis toreni yazar.
+// Donem yokken (el-suruslu okuma, kurulum kapisi cagrilari) davranis DEGISMEZ: kutudan okunur.
 let BUTCE = 3;
 const durusBlok = blok("Duruş sözleşmesi");
-const butceSatir = (durusBlok || "").split("\n").find((s) => /^\s*BÜTÇE\s*:/.test(s));
-const butceSayi = butceSatir && butceSatir.match(/(\d+)/);
+let butceKaynak = "kutu";
+let butceSayi = null;
+try {
+  const c = readFileSync(join(KOK, "tools/sevk/.donem-capa"), "utf8");
+  const s = c.split("\n").find((x) => /^butce\t/.test(x));
+  const m = s && s.replace(/^butce\t/, "").match(/(\d+)/);
+  if (m) { butceSayi = m; butceKaynak = "capa"; }
+} catch { /* capa yok: donem acik degil ya da eski donem — kutuya dus */ }
+if (!butceSayi) {
+  const butceSatir = (durusBlok || "").split("\n").find((s) => /^\s*BÜTÇE\s*:/.test(s));
+  butceSayi = butceSatir && butceSatir.match(/(\d+)/);
+}
 if (butceSayi) BUTCE = Number(butceSayi[1]);
 else kayit({ tip: "bulgu", cins: "butce-okunmadi", detay: "durus sozlesmesinde BÜTÇE satiri yok/sayisiz — fail-closed varsayilan 3" });
+// Capasiz acik donem = eski surumden kalan ya da elle acilmis gosterge: butce kutudan okunuyor
+// demektir ve o dosya ajana aciktir. Sessiz gecilmez.
+if (DONEM && butceKaynak !== "capa") {
+  kayit({ tip: "bulgu", cins: "butce-capasiz", detay: "donem acik ama tools/sevk/.donem-capa yok — butce kutudan okundu (olctugu taraf yazabilir); donemi kapatip yeniden ac" });
+}
 
 // Bagimlilik/risk blogu: her gorev icin bir satir sart (kurulum kapisinin de aradigi sema).
 const riskBlok = blok("Bağımlılık ve risk");
@@ -300,17 +327,38 @@ const sevkKararlari = buKosu.filter((r) => r.j.tip === "sevk-karar").map((r) => 
 // Butcenin ILAN EDILMIS anlami "sahip bakmadan en fazla ne kadar sey KURULABILIR"dir (K-G) —
 // dogrulama, catal suzgeci, dis goz brifingi ve kapanis denetimi bir sey KURMAZ. Onlarin freni
 // mutlak tur tavani ve gidis-donus tavanidir.
-const uretimKararlari = sevkKararlari.filter((s) => s.is_tipi === "uretim");
+// `kapanis-duzeltme` DE URETIMDIR (hasim bulgusu 2026-07-30): o cagri kutunun uretim koltugunu
+// acar ve dosya yazdirir — "bir sey KURAR". Ilk yazimda yalniz `uretim` sayiliyordu, yani
+// ilan edilen tavan donem basina 2 cagri sizdiriyordu (gidis-donus tavani kadar) ve sahip
+// ekraninda o cagrilar "denetim cagrisi" diye gorunuyordu: paketin bu turda duzelttigi
+// "sayac ne olctugunu soylemiyor" kusurunun yeni daldaki tekrari.
+const URETIM_TIPLERI = new Set(["uretim", "kapanis-duzeltme"]);
+const uretimKararlari = sevkKararlari.filter((s) => URETIM_TIPLERI.has(s.is_tipi));
 
 // ── Frenler ─────────────────────────────────────────────────────────────────────────────
 // Butce freni burada DEGIL, uretim sevkinden hemen once kosar: butce dolduysa yeni is kurulmaz,
 // ama biten kutunun kapanis denetimi yine de kosabilmelidir (aksi halde butcesi dolan her donem
 // kapanmadan olur ve sahip ucuncu bir tusa mecbur kalir — makro olcute aykiri).
-const TUR_TAVANI = 3 * BUTCE + 5;
+// TUR TAVANI KAPANIS EVRESINI DE KALDIRMALI (hasim bulgusu 2026-07-30): sayi `3*BUTCE+5` idi ve
+// bu paket doneme YENI turlar ekledi — kapanis evresi sabit iki tur (dis goz brifingi + kapanis
+// karnesi) ve her gidis-donus UC tur (duzeltme + karnesi + yeniden kapanis karnesi) yer. Kucuk
+// kutuda hesap tutmuyordu: BUTCE=2 icin tavan 11, gereken 12 → "iki gidis-donus" ilani kagit
+// uzerinde vardi, kodda ULASILAMIYORDU. Ek pay ayri yazilir ki bir sonraki paket neyi
+// buyuttugunu gorsun (tek sayiya gomulen gerekce, okunamaz gerekcedir).
+const GIDIS_DONUS_TAVANI = 2;
+const KAPANIS_TUR_PAYI = 2 + 3 * GIDIS_DONUS_TAVANI;   // brifing + kapanis karnesi + gidis-donusler
+const TUR_TAVANI = 3 * BUTCE + 5 + KAPANIS_TUR_PAYI;
 if (TUR_NO > TUR_TAVANI) dur("mutlak tur tavani asildi (" + TUR_NO + " > " + TUR_TAVANI + ") — sonsuz Stop dongusune karsi son kemer; donem durdu");
 const sonIki = nabizlar.slice(-2);
 if (sonIki.length === 2 && sonIki.every((n) => n.zarf_sayisi === zarfSayisi)) {
-  dur("ilerleme yok: son iki turda gunluge yeni zarf dusmedi (zarf sayisi " + zarfSayisi + ") — gorev bolunmeli ya da halka kopmus (maxTurns kesmesi ISARETSIZDIR, E0 kalem 4)");
+  // SEBEP ADIYLA SOYLENIR (hasim bulgusu 2026-07-30): bu fren, kapanis evresindeki her tikanmada
+  // (ornegin bicim kapisi brifingi geri cevirdiginde) OTEKI frenlerden ONCE atesliyor ve sahibe
+  // hep ayni jenerik cumleyi basiyordu — "dis goz iki kez sevk edildi ama brifing dusmedi" gibi
+  // ozel tanilar bu yuzden fiilen ULASILAMAZDI. Son sevk kararinin tipi cumleye girer.
+  const sonKarar = sevkKararlari[sevkKararlari.length - 1];
+  const ek = sonKarar ? " Son acilan cagri: " + sonKarar.rol + " · " + sonKarar.is_tipi +
+    " (" + (sonKarar.gorev || "?") + ") — donusu gunluge DUSMEDI; bicim kapisi zarfi geri ceviriyor olabilir (`bicim` kayitlarina bak)." : "";
+  dur("ilerleme yok: son iki turda gunluge yeni zarf dusmedi (zarf sayisi " + zarfSayisi + ") — gorev bolunmeli ya da halka kopmus (maxTurns kesmesi ISARETSIZDIR, E0 kalem 4)." + ek);
 }
 
 // ── Kuyruk: BEKLETIR kilidi + cozulemeyen madde ─────────────────────────────────────────
@@ -475,7 +523,7 @@ const talimat = (rol, gorev, tip, sebep, ekOkuma) => {
   // SAYAÇ NE ÖLÇTÜĞÜNÜ SÖYLER: bütçe artık YALNIZ üretimi sayıyor; ekrana toplam çağrı sayısını
   // basmak "butce 7/2" gibi yalan bir satır üretiyordu (ilan abartması sınıfı — canlı yürüyüşte
   // görüldü, 2026-07-30). Üretim dışı çağrılar ayrı sayılır ve ayrı yazılır.
-  const butceSayac = uretimKararlari.length + (tip === "uretim" ? 1 : 0);
+  const butceSayac = uretimKararlari.length + (URETIM_TIPLERI.has(tip) ? 1 : 0);
   yaz("SEVK · " + DONEM + " · tur " + TUR_NO + "/" + TUR_TAVANI +
       " · uretim butcesi " + butceSayac + "/" + BUTCE +
       " · denetim cagrisi " + (sevkKararlari.length + 1 - butceSayac) + " · " + sebep);
@@ -510,6 +558,7 @@ if (TUR === "kurulum") {
   }
   if (k.var && kayitBuKosuda && k.hukum === "YEŞİL") {
     OZET.simdi = "durdu — kurulum denetimi YESIL; acilis muhru sahibin";
+    KAPANIS_SEBEP = "kurulum denetimi YEŞİL";
     yaz("kurulum denetimi YESIL — acilis muhru sahibin. Denetci raporu muhur paketine eklenir.");
     bitir("KAPAT");
   }
@@ -533,7 +582,9 @@ if (TUR === "kurulum") {
 // kapanir ve sahip muhru bekler; KIRMIZI ise tur yerinde `yapim` olur ve bulgu SEVK EDILIR.
 // Uretim gorevi bu evrede ACILMAZ (rejim ayrimi korunur) — duzeltme sevki bunun tek istisnasidir
 // ve bulgunun sahibi karnede ADIYLA yazilidir (sevk kendi gorev acmaz, v1 siniri).
-const GIDIS_DONUS_TAVANI = 2;
+// GIDIS_DONUS_TAVANI yukarida, tur tavaninin yaninda tanimli: iki sayi birbirine bagli (tur
+// tavani kapanis evresinin turlarini kaldirmak zorunda) ve iki ayri yerde yasamalari, ikisinin
+// birlikte hesaplanmadigi hatasinin ta kendisiydi.
 const kapanisDali = () => {
   // (1) Dis goz brifingi — donem basina TEK sefer.
   const brifingVar = kayitlar.some((r) => r.j.tip === "brifing" && r.j.donem === DONEM);
@@ -556,6 +607,7 @@ const kapanisDali = () => {
   if (k && taze && k.hukum === "YEŞİL") {
     OZET.karneli = gorevler.filter((x) => x.durum === "kapalı" && kapaliSayilir(x.id)).length;
     OZET.simdi = "durdu — kapanis denetimi YESIL; kapanis muhru sahibin (D7 muhur paketi: demo + dis goz brifingi 03_roller/disgoz/BRIFING.md + kapanis karnesi)";
+    KAPANIS_SEBEP = "kapanış denetimi YEŞİL";
     const bl = ucBlok();
     yaz("GECE NE OLDU: " + bl[0]);
     yaz("SENDE BEKLEYEN: " + bl[1]);
@@ -563,30 +615,28 @@ const kapanisDali = () => {
     yaz("muhur paketinin dordu: demo · kanit satirlari · dis goz brifingi (03_roller/disgoz/BRIFING.md) · kapanis karnesi (00_pano/zarf-gunlugu.jsonl)");
     bitir("KAPAT");
   }
+  // DOGRULANAMADI AYRI HALDIR (hasim bulgusu 2026-07-30): "dogrulayamadim" diyen gozun elinde
+  // duzeltilecek adres YOKTUR; onu KIRMIZI dalina sokmak, gozu adres uydurmaya zorlamakti
+  // (bulgu icat yasaginin tam tersi). Bu hal donemi SAHIBE birakir — yapiya verilmis bir is yok.
+  if (k && taze && k.hukum === "DOĞRULANAMADI") {
+    dur("kapanis karnesi DOĞRULANAMADI: bagimsiz goz kutunun bitip bitmedigini OLCEMEDI — duzeltilecek adres yok, karar sahibin. Karne maddeleri gunlukte (00_pano/zarf-gunlugu.jsonl, son `karne` kaydi)");
+  }
   if (k && taze && k.hukum !== "YEŞİL") {
     // (3) KIRMIZI dali — ucuncu komut istenmez (F1-5b): tur yerinde `yapim` olur.
     const donus = kayitlar.filter((r) => r.j.tip === "evre-gecis" && r.j.donem === DONEM && r.j.hedef === "yapim").length;
-    if (donus >= GIDIS_DONUS_TAVANI) {
-      dur("kapanis karnesi " + k.hukum + " ve uretim<->kapanis gidis-donusu doldu (" + donus + "/" + GIDIS_DONUS_TAVANI + ") — donem kapandi; bulgular sahibin masasinda (kapanis karnesi: 00_pano/kapanis-bulgulari.txt)");
-    }
     const hedefler = String(k.bulgu_gorev || "").match(/G-\d+/g) || [];
-    const acilabilir = hedefler.map((g) => gorevler.find((x) => x.id === g)).filter(Boolean);
-    if (!acilabilir.length) {
-      dur("kapanis karnesi " + k.hukum + " ama duzeltilecek gorev cozulmuyor (BULGU-GOREV: " + (k.bulgu_gorev || "yok") + ") — sevk kendi gorev acamaz (v1 siniri); bulgulari sahip/rol kapatir");
-    }
-    const hedef = acilabilir[0];
-    if (!ajanVar(hedef.sahip)) {
-      dur("kapanis bulgusunun gorevi (" + hedef.id + ") kadroda olmayan bir koltuga ait: " + hedef.sahip + " — duzeltme sevk edilemez");
-    }
-    // Bulgu metni ROLE ISARETCIYLE gider (devir metni serbest metin tasiyamaz — 800B sema kapisi).
-    // Metin KARNE KAYDINDAN mekanik kurulur; sevkin kendi kalemi girmez (§9 sahip-atfi kuralinin
-    // kardesi: hukum, hukmu verenin kaydindan tasinir).
+    // BULGU DOSYASI EN BASTA YAZILIR (hasim bulgusu 2026-07-30): dosya eskiden dalin SONUNDA,
+    // yalniz duzeltme sevk edilirken yaziliyordu. Oysa dalin cikis yollarinin hepsi (gidis-donus
+    // tavani · uygunsuz hedef · dolu butce) sahibi ADIYLA bu dosyaya yolluyor — yani sahibin
+    // gordugu icerik BIR ONCEKI turun bulgulariydi, hic KIRMIZI olmamis bir kutuda ise dosya
+    // HIC YOKTU ve mesaj var olmayan bir dosyayi gosteriyordu. Isaretci yalan soylemez.
     const bulguYolu = "00_pano/kapanis-bulgulari.txt";
     try {
       writeFileSync(join(KOK, bulguYolu),
         "KAPANIS KARNESI — donem " + DONEM + "\n" +
         "HUKUM: " + k.hukum + "\n" +
         "KARNEYI VEREN: " + (k.ajan || "?") + "\n" +
+        "GIDIS-DONUS: " + donus + "/" + GIDIS_DONUS_TAVANI + "\n" +
         "DUZELTILECEK GOREV(LER): " + hedefler.join(" ") + "\n" +
         "MADDELER: " + String(k.maddeler || "(karne maddeleri bos)") + "\n\n" +
         "KURAL: gorev satiri YENIDEN ACILMAZ — `kapalı` kalir, duzeltme ayni gorevin altinda\n" +
@@ -594,6 +644,46 @@ const kapanisDali = () => {
         "ister; bu dosyayi sen guncellemezsin (mekanik olarak yeniden yazilir).\n");
     } catch (e) {
       dur("kapanis bulgu dosyasi yazilamadi (" + bulguYolu + ") — duzeltme sevki isaretcisiz kalirdi (fail-closed): " + String(e && e.message));
+    }
+    if (donus >= GIDIS_DONUS_TAVANI) {
+      dur("kapanis karnesi " + k.hukum + " ve uretim<->kapanis gidis-donusu doldu (" + donus + "/" + GIDIS_DONUS_TAVANI + ") — donem kapandi; bulgular sahibin masasinda (kapanis karnesi: 00_pano/kapanis-bulgulari.txt)");
+    }
+    // HEDEF UYGUNLUGU (hasim bulgusu 2026-07-30): burada TEK kosul numaranin tabloda BULUNMASIYDI.
+    // Yapim dalinin bes engeli (pas · muhur-bekliyor · cozulmemis onkosul · BEKLETIR kilidi ·
+    // donusu gelmemis cagri) bu evrede HIC sorulmuyordu — cunku `kapanisDali()` yapim blogunun
+    // tamaminin onunde ve her dali sureci bitiriyor. Otomatik yolda ulasilan hal `pas`ti:
+    // `acikVar` pas durumunu saymaz, yani pas gorevli kutu kapanis evresine gecer ve karne o numarayi
+    // adresleyince "pas gorevde IS YAPILMADI" kuralina ragmen sahibe sorulmadan uretim acilirdi.
+    const UYGUNSUZ = { "pas": "gorev PAS (is yapilmayacagi yazili)", "mühür-bekliyor": "gorev sahip muhru bekliyor" };
+    const hedefAdaylari = hedefler.map((g) => gorevler.find((x) => x.id === g)).filter(Boolean);
+    const acilabilir = hedefAdaylari.filter((x) => !UYGUNSUZ[x.durum]);
+    if (!acilabilir.length) {
+      const sebep = hedefAdaylari.length
+        ? "gosterdigi gorev(ler) duzeltmeye uygun degil: " + hedefAdaylari.map((x) => x.id + " (" + (UYGUNSUZ[x.durum] || x.durum) + ")").join(" · ")
+        : "duzeltilecek gorev cozulmuyor (BULGU-GOREV: " + (k.bulgu_gorev || "yok") + ")";
+      dur("kapanis karnesi " + k.hukum + " ama " + sebep + " — sevk kendi gorev acamaz (v1 siniri); bulgulari sahip/rol kapatir");
+    }
+    const hedef = acilabilir[0];
+    // BUTCE FRENI KAPANIS DUZELTMESINDE DE SORULUR (hasim bulgusu 2026-07-30): bu cagri kutunun
+    // URETIM koltugunu acar ve dosya yazdirir — yani "bir sey KURAR", bütçenin ilan edilmis
+    // anlaminin (K-G) tam tanimi. Fren yalniz `if (secilen)` blogundaydi; kapanis dali ona hic
+    // ugramiyordu ve gidis-donus tavani 2 oldugu icin fiili tavan BUTCE+2 idi (butce 3 icin %66 asim).
+    if (uretimKararlari.length >= BUTCE) {
+      dur("kapanis karnesi " + k.hukum + " ama uretim butcesi doldu (" + uretimKararlari.length + "/" + BUTCE +
+          ") — duzeltme yeni bir uretim cagrisi acar ve bu donemde acilamaz. Bulgular sahibin masasinda: 00_pano/kapanis-bulgulari.txt");
+    }
+    if (!ajanVar(hedef.sahip)) {
+      dur("kapanis bulgusunun gorevi (" + hedef.id + ") kadroda olmayan bir koltuga ait: " + hedef.sahip + " — duzeltme sevk edilemez");
+    }
+    // Bulgu metni ROLE ISARETCIYLE gider (devir metni serbest metin tasiyamaz — 800B sema kapisi);
+    // dosya yukarida, dalin BASINDA yazildi.
+    // KALAN HEDEFLER IZSIZ DUSMEZ (hasim bulgusu 2026-07-30): BULGU-GOREV birden cok gorev
+    // gosterebilir ve sevk yalniz ILKINI acar. Kalanlar hicbir yerde gorunmuyordu; simdi hem
+    // gunluge bulgu olarak duser hem de dosyada ADIYLA yazili (yukaridaki DUZELTILECEK satiri).
+    if (acilabilir.length > 1) {
+      kayit({ tip: "bulgu", gorev: hedef.id, cins: "kapanis-bulgu-kuyrugu",
+              detay: "kapanis karnesi " + acilabilir.length + " gorev gosterdi; bu turda " + hedef.id + " sevk edildi, kalanlar: " +
+                     acilabilir.slice(1).map((x) => x.id).join(" ") + " (sonraki kapanis turunda sirayla acilir)" });
     }
     EVRE_HEDEF = "yapim";
     kayit({ tip: "evre-gecis", hedef: "yapim", sebep: "kapanis karnesi " + k.hukum, gorev: hedef.id });
@@ -609,13 +699,18 @@ const kapanisDali = () => {
   talimat("dogrulayici", "KAPANIS", "kapanis-denetimi",
     "kapanis kapisi: kutunun bagimsiz denetimi (KIRMIZI ise karneye BULGU-GOREV satiri zorunlu)");
 };
-if (TUR === "kapanis") kapanisDali();
 
-// ── Tur: yapim ──────────────────────────────────────────────────────────────────────────
-// (0) Catal suzgeci — E3ten E4e gelen ZORUNLU girdi (tasarim §7.2): zarfta ÇATAL dolu dustuyse
-//     soru sahibe GITMEDEN once catal-denetcisi cagrisi acilir. Suzgec hukmu (catal-suzgec kaydi)
-//     gelmemis bir catal, kuyruga da dusmemistir — bu is her seyin onunde gelir: acik catal
-//     BEKLETIR listesindeki gorevleri kilitler, yani beklemek koseyi tikar.
+// ── (0) Catal suzgeci — EVREDEN BAGIMSIZ ────────────────────────────────────────────────
+// E3ten E4e gelen ZORUNLU girdi (tasarim §7.2): zarfta ÇATAL dolu dustuyse soru sahibe
+// GITMEDEN once catal-denetcisi cagrisi acilir. Suzgec hukmu (catal-suzgec kaydi) gelmemis bir
+// catal, kuyruga da dusmemistir — bu is her seyin onunde gelir: acik catal BEKLETIR
+// listesindeki gorevleri kilitler, yani beklemek koseyi tikar.
+// SIRA DEGISTI (hasim bulgusu 2026-07-30): blok `if (TUR === "kapanis") kapanisDali()` cagrisinin
+// ALTINDAYDI ve kapanisDali fonksiyonunun HER dali talimat()/dur()/bitir() ile sureci bitiriyor — yani
+// kapanis evresinde suzgec HIC KOSMUYORDU. Kapanis evresinde catal dogmasi olagandir (dis goz
+// ve karne zarflari ÇATAL tasiyabilir; kapi bunu bekliyor bile, iki koltuk da HUKUM_SINIFI kumesinde).
+// Karne YESIL gelip donem kapanirsa ne `catal-suzgec` kaydi ne kuyruk maddesi dogardi: D-25 ucuncu maddesinin
+// "suzgecten gecmemis catal sahibe GONDERILEMEZ" kurali, "hic gonderilmez"e donuyordu.
 const catalBekleyen = [];
 for (const r of kayitlar) {
   const j = r.j;
@@ -630,6 +725,9 @@ if (catalBekleyen.length) {
     "catal suzgeci: " + catalBekleyen[0] + " gorevinin catali sahibe gitmeden once bes kalemden gecer");
 }
 
+if (TUR === "kapanis") kapanisDali();
+
+// ── Tur: yapim ──────────────────────────────────────────────────────────────────────────
 // (a) Karne sarti — BU DÖNEMDE is uretilmis ama karnesiz/bayat gorev (miras gorev haric — yukarida)
 for (const k of gorevler) {
   if (k.durum !== "kapalı") continue;
@@ -663,8 +761,12 @@ for (const sk of sevkKararlari) {
   if (sk.is_tipi !== "uretim" || typeof sk.gorev !== "string") continue;
   acilis[sk.gorev] = (acilis[sk.gorev] || 0) + 1;
 }
+// HUKUM_ZARFI kumesi burada da kullanilir (hasim bulgusu 2026-07-30): bu paket "is olmayan
+// zarf siniflari"ni tek kumede topladi ve UC kullanim yerini gunceledi, DORDUNCUSUNU degil —
+// burasi hala `karne`/`hukum` dizelerini elle sayiyordu ve `brifing` sinifini IS sayiyordu.
+// Sonucu: dis gozun BRIFING donusu, ayni ada sahip bir gorevin "dondu" sayilmasina yol acabilir.
 const donen = new Set(kayitlar
-  .filter((r) => r.j.tip === "zarf" && r.j.donem === DONEM && r.j.sinif !== "karne" && r.j.sinif !== "hukum")
+  .filter((r) => r.j.tip === "zarf" && r.j.donem === DONEM && !HUKUM_ZARFI.has(r.j.sinif))
   .map((r) => r.j.gorev));
 const ucusta = new Set(Object.keys(acilis).filter((g) => !donen.has(g) && acilis[g] >= 2));
 const yeniden = new Set(Object.keys(acilis).filter((g) => !donen.has(g) && acilis[g] === 1));
@@ -729,6 +831,7 @@ KARAR="$(printf '%s' "${CIKTI%%$'\n'*}" | cut -f2)"
 EVRE_HEDEF="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="EVRE"{print $2; exit}')"
 EYLEMLER="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="EYLEM"{sub(/^EYLEM\t/,""); print}')"
 BEKCI_GEREK="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="BEKCI"{print $2; exit}')"
+KAPANIS_SEBEP="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="KAPANIS"{print $2; exit}')"
 LOGLAR="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="LOG"{sub(/^LOG\t/,""); print}')"
 MESAJ="$(printf '%s' "$CIKTI" | awk -F'\t' '$1=="METIN"{sub(/^METIN\t/,""); print}')"
 # Üç blok (E5): sabah yüzeyinin ve kapanış e-postasının gövdesi. TEK üretici çözümleyicidir.
@@ -858,14 +961,15 @@ case "$KARAR" in
     kapat "duran-kapi" "$MESAJ"
     ;;
   KAPAT)
-    # KAPANIŞ SEBEBİ ARTIK "açık iş yok" DEĞİL: dönem, bağımsız kapanış denetimi YEŞİL verdiği
-    # için biter (F1-5a). Üçüncü blok çözümleyiciden gelir ve gerçek sebebi taşır — burada sabit
-    # metin basmak sahip yüzeyinde yanlış cümle üretirdi.
-    rm -f "$GOSTERGE"
-    kapanis_yuzeyi "durdu — kapanış denetimi tamamlandı"
-    J_tip=donem-kapanis J_donem="$DONEM_ID" J_kutu="$DONEM_KUTU" J_sinif="kapanis-denetimi-yesil" \
-      J_sebep="kapanis denetimi yesil — muhur sahibin" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
-    printf 'DÖNEM KAPANDI · %s · kapanış denetimi YEŞİL (mühür sende)\n%s\n' "$DONEM_ID" "$MESAJ"
+    # KAPANIŞ SEBEBİ ARTIK "açık iş yok" DEĞİL: dönem, bağımsız bir denetim YEŞİL verdiği için
+    # biter (F1-5a). Sebep ÇÖZÜMLEYİCİDEN gelir — burada sabit metin basmak, aynı kararı kullanan
+    # KURULUM dönemi için yanlış cümle üretiyordu: hiç koşmamış bir "kapanış denetimi"nin yeşili
+    # hem sahip ekranına hem günlüğe yazılıyordu (hasım bulgusu 2026-07-30).
+    rm -f "$GOSTERGE" "$KOK/tools/sevk/.donem-capa"
+    kapanis_yuzeyi "durdu — ${KAPANIS_SEBEP:-dönem kapandı}"
+    J_tip=donem-kapanis J_donem="$DONEM_ID" J_kutu="$DONEM_KUTU" J_sinif="${KAPANIS_SEBEP:-donem-kapandi}" \
+      J_sebep="${KAPANIS_SEBEP:-dönem kapandı} — muhur sahibin" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
+    printf 'DÖNEM KAPANDI · %s · %s (mühür sende)\n%s\n' "$DONEM_ID" "${KAPANIS_SEBEP:-dönem kapandı}" "$MESAJ"
     exit 0
     ;;
   *)

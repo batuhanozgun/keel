@@ -14,7 +14,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFileSync, chmodSync, appendFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFileSync, chmodSync, appendFileSync, symlinkSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -90,6 +90,15 @@ function kurulum({ donem = 'yapim', kutu = kutuMetni(), kadro = ['uretici'],
   writeFileSync(join(kok, '.kurulum-tamam'), '2026-07-30\n');
   if (donem) {
     writeFileSync(GOSTERGE(kok), `DONEM-S7\t${KUTU_ADI}\t${donem}\ttatbikat\ndamga\t${new Date().toISOString()}\n`);
+    // İzin/bütçe ÇAPASI (hasım turu 2026-07-30): gerçek akışta bunu açılış töreni yazar ve
+    // kanca/sevk YALNIZ bunu okur. Fikstür de aynı dünyayı taklit etmeli — değerler kutunun
+    // duruş sözleşmesinden AYRIŞTIRILARAK alınır, kapının kendi deseninden türetilerek değil.
+    const durus = (kutu.split('## Duruş sözleşmesi')[1] || '');
+    const izinS = (durus.split('\n').find((s) => /^\s*İZİN\s*:/.test(s)) || '').replace(/^\s*İZİN\s*:/, '').trim();
+    const butceS = (durus.split('\n').find((s) => /^\s*BÜTÇE\s*:/.test(s)) || '').match(/(\d+)/);
+    const jetonlar = /^yok\b/.test(izinS) ? '' : izinS.split(/[\s,·]+/).filter(Boolean).join(' ');
+    writeFileSync(join(kok, 'tools', 'sevk', '.donem-capa'),
+      `izin\t${jetonlar}\nbutce\t${butceS ? butceS[1] : 3}\nkutu\t${KUTU_ADI}\ndonem\tDONEM-S7\n`);
   }
   return kok;
 }
@@ -301,14 +310,22 @@ test('F1-5c: beş başlıklı brifing zarfı → BRIFING.md kapı eliyle yazıl�
 
 test('F1-5c: sapma sayan brifingde KANIT zorunlu; eksik başlık ve tavan aşımı geri döner', () => {
   const kok = kurulum({ donem: 'kapanis' });
+  // Beyansız serbest cümle: artık BEYAN kapısında durur (eskiden kanıt kapısında dururdu).
+  const beyansiz = [...BES_SATIR];
+  beyansiz[2] = 'BRIFING-3: Kabul ölçütü değişmiş gibi duruyor, üç madde saydım.';
+  const r1 = kapi(kok, brifingZarfi(beyansiz));
+  assert.equal(r1.status, 2, 'beyansız serbest cümle geçmemeli');
+  assert.match(r1.stderr, /sapma beyanı çözülmüyor/);
+
+  // Beyan VAR, kanıt YOK → kanıt kapısı.
   const kanitsiz = [...BES_SATIR];
-  kanitsiz[2] = 'BRIFING-3: Kabul ölçütü değişmiş gibi duruyor, üç madde saydım.';
-  const r1 = kapi(kok, brifingZarfi(kanitsiz));
-  assert.equal(r1.status, 2, 'kanıtsız sapma geçmemeli');
-  assert.match(r1.stderr, /kanıt/);
+  kanitsiz[2] = 'BRIFING-3: sapma var — kabul ölçütü değişmiş gibi duruyor, üç madde saydım.';
+  const r1b = kapi(kok, brifingZarfi(kanitsiz));
+  assert.equal(r1b.status, 2, 'kanıtsız sapma geçmemeli');
+  assert.match(r1b.stderr, /kanıt/);
 
   const kanitli = [...BES_SATIR];
-  kanitli[2] = 'BRIFING-3: Kabul ölçütü değişmiş — 01_kutular/KT-901-dikis/KUTU.md:12 satırında yeni cümle var.';
+  kanitli[2] = 'BRIFING-3: sapma var — kabul ölçütü değişmiş: 01_kutular/KT-901-dikis/KUTU.md:12 satırında yeni cümle var.';
   assert.equal(kapi(kok, brifingZarfi(kanitli)).status, 0, 'kanıt işaretçisi taşıyan sapma geçmeli');
   assert.equal(gunluk(kok).find((j) => j.tip === 'brifing').sapma, 'var');
 
@@ -321,6 +338,63 @@ test('F1-5c: sapma sayan brifingde KANIT zorunlu; eksik başlık ve tavan aşım
   const r2 = kapi(kok, brifingZarfi(uzun));
   assert.equal(r2.status, 2, 'tavan aşan brifing kırpılmaz, geri döner');
   assert.match(r2.stderr, /tavanı aşıldı/);
+});
+
+// ── Hasım turu 2026-07-30 · brifing kapısının dört deliği ───────────────────────────────────
+
+test('hasım-1: «Normal değil …» sapma İLAN EDER — kanıtsız geçemez, günlüğe «yok» yazılamaz', () => {
+  const kok = kurulum({ donem: 'kapanis' });
+  // Eski desen (/^normal\b/i) bu satırı «normal» sayıyordu: kanıt kapısı hiç aranmıyor,
+  // günlüğe `sapma: "yok"` düşüyordu — yani sapma ilan eden brifing, tüm gözlerin okuduğu
+  // veri katmanına «sapma yok» diye geçiyordu. Türkçede en doğal ifade budur.
+  const olumsuz = [...BES_SATIR];
+  olumsuz[2] = 'BRIFING-3: Normal değil — kabul ölçütü kutuda değişmiş görünüyor.';
+  const r = kapi(kok, brifingZarfi(olumsuz));
+  assert.equal(r.status, 2, '«Normal değil» kanıtsız geçmemeli: ' + r.stdout);
+  assert.match(r.stderr, /kanıt/);
+
+  const kanitli = [...BES_SATIR];
+  kanitli[2] = 'BRIFING-3: Normal değil — kabul ölçütü değişmiş: 01_kutular/KT-901-dikis/KUTU.md:12';
+  assert.equal(kapi(kok, brifingZarfi(kanitli)).status, 0, 'kanıtlı olumsuz beyan geçmeli');
+  assert.equal(gunluk(kok).find((j) => j.tip === 'brifing').sapma, 'var', 'olumsuz beyan günlüğe «var» düşmeli');
+});
+
+test('hasım-2: BRIFING başlıkları ÇOK SATIRLI olabilir — kanıt devam satırındayken de sayılır', () => {
+  const kok = kurulum({ donem: 'kapanis' });
+  const cok = [...BES_SATIR];
+  cok[2] = 'BRIFING-3: sapma var — üç madde:\n- kabul ölçütü değişmiş\n  kanıt: 01_kutular/KT-901-dikis/KUTU.md:12\n- ikinci madde';
+  const r = kapi(kok, brifingZarfi(cok));
+  assert.equal(r.status, 0, 'sözleşmenin istediği çok maddeli brifing geri çevrilmemeli: ' + r.stderr);
+  const b = readFileSync(join(kok, '03_roller', 'disgoz', 'BRIFING.md'), 'utf8');
+  assert.match(b, /ikinci madde/, 'devam satırları sessizce kırpılmamalı');
+});
+
+test('hasım-3: kanıt işaretçisinin VARLIĞI denetlenir; hex görünümlü sözcük commit sayılmaz', () => {
+  const kok = kurulum({ donem: 'kapanis' });
+  const kopuk = [...BES_SATIR];
+  kopuk[2] = 'BRIFING-3: sapma var — 01_kutular/OLMAYAN-KUTU/KUTU.md:12 satırında değişiklik.';
+  const r1 = kapi(kok, brifingZarfi(kopuk));
+  assert.equal(r1.status, 2, 'kopuk işaretçi kanıt sayılmamalı');
+  assert.match(r1.stderr, /işaretçi kopuk|ÇÖZÜLEN kanıt yok/);
+
+  const sahteHex = [...BES_SATIR];
+  // "defaced" yalnız a-f harflerinden oluşur ve 7 hanedir — eski desen onu commit sayıyordu.
+  sahteHex[2] = 'BRIFING-3: sapma var — kabul defaced gibi duruyor.';
+  const r2 = kapi(kok, brifingZarfi(sahteHex));
+  assert.equal(r2.status, 2, 'yalnız harflerden oluşan sözcük commit kanıtı sayılmamalı');
+});
+
+test('hasım-4: brifing yolu sembolik bağsa kapı YAZMAZ (kanca korunan yollara araç olamaz)', () => {
+  const kok = kurulum({ donem: 'kapanis' });
+  const hedef = join(kok, 'tools', 'sevk', 'kurban.txt');
+  writeFileSync(hedef, 'dokunulmamalı\n');
+  const yol = join(kok, '03_roller', 'disgoz', 'BRIFING.md');
+  rmSync(yol, { force: true });
+  symlinkSync(hedef, yol);
+  const r = kapi(kok, brifingZarfi(BES_SATIR));
+  assert.equal(r.status, 2, 'bağ üzerinden yazım engellenmeli: ' + r.stdout);
+  assert.match(r.stderr, /sembolik bağ/);
+  assert.equal(readFileSync(hedef, 'utf8'), 'dokunulmamalı\n', 'bağın hedefi DEĞİŞMEMELİ');
 });
 
 test('F1-5c: dış gözün BİTEN jetonu BRIFING olabilir; üretim rolünde G-NN şartı SÜRER', () => {
@@ -431,4 +505,144 @@ test('F1-5f: çekilme kapısı ilk kutunun İZİN satırında kutu-ciktilari ARA
     'çekilme kapısı İZİN değerini eşlemeli (yalnız varlığını değil)');
   assert.match(denetim, /"BİTİŞ HÂLİ" "KANIT" "KISIT" "BÜTÇE" "İZİN" "LİSTE"/,
     'duruş sözleşmesinin ALTI satırı da kapıda aranmalı');
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════════
+// Hasım turu 2026-07-30 · kapanış dalının süzgeçleri, bütçesi ve dürüstlüğü
+// ══════════════════════════════════════════════════════════════════════════════════════════
+
+test('hasım-5: kapanış karnesi PAS görevi adresliyorsa üretim AÇILMAZ (duran kapı)', () => {
+  // Delik: hedef seçiminin TEK koşulu numaranın tabloda bulunmasıydı. Yapım dalının beş engeli
+  // (pas · mühür-bekliyor · önkoşul · BEKLETİR · dönmemiş çağrı) bu evrede hiç sorulmuyordu.
+  // `pas` otomatik yolda ULAŞILABİLİR: acikVar pas'ı saymaz, yani pas görevli kutu kapanış
+  // evresine geçer ve karne o numarayı gösterince "pas görevde iş yapılmaz" kuralı deliniyordu.
+  const kok = kurulum({ kutu: kutuMetni({ gorevler: [
+    { id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' },
+    { id: 'G-02', is: 'vazgeçildi', sahip: 'uretici', durum: 'pas', kanit: '—' },
+  ] }) });
+  ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  ekle(kok, { tip: 'brifing', ajan: 'disgoz', donem: 'DONEM-S7', yol: '03_roller/disgoz/BRIFING.md' });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'KAPANIS', hukum: 'KIRMIZI', maddeler: 'y=YANLIŞ', bulgu_gorev: 'G-02' });
+  const r = sevk(kok);
+  assert.equal(r.status, 0, 'duran kapı olmalı, sevk değil: ' + r.stdout);
+  assert.match(r.stdout, /uygun degil|PAS/i, 'sebep adıyla söylenmeli: ' + r.stdout);
+  assert.doesNotMatch(r.stdout, /AC: Agent araciyla/, 'pas göreve üretim koltuğu sürülmemeli');
+});
+
+test('hasım-6: kapanış düzeltmesi BÜTÇEYE tabidir (dolu bütçeyle ikinci tavan açılmaz)', () => {
+  const kok = kurulum({ kutu: kutuMetni({ butce: '1' }) });
+  ekle(kok, { tip: 'sevk-karar', gorev: 'G-01', rol: 'uretici', is_tipi: 'uretim', donem: 'DONEM-S7' });
+  ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  ekle(kok, { tip: 'brifing', ajan: 'disgoz', donem: 'DONEM-S7', yol: '03_roller/disgoz/BRIFING.md' });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'KAPANIS', hukum: 'KIRMIZI', maddeler: 'y=YANLIŞ', bulgu_gorev: 'G-01' });
+  const r = sevk(kok);
+  assert.equal(r.status, 0, 'bütçesi dolu dönemde düzeltme açılmamalı: ' + r.stdout);
+  assert.match(r.stdout, /butcesi doldu/);
+  // ve sahibin yönlendirildiği dosya BU turun bulgularını taşımalı (bayat değil).
+  const bulgu = readFileSync(join(kok, '00_pano', 'kapanis-bulgulari.txt'), 'utf8');
+  assert.match(bulgu, /HUKUM: KIRMIZI/);
+  assert.match(bulgu, /GIDIS-DONUS: 0\/2/);
+});
+
+test('hasım-7: DOĞRULANAMADI adres İSTEMEZ — karne düşer, dönem sahibe kalır', () => {
+  const kok = kurulum({ donem: 'kapanis' });
+  // Kapı: adres satırı olmadan da zarf GEÇMELİ (eskiden `!== YEŞİL` şartı adres istiyordu ve
+  // göz ya adres uyduracak ya karne kaydı hiç düşmeyecekti).
+  const r1 = kapi(kok, karneZarfi({ gorev: 'KAPANIS', hukum: 'DOĞRULANAMADI' }));
+  assert.equal(r1.status, 0, 'DOĞRULANAMADI zarfı geri çevrilmemeli: ' + r1.stderr);
+  const k = gunluk(kok).find((j) => j.tip === 'karne' && j.gorev === 'KAPANIS');
+  assert.ok(k, 'hüküm kaybolmamalı — karne kaydı düşmeli');
+  assert.equal(k.hukum, 'DOĞRULANAMADI');
+  // Sevk: üretim açmaz, sahibe bırakır.
+  ekle(kok, { tip: 'brifing', ajan: 'disgoz', donem: 'DONEM-S7', yol: '03_roller/disgoz/BRIFING.md' });
+  const r2 = sevk(kok);
+  assert.equal(r2.status, 0, 'duran kapı olmalı: ' + r2.stdout);
+  assert.match(r2.stdout, /DOĞRULANAMADI/);
+  assert.doesNotMatch(r2.stdout, /AC: Agent araciyla/, 'adres yokken üretim açılmamalı');
+});
+
+test('hasım-8: KIRMIZI karnede adres ZORUNLU kalır (DOĞRULANAMADI kaçış yolu değil)', () => {
+  const kok = kurulum({ donem: 'kapanis' });
+  const r = kapi(kok, karneZarfi({ gorev: 'KAPANIS', hukum: 'KIRMIZI' }));
+  assert.equal(r.status, 2, 'adressiz KIRMIZI geçmemeli');
+  assert.match(r.stderr, /BULGU-GOREV/);
+  assert.match(r.stderr, /DOĞRULANAMADI/, 'gözü doğru hükme yönlendirmeli — adres uydurmaya değil');
+});
+
+test('hasım-12: çatal süzgeci KAPANIŞ evresinde de koşar (evreden bağımsız)', () => {
+  // Delik: süzgeç bloğu `if (TUR === "kapanis") kapanisDali()` çağrısının ALTINDAYDI ve
+  // kapanisDali her dalında süreci bitiriyor — kapanış evresinde doğan çatal hiçbir zaman
+  // süzgeçten geçmiyor, karne YEŞİL gelirse kuyruğa da hiç düşmüyordu.
+  const kok = kurulum({ donem: 'kapanis' });
+  ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'dolu' } });
+  const r = sevk(kok);
+  assert.equal(r.status, 2, 'dönem sürmeli (sevk talimatı)');
+  assert.match(r.stderr, /catal-denetcisi/, 'kapanış evresinde de süzgeç açılmalı: ' + r.stderr);
+});
+
+test('hasım-13: KURULUM dönemi kapanırken "kapanış denetimi" adı KULLANILMAZ', () => {
+  // Delik: KAPAT kararı iki dal tarafından paylaşılıyor ve kabuk sabit metin basıyordu —
+  // kurulum dönemi kapanınca hiç koşmamış bir kapanış denetiminin YEŞİLİ hem sahip ekranına
+  // hem günlüğe (`J_sinif=kapanis-denetimi-yesil`) yazılıyordu.
+  const kok = kurulum({ donem: 'kurulum' });
+  ekle(kok, { tip: 'karne', ajan: 'kurulum-denetcisi', gorev: 'KURULUM', hukum: 'YEŞİL', maddeler: 'x=DOĞRU', donem: 'DONEM-S7' });
+  const r = sevk(kok);
+  assert.equal(r.status, 0, 'kurulum dönemi kapanmalı: ' + r.stdout);
+  assert.match(r.stdout, /kurulum denetimi YEŞİL/, 'doğru denetimin adı yazılmalı');
+  assert.doesNotMatch(r.stdout, /kapanış denetimi YEŞİL/, 'koşmamış denetimin yeşili yazılamaz');
+});
+
+// ── Hasım turu 2026-07-30 · açılış töreni çapayı KATI SÖZLÜKLE üretir ────────────────────
+
+test('hasım-16: tören İZİN satırını kapalı sözlükle ayrıştırır ve çapayı yazar', () => {
+  const kok = kurulum({ donem: false, kutu: kutuMetni({ izin: 'mcp git-obje', butce: '4' }) });
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(r.status, 0, 'dönem açılmalı: ' + r.stderr);
+  const capa = readFileSync(join(kok, 'tools', 'sevk', '.donem-capa'), 'utf8');
+  assert.match(capa, /^izin\tmcp git-obje$/m, 'çapa jetonları taşımalı: ' + capa);
+  assert.match(capa, /^butce\t4$/m, 'bütçe de çapaya inmeli (kutuya değil çapaya bakılır)');
+  // Kapatma çapayı da siler: eski dönemin izni diskte kalmaz.
+  kos(kok, 'donem-ac.sh', ['kapat']);
+  assert.equal(existsSync(join(kok, 'tools', 'sevk', '.donem-capa')), false, 'çapa göstergeyle birlikte ölmeli');
+});
+
+test('hasım-17: sözlük dışı jeton ve «yok (…)» tuzağı dönemi AÇTIRMAZ', () => {
+  // Eski ayrıştırıcı TOPLAYICIYDI: «İZİN: yok (disa gerekmiyor)» satırı `disa` sınıfını
+  // fiilen VERİYORDU — cümlenin anlamının tam tersi. Ve sözlük dışı jeton sessizce
+  // "izin yok"a düşüyordu, yani yazım hatası sessiz daralma üretiyordu.
+  const tuzak = kurulum({ donem: false, kutu: kutuMetni({ izin: 'yok (disa gerekmiyor)' }) });
+  const r1 = kos(tuzak, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(r1.status, 0, '«yok» ile başlayan satır geçerli olmalı: ' + r1.stderr);
+  const capa = readFileSync(join(tuzak, 'tools', 'sevk', '.donem-capa'), 'utf8');
+  assert.match(capa, /^izin\t$/m, '«yok (…)» hiçbir sınıf VERMEMELİ: ' + capa);
+
+  const hatali = kurulum({ donem: false, kutu: kutuMetni({ izin: 'disaa' }) });
+  const r2 = kos(hatali, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(r2.status, 1, 'sözlük dışı jeton dönemi açtırmamalı');
+  assert.match(r2.stderr, /sözlük dışı jeton/);
+  assert.equal(existsSync(join(hatali, 'tools', 'sevk', '.donem-acik')), false, 'gösterge yazılmamalı');
+});
+
+test('hasım-18 (uçtan uca): tören çapayı yazar; kutu SONRADAN değişse de sevk çapayı dinler', () => {
+  // Deliğin tam senaryosu: dönem içinde ajan KUTU.md yazar (tasarımın kendi gereği — görev
+  // listesini G-01 doğurur). Eski mekanikte o yazımla üretim tavanını ve izin listesini de
+  // değiştirebiliyordu. Zincir: tören → çapa → sevk. Kutu artık sevkin okuduğu yer değil.
+  const kok = kurulum({ donem: false, kutu: kutuMetni({ butce: '1' }) });
+  const acilis = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(acilis.status, 0, 'dönem açılmalı: ' + acilis.stderr);
+
+  // Ajan kutuyu yeniden yazıyor: bütçeyi 99 yapıyor, kendine `yazim` izni veriyor.
+  writeFileSync(join(kok, '01_kutular', KUTU_ADI, 'KUTU.md'),
+    kutuMetni({ butce: '99', izin: 'yazim disa', gorevler: [
+      { id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'açık', kanit: '00_pano/PANO.md' },
+      { id: 'G-02', is: 'iş', sahip: 'uretici', durum: 'açık', kanit: '00_pano/PANO.md' },
+    ] }));
+  // Bir üretim çağrısı zaten açılmış olsun (çapadaki bütçe 1).
+  ekle(kok, { tip: 'sevk-karar', gorev: 'G-01', rol: 'uretici', is_tipi: 'uretim',
+              donem: readFileSync(GOSTERGE(kok), 'utf8').split('\t')[0] });
+  const r = sevk(kok);
+  assert.match(r.stdout + r.stderr, /butce tavani doldu/,
+    'sevk kutunun yeni 99luk bütçesini DEĞİL, çapadaki 1i uygulamalı: ' + r.stdout + r.stderr);
 });

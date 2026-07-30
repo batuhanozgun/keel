@@ -47,15 +47,25 @@ function kos(kok, girdi) {
   });
 }
 
-// F1-5f · dönem fixture'ı: gösterge + kutunun `İZİN:` satırı. İzin listesi KUTUDAN okunur;
-// kutu yoksa ya da satır yoksa liste BOŞTUR (fail-closed) — "okuyamadım" ile "serbest" ayrı şeydir.
-function donemAc(kok, { kutu = 'KT-900', izin = null } = {}) {
+// F1-5f · dönem fixture'ı: gösterge + izin/bütçe ÇAPASI.
+// ÇAPA, KUTU DEĞİL (hasım turu 2026-07-30): izin listesi eskiden doğrudan `01_kutular/<kutu>/KUTU.md`
+// den okunuyordu ve o dosya korunan-yolların hiçbir bölümünde değil — kafesteki taraf kendi
+// anahtarını yazabiliyordu. Liste artık açılış töreninin (donem-ac.sh) kapalı sözlükle
+// ayrıştırıp `tools/sevk/.donem-capa`ya yazdığı değerden okunur. Çapa yoksa liste BOŞTUR
+// (fail-closed) — "okuyamadım" ile "serbest" ayrı şeydir.
+// `kutuIzni` PARAMETRESİ BİLEREK DURUYOR: deliğin kapandığını ölçen negatif test onu kullanır
+// (kutuya `İZİN: yazim` yazmak artık HİÇBİR ŞEY vermemeli).
+function donemAc(kok, { kutu = 'KT-900', izin = null, kutuIzni = null, butce = 3 } = {}) {
   mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
   writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), `DONEM-1\t${kutu}\tyapim\ttatbikat\ndamga\t2026-07-30T10:00:00Z\n`);
   if (izin !== null) {
+    writeFileSync(join(kok, 'tools', 'sevk', '.donem-capa'),
+      `izin\t${izin}\nbutce\t${butce}\nkutu\t${kutu}\ndonem\tDONEM-1\n`);
+  }
+  if (kutuIzni !== null) {
     mkdirSync(join(kok, '01_kutular', kutu), { recursive: true });
     writeFileSync(join(kok, '01_kutular', kutu, 'KUTU.md'),
-      `# ${kutu}\n\n## Duruş sözleşmesi\nBİTİŞ HÂLİ: x\nKANIT: y\nKISIT: z\nBÜTÇE: 3 ÜRETİM çağrısı\nİZİN:       ${izin}\n`);
+      `# ${kutu}\n\n## Duruş sözleşmesi\nBİTİŞ HÂLİ: x\nKANIT: y\nKISIT: z\nBÜTÇE: 3 ÜRETİM çağrısı\nİZİN:       ${kutuIzni}\n`);
   }
 }
 
@@ -477,11 +487,91 @@ test('F1-5f MCP dikişi: dönem-AÇIK iken izin penceresi AÇILMAZ — listede y
   assert.match(engel.stderr, /mcp/);
   assert.match(engel.stderr, /İZİN-ENGELİ/, 'ajana ne yapacağı söylenmeli (adımı atla + zarfa yaz)');
 
-  // Sahip kutu açılışında sınıfı önceden serbest bıraktıysa çağrı GEÇER.
+  // Sahip kutu açılışında sınıfı önceden serbest bıraktıysa çağrı GEÇER — ve bu, AÇIKÇA
+  // verilmiş bir "allow" kararıdır. Sessiz geçiş yetmez (hasım bulgusu 2026-07-30): kanca
+  // karar vermeyince izin sistemi devreye girer ve settings.json'daki `ask` kuralları
+  // (git push · curl · golden) gece yarısı pencere açardı — F1-5f engelleyebiliyor ama
+  // geçirEMİyordu.
   donemAc(kok, { izin: 'mcp git-obje' });
   const serbest = kos(kok, cagri);
   assert.equal(serbest.status, 0);
-  assert.equal(serbest.stdout.trim(), '', 'önceden izinli sınıfta soru da engel de olmamalı');
+  assert.match(serbest.stdout, /"permissionDecision"\s*:\s*"allow"/, 'önceden izinli sınıf açıkça geçirilmeli');
+  assert.doesNotMatch(serbest.stdout, /"ask"/, 'izinli sınıfta pencere açılmamalı');
+});
+
+test('hasım-15: önceden izinli `disa` sınıfı settings.json ask kuralını EZER (allow kararı)', () => {
+  const kok = kurulum();
+  const push = { tool_name: 'Bash', tool_input: { command: 'git push origin main' } };
+  donemAc(kok, { izin: 'disa git-obje' });
+  const r = kos(kok, push);
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /"permissionDecision"\s*:\s*"allow"/,
+    'settings.json `ask` listesinde `Bash(git push:*)` var; kanca karar vermezse dönem insan bekler');
+});
+
+// ── Hasım turu 2026-07-30 · kafesin anahtarı ────────────────────────────────────────────────
+// Turun en sert bulgusu: izin listesi ölçtüğü tarafın yazabildiği bir dosyadan okunuyordu.
+// Aşağıdaki dört test o deliği ve kardeşlerini BİREBİR ölçer; kural geri alınırsa kırmızı olurlar.
+
+test('hasım-9: kutunun İZİN satırı artık HİÇBİR ŞEY vermez — izin YALNIZ çapadan okunur', () => {
+  const kok = kurulum();
+  const cagri = { tool_name: 'mcp__ornek__gonder', tool_input: { x: 'y' } };
+  // Ajanın dönem içinde yazmak ZORUNDA olduğu dosyaya izin yazmayı dene (eski delik):
+  donemAc(kok, { izin: 'yok', kutuIzni: 'mcp git-obje yazim' });
+  const engel = kos(kok, cagri);
+  assert.equal(engel.status, 2, 'KUTU.md üzerinden izin genişletilememeli: ' + engel.stdout);
+  assert.match(engel.stderr, /İZİN-ENGELİ/);
+  // Aynı sınıf çapada yazılıysa geçer — kapı çalışıyor, yalnız kaynağı değişti.
+  donemAc(kok, { izin: 'mcp' });
+  assert.equal(kos(kok, cagri).status, 0, 'çapadaki sınıf serbest geçmeli');
+});
+
+test('hasım-9b: çapa YOKKEN açık dönemde hiçbir sınıf serbest değildir (fail-closed)', () => {
+  const kok = kurulum();
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
+  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'DONEM-1\tKT-900\tyapim\ttatbikat\ndamga\t2026-07-30T10:00:00Z\n');
+  const engel = kos(kok, { tool_name: 'mcp__ornek__gonder', tool_input: { x: 'y' } });
+  assert.equal(engel.status, 2, 'çapasız dönemde "okuyamadım" serbest sayılmamalı');
+});
+
+test('hasım-10: `yazim` izni [SERT] kafesi ve kural evini AÇMAZ (sınıf yola göre bölünür)', () => {
+  const kok = kurulum();
+  donemAc(kok, { izin: 'yazim' });
+  // [SERT]: korumanın kendi kodu, kanca kablosu ve kilitli kararlar — `yazim` izniyle bile açılamaz.
+  // (Yollar fikstürün VARSAYILAN_LISTE'sinden seçildi; gerçek dağıtımda tools/sevk/ de bu bölümdedir.)
+  for (const komut of ['cp /tmp/x tools/guard/file-guard.sh', 'echo x > .claude/settings.json', 'cp /tmp/x 02_kanon/kilitli/K-01.md']) {
+    const r = kos(kok, { tool_name: 'Bash', tool_input: { command: komut } });
+    assert.equal(r.status, 2, '[SERT] yolu `yazim` izniyle açılmamalı: ' + komut + ' → ' + r.stdout);
+    assert.match(r.stderr, /kafes/, 'sınıf `kafes` olmalı (sözlükte yok): ' + komut);
+  }
+  // Kural evi: [SORULUR] bölümünde ama önceden ASLA verilemez (Edit yolundaki ayrımın kardeşi).
+  const kuralEvi = kos(kok, { tool_name: 'Bash', tool_input: { command: 'cp /tmp/x 00_genesis/GENESIS.md' } });
+  assert.equal(kuralEvi.status, 2, 'kural evi `yazim` izniyle açılmamalı: ' + kuralEvi.stdout);
+  assert.match(kuralEvi.stderr, /kural-evi/);
+  // Sıradan korunan yol (golden) `yazim` iznine takılmaz — izin listesi bir esneme yeridir.
+  const golden = kos(kok, { tool_name: 'Bash', tool_input: { command: 'cp /tmp/x 02_kanon/golden/a.json' } });
+  assert.equal(golden.status, 0, '`yazim` izni sıradan korunan yolda çalışmalı: ' + golden.stderr);
+});
+
+test('hasım-10b: el-sürüşlü kipte davranış DEĞİŞMEDİ — [SERT] anan yazım komutu yine SORULUR', () => {
+  const kok = kurulum();   // dönem YOK
+  const r = kos(kok, { tool_name: 'Bash', tool_input: { command: 'cp /tmp/x tools/guard/file-guard.sh' } });
+  assert.equal(r.status, 0, 'dönem yokken engel değil soru olmalı');
+  assert.match(r.stdout, /"permissionDecision"\s*:\s*"ask"/, 'sahip klavyedeyken karar ona gider');
+});
+
+test('hasım-11: evre alanını yazan çağrı ve izin çapası dönem dikişine takılır', () => {
+  const kok = kurulum();
+  // Dönem yokken: sahibe sorulur (tören kendi yazımını burada onaylatır).
+  const sor = kos(kok, { tool_name: 'Bash', tool_input: { command: '. tools/sevk/ortak.sh; donem_turu_yaz . kapanis' } });
+  assert.equal(sor.status, 0);
+  assert.match(sor.stdout, /"permissionDecision"\s*:\s*"ask"/, 'evre yazımı el-sürüşlü kipte sorulmalı');
+  // Dönem açıkken: `donem` sınıfı sözlükte YOK → ENGEL (ajan evreyi çeviremez).
+  donemAc(kok, { izin: 'yazim git-obje disa mcp korumali-yol kutu-ciktilari' });
+  const engel = kos(kok, { tool_name: 'Bash', tool_input: { command: '. tools/sevk/ortak.sh; donem_turu_yaz . kapanis' } });
+  assert.equal(engel.status, 2, 'evre çevirme TÜM izinler verilse bile engellenmeli: ' + engel.stdout);
+  const capa = kos(kok, { tool_name: 'Bash', tool_input: { command: 'echo "izin\tyazim" > tools/sevk/.donem-capa' } });
+  assert.equal(capa.status, 2, 'çapanın kendisi dönem içinde yazılamamalı: ' + capa.stdout);
 });
 
 test('E2 git-obje dikişi: dönem-AÇIK iken commit sorulur; worktree bağlamında ENGEL; dönem yokken serbest', () => {

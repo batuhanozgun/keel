@@ -40,7 +40,13 @@ case "$INPUT" in
     # deliğidir (bu yüzden çıplak: "cp" baştaki cp'yi de yakalar — hasım bulgusu). Gate dikiş
     # tetikleyicilerinin TAM üst-kümesidir (markerlar + dışa-giden + git-obje + yazım fiilleri).
     case "$INPUT" in
-      *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.donem-acik'*|*'.dur'*) : ;;
+      # `.donem-` ÖNEKİ iki dosyayı birden kapsar: gösterge (.donem-acik) ve izin/bütçe çapası
+      # (.donem-capa). Çapa hasım turunda doğdu: izin listesi eskiden kutunun KUTU.md'sinden
+      # okunuyordu, o dosya hiçbir koruma listesinde DEĞİL ve dönem içinde ajanın yazması
+      # tasarımın kendi gereği — kafesteki taraf kendi anahtarını yazabiliyordu.
+      # `donem_turu_yaz` da buradadır: evre alanını yazan tek fonksiyondur; adı geçmeden
+      # çağrılamaz (metin-eş sınırı damga-dikişiyle aynı — bilinen ve ilan edilmiş sınır).
+      *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.donem-'*|*'.dur'*|*donem_turu_yaz*) : ;;
       # E5 kanal betikleri: ön-eleme listesi dikiş kapsamının ÜST-kümesi olmak zorundadır —
       # buraya eklenmezse aşağıdaki kanal dikişi HİÇ koşmaz (yaşanmış: dikiş yazıldı, gate
       # elemişti; sessiz delik). "Az eşleşme koruma deliğidir" kuralının canlı örneği.
@@ -147,28 +153,42 @@ const donemAcik = existsSync(resolve(ROOT, "tools/sevk/.donem-acik"));
 // KARAR_ALANI.md). Bunlari onceden serbest birakabilmek, ajanin kendi kafesini genisletebilmesi
 // demek olurdu — izin listesi bir esneme yeridir, kafesin anahtari degil.
 const IZIN_SOZLUGU = new Set(["git-obje", "disa", "mcp", "yazim", "korumali-yol", "kutu-ciktilari"]);
+// KURAL EVI ve KAFES yollari: iki listenin de sozlukte KARSILIGI YOKTUR — bu, "hicbir zaman
+// onceden verilemez" ilaninin mekanik yuzudur. Edit yolunda sinif zaten YOLA gore bolunuyordu
+// (asagida, `sor` dali); Bash yolunda BOLUNMUYORDU ve hepsi tek `yazim` sinifina dusuyordu —
+// yani `İZİN: yazim` yazan tek satir [SERT] kafesi ve kural evini Bash yolundan aciyordu (hasim
+// bulgusu 2026-07-30, siddet YUKSEK). Liste burada tanimlanir cunku iki dal da okur.
+const KURAL_EVI = ["00_genesis/", "02_kanon/OTONOM_DONEM.md", "02_kanon/KARAR_ALANI.md"];
+const KUTU_CIKTILARI = ["02_kanon/BITTI_TANIMI.md", "02_kanon/KUTU_PLANI.md"];
 let izinListesi = null;
 const izinli = (sinif) => {
   if (!donemAcik) return true;                 // el-suruslu: karar sahibe gider (SOR)
   if (!IZIN_SOZLUGU.has(sinif)) return false;  // sozlukte olmayan sinif onceden verilemez
   if (izinListesi === null) {
     izinListesi = new Set();
+    // CAPA, KUTU DEGIL (hasim bulgusu 2026-07-30): izin listesi eskiden dogrudan
+    // `01_kutular/<kutu>/KUTU.md`den okunuyordu. O dosya korunan-yollarin HICBIR bolumunde
+    // degil ve donem icinde ajanin ona yazmasi tasarimin kendi geregi (gorev tablosunu G-01
+    // dogurur) — yani kafesteki taraf kendi anahtarini yazabiliyordu. Artik deger, SAHIP
+    // KLAVYEDEYKEN kosan acilis toreninde (donem-ac.sh) KAPALI SOZLUKLE ayristirilir ve
+    // ajanin erisemedigi capaya yazilir; kanca yalniz capayi okur.
     try {
-      const g = readFileSync(resolve(ROOT, "tools/sevk/.donem-acik"), "utf8").split("\n")[0].split("\t");
-      const kutu = String(g[1] || "").trim();
-      if (/^[A-Za-z0-9._-]+$/.test(kutu)) {
-        const km = readFileSync(resolve(ROOT, "01_kutular", kutu, "KUTU.md"), "utf8");
-        const satir = (km.split("\n").find((s) => /^\s*İZİN\s*:/.test(s)) || "").replace(/^\s*İZİN\s*:/, "");
-        for (const jeton of satir.split(/[\s,·]+/)) if (IZIN_SOZLUGU.has(jeton)) izinListesi.add(jeton);
-      }
-    } catch { izinListesi = new Set(); }   // okunamayan kutu = izin YOK (fail-closed)
+      const c = readFileSync(resolve(ROOT, "tools/sevk/.donem-capa"), "utf8");
+      const satir = (c.split("\n").find((s) => /^izin\t/.test(s)) || "").replace(/^izin\t/, "");
+      for (const jeton of satir.split(/[\s,·]+/)) if (IZIN_SOZLUGU.has(jeton)) izinListesi.add(jeton);
+    } catch { izinListesi = new Set(); }   // capa yok/okunamiyor = izin YOK (fail-closed)
   }
   return izinListesi.has(sinif);
 };
 // Karari basar: donemde izinliyse GEC, degilse ENGEL-IZIN; donem yoksa bugunku SOR davranisi.
 const izinKarari = (sinif, sorKodu, detay) => {
   if (!donemAcik) { console.log(sorKodu + (detay ? "\t" + detay : "")); process.exit(0); }
-  if (izinli(sinif)) { console.log("GEC"); process.exit(0); }
+  // ONCEDEN IZINLI SINIF ACIKCA "allow" DONER (hasim bulgusu 2026-07-30). Sessiz "GEC" karar
+  // DEGILDIR: kanca karar vermeyince izin sistemi devreye girer ve `settings.json`daki `ask`
+  // kurallari (git push · curl · golden yazimi …) PENCERE ACAR. Yani F1-5f yarim calisiyordu:
+  // engelleyebiliyor ama gecirEMIyordu — sahibin kutu acilisinda verdigi izin, gece yarisi
+  // insan bekleyen bir pencereye donusuyordu. Paketin "pencere zaten acilmiyor" ilani buydu.
+  if (izinli(sinif)) { console.log("IZINLI\t" + sinif); process.exit(0); }
   console.log("ENGEL-IZIN\t" + sinif + (detay ? " · " + detay : ""));
   process.exit(0);
 };
@@ -236,6 +256,16 @@ if ((j.tool_name || "") === "Bash") {
   // sahip onayiyla gecer (rol-toreni damga-dikisi emsali — G3.3c "bu NORMALdir"). Metin-es
   // sinir damga-dikisiyle aynidir (bilinen sinir).
   if (komut.includes(".donem-acik")) izinKarari("donem", "SOR-DONEM", "tools/sevk/.donem-acik");
+  // Capa-dikisi (hasim bulgusu 2026-07-30): `.donem-capa` izin listesini ve butce tavanini
+  // tasir — yani KAFESIN ANAHTARIDIR. Gostergeyle ayni sinif: dokunan Bash komutu sorulur ve
+  // donem icinde `donem` sinifi sozlukte OLMADIGI icin ENGEL alir.
+  if (komut.includes(".donem-capa")) izinKarari("donem", "SOR-DONEM", "tools/sevk/.donem-capa");
+  // Evre-dikisi (hasim bulgusu 2026-07-30): gostergenin EVRE alanini yazan tek fonksiyon
+  // `ortak.sh:donem_turu_yaz`tir ve o kitaplik source edilip cagrilabiliyordu — komut metninde
+  // `.donem-acik` GECMEDIGI icin ustteki dikis onu hic gormuyordu. Oysa ortak.sh:188 ve kural
+  // evi "ajan eliyle cagrilmasi ENGELLENIR" diye ILAN ediyordu: koruma yoktu, ilan vardi.
+  // Evreyi ceviren ajan uretim gorevlerini o donemde sessizce sevk disi birakabiliyordu.
+  if (komut.includes("donem_turu_yaz")) izinKarari("donem", "SOR-DONEM", "ortak.sh:donem_turu_yaz");
   // DUR-dikisi (E4 hasim bulgusu): `.dur` sahibin acil frenidir ve .gitignore icindedir — bekcinin
   // porcelain hatti onu GOREMEZ. Kosu-gostergesiyle ayni sinif: ona dokunan Bash komutu SORULUR
   // (donem icinde modelin freni sessizce silmesini engeller; el-suruslu oturumda da sorulur —
@@ -317,7 +347,21 @@ if ((j.tool_name || "") === "Bash") {
       // (tools/guard/ + tools/sevk/ + .claude/) anan komutta sorar (A5 ruhu), digerinde susar.
       const kurulumSuruyorB = !existsSync(resolve(ROOT, ".kurulum-tamam"));
       const cekirdekAnildi = anilanlar.some((k) => /^(tools\/guard\/|tools\/sevk\/|\.claude\/)/.test(k.yol));
-      if (!kurulumSuruyorB || cekirdekAnildi) izinKarari("yazim", "SOR-YAZIM", anilanlar[0].yol);
+      // SINIF YOLA GORE (hasim bulgusu 2026-07-30, YUKSEK): burasi eskiden anilan yolun hangi
+      // bolumden geldigine BAKMADAN tek bir `yazim` sinifi uretiyordu ve `yazim` izin
+      // sozlugunde. Sonuc: kutunun `İZİN: yazim` satiri, Bash yolundan `> tools/guard/...`,
+      // `> tools/sevk/sevk.sh`, `cp … .claude/settings.json` ve `sed -i … 02_kanon/KARAR_ALANI.md`
+      // yazimlarini AYNI ANDA serbest birakiyordu — Edit yolunda ayni hedefler [SERT] ENGEL ve
+      // `kural-evi` (sozluk disi) sinifindaydi. Iki yol arasindaki bu asimetri ILAN EDILMEMISTI
+      // ve dogrudan bu paketin ilanini ("kural evi HICBIR ZAMAN onceden verilemez") yanliyordu.
+      // El-suruslu kipte davranis DEGISMEZ: donem yokken izinKarari zaten SOR-YAZIM basar.
+      const anilanSert = anilanlar.find((k) => k.bolum === "[SERT]");
+      const anilanKuralEvi = anilanlar.find((k) => KURAL_EVI.includes(k.yol));
+      const anilanKutu = anilanlar.find((k) => KUTU_CIKTILARI.includes(k.yol));
+      const secilenY = anilanSert || anilanKuralEvi || anilanKutu || anilanlar[0];
+      const sinifY = anilanSert ? "kafes" : (anilanKuralEvi ? "kural-evi"
+                   : (anilanKutu ? "kutu-ciktilari" : "yazim"));
+      if (!kurulumSuruyorB || cekirdekAnildi) izinKarari(sinifY, "SOR-YAZIM", secilenY.yol);
     }
   }
   console.log("GEC"); process.exit(0);
@@ -450,8 +494,8 @@ if (sor) {
   if (kurulumSuruyor) { console.log("GEC"); process.exit(0); }
   // Sinif YOLA gore: kural evi ASLA onceden verilemez; ilk kutunun iki urunu kendi sinifindadir;
   // gerisi (golden dahil, projenin ekledigi yollar dahil) `korumali-yol` sinifidir.
-  const KURAL_EVI = ["00_genesis/", "02_kanon/OTONOM_DONEM.md", "02_kanon/KARAR_ALANI.md"];
-  const KUTU_CIKTILARI = ["02_kanon/BITTI_TANIMI.md", "02_kanon/KUTU_PLANI.md"];
+  // Iki liste artik TEK YERDE tanimli (yukarida, izin sozlugunun yaninda): Bash dali da ayni
+  // ayrimi yapmak zorunda ve iki kopya sapmanin ta kendisiydi (hasim bulgusu 2026-07-30).
   const sinif = KURAL_EVI.includes(sor.yol) ? "kural-evi"
               : (KUTU_CIKTILARI.includes(sor.yol) ? "kutu-ciktilari" : "korumali-yol");
   izinKarari(sinif, "SOR", sor.yol);
@@ -464,6 +508,15 @@ DETAY="${KARAR#*$'\t'}"
 
 case "$DURUM" in
   GEC) exit 0 ;;
+  IZINLI)
+    # Otonom dönemde ÖNCEDEN İZİNLİ sınıf: karar burada VERİLİR. Sessiz geçiş yetmiyordu —
+    # karar verilmeyince `settings.json` `ask` kuralları pencere açıyor ve dönem insan bekliyordu
+    # (hasım turu 2026-07-30; paketin "pencere zaten açılmıyor" ilanının kodda karşılığı yoktu).
+    # El-sürüşlü kipte bu dala HİÇ gelinmez: izinKarari dönem yokken SOR basar.
+    GEREKCE="Otonom dönem: bu sınıf ($DETAY) kutunun duruş sözleşmesindeki İZİN satırında sahip tarafından önceden serbest bırakıldı (çapa: tools/sevk/.donem-capa)." \
+      "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",permissionDecisionReason:process.env.GEREKCE}}))'
+    exit 0
+    ;;
   ENGEL)
     engel "bu yol korumalı ([SERT] sınıfı: $DETAY). Kilitli karar / guard dosyaları oturum içinde DEĞİŞTİRİLMEZ; meşru bir değişiklik gerekiyorsa sahibine söyle — yol: sahip kararı + tören. Liste: tools/guard/korunan-yollar.txt"
     ;;
