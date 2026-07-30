@@ -26,7 +26,7 @@ const GEN = join(KOK_REPO, '00_genesis');
 // TAVAN SAYILARI BURADA SABİTTİR (otonom-sim emsali, hasım bulgusu 2026-07-28): tavanı ölçtüğü
 // dosyanın kendi yorumundan okumak, metni büyüten kişi aynı düzenlemede sayıyı da büyütünce
 // freni fren olmaktan çıkarıyordu. Tavan değişikliği İKİ dosyada bilinçli edim ister.
-const TAVANLAR = { KILAVUZ: 5632, ROL_ALT_AJAN: 2560 };
+const TAVANLAR = { KILAVUZ: 5632, ROL_ALT_AJAN: 2816 };
 const MARJ_FRENI = 500;
 
 function kalipTavani(metin, ad) {

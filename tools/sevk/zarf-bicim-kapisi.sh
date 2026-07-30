@@ -461,12 +461,25 @@ const jargonTara = (metin) => {
   if (/(?:^|[^\p{L}\p{N}])(?:00_pano|01_kutular|02_kanon|03_roller|00_genesis|tools|\.claude)\//u.test(metin)) j.push("dosya yolu");
   return j;
 };
+// SADE VE KISA YAZMA KAPISI (sahip karari, 2026-07-31). Iki yasak birlikte calisir:
+// (1) JARGON — numara/dosya adi/yol gecemez (asagida, eskiden beri).
+// (2) UZUNLUK — bu satirlar sahip yuzeyine AYNEN yazilir ve kuyrugun tavanini onlar doldurur.
+//     Tavan 2KBdan 10KBa cikarildi, ama asil cozum tavan degil KALEM: uzun aciklama, sahibin
+//     okumadigi aciklamadir. Kapi KIRPMAZ, REDDEDER — kirpilmis bir sahip cumlesi yalan soyler
+//     ve rol daha kisa yazmayi ancak geri donerse ogrenir. Esikler catal-kuyruk.sh kis()
+//     tavanlarinin ALTINDADIR; boylece kirpma dali fiilen hic calismaz.
+const SAHIP_TAVANI = { "ÇEVİRİ": 200, "ETKİ": 240 };
 if (!catalYok && !denetciMi) {
   for (const [ad, metin] of [["ÇEVİRİ", alan["ÇEVİRİ"] || ""], ["ETKİ", alan["ETKİ"] || ""]]) {
     const jargon = jargonTara(metin);
     if (jargon.length) {
       red(ad + " satırı sahibin bilmediği kelime taşıyor (" + jargon.join(", ") + ")",
           "soruyu ve etkisini sahip diline çevir: numara/dosya adı/yol GEÇMEZ — «cevabına göre ertesi sabah ne değişir» diliyle yaz (KARAR_ALANI Bölüm A madde 6). Bu iki satır kuyruğa AYNEN yazılır.");
+    }
+    const b = Buffer.byteLength(metin, "utf8");
+    if (b > SAHIP_TAVANI[ad]) {
+      red(ad + " satırı çok uzun (" + b + " B > " + SAHIP_TAVANI[ad] + " B)",
+          "sahibe giden cümle SADE ve KISA olmalı: benzetme yok, tek düz cümle, gündelik kelimeler. Uzun açıklama sahibin okumadığı açıklamadır; kısalt ve yeniden ver (kapı kırpmaz, geri çevirir)");
     }
   }
 }
@@ -486,7 +499,7 @@ if (sec && !/^açık-uçlu\b/i.test(sec)) {
   for (const pRaw of parcalar) {
     if (Buffer.byteLength(pRaw, "utf8") > 120) {
       red("SEÇENEKLER maddesi 120 baytı aşıyor: " + pRaw.slice(0, 60),
-          "her seçenek sahip dilinde TEK kısa cümle olmalı — telefonda okunacak");
+          "her seçenek sahip dilinde TEK kısa cümle olmalı — benzetme yok, gündelik kelimeler; telefonda okunacak");
     }
     const j = jargonTara(pRaw);
     if (j.length) {

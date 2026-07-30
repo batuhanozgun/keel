@@ -8,8 +8,14 @@
      otonom kural evi BU dosyadır. Keşfi ÜÇ yoldan: sevkin devir metnindeki `kural:` işaretçisi ·
      rolün alt-ajan koltuğundaki açılış okuma listesi (G3.3e) · rol sözleşmesinin "Açılış
      ek-okumaları" satırı. İlk ikisi mekaniktir, üçüncüsü serbest metin.
-     Tavan: 17.408 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
+     Tavan: 17.664 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
      ölçer; kurulu bekçiye girmez — F3 tablosu EL_KITABI'nda ve ona dokunulmuyor).
+     ALTINCI ARTIŞ (2026-07-31, SAHİP KARARI): 17.408 → 17.664 (+256 B). Sebep tek bir kural:
+     sahibe giden üç satır SADE, GÜNDELİK ve KISA olacak (§6.6; bayt tavanları kapıda mekanik,
+     kapı kırpmaz geri çevirir). Kararı sahip verdi — kuyruk tavanı 2KBdan 10KBa çıkarılırken
+     "asıl çözüm tavan değil kalem" dedi. Metin ÜÇ kez sıkıştırıldı (yeni bloğun kendisi
+     kaldırıldı ve kural, sahibin dilini zaten düzenleyen §6.6ya eklendi; §6.7 de kısaltıldı);
+     artış ondan sonra kalan. Yeni marj 687 B.
      BEŞİNCİ ARTIŞ (2026-07-30, Faz 2 sıra 8 · cevap kanalı): 16.640 → 17.408 (+768 B).
      Sebep yine ek KURAL: (i) zarfa isteğe bağlı SEÇENEKLER alt-alanı ve biçimi (§4) ·
      (ii) §6ya 7. madde — uzaktan cevabın üç şartı, "cevap bir indekstir" ilkesi, kapanış
@@ -130,8 +136,8 @@ TÜRETME-İZİ: yok | "sormadım çünkü VIZYON/karar <satır>"
 GERİ-ÇEKİLEN: yok | <dönem içinde açılıp geri çekilen çatal/karar — tek satır iz>
 ```
 
-- **SEÇENEKLER:** yazılırsa 2-4 seçenek, her biri ≤120 B, sahip dilinde (jargon kapısı
-  ÇEVİRİ/ETKİ ile aynı). **Yokluğu red sebebi değildir** — o çatal klavye-yalnız kalır.
+- **SEÇENEKLER:** yazılırsa 2-4 seçenek, sahip dilinde. **Yokluğu red sebebi değildir** — o
+  çatal klavye-yalnız kalır.
 - **Koşullu 7. satır — İZİN-ENGELİ:** izin engeli yaşandıysa (§2 İZİN) zarfa
   `İZİN-ENGELİ: <ne engellendi>` yazılır; kapı bunu transkriptten ÇİFT kaynakla doğrular —
   yaşanmışken yazılmamış zarf geri döner. Engellenen adım ATLANIR; iş durmaz.
@@ -180,13 +186,15 @@ Dosya yoksa ya da profil boşsa **çatal sahibe gidemez** — soru kanalı kapal
    sözleşmesi kendi dosyasında). Hükmü GEÇTİ/DÖNDÜ'dür ve **metni yeniden yazamaz** — sahip
    cümlesi zarfın günlük kaydından mekanik alınır (§9). DÖNDÜ izini dış göz okur.
 6. **Sahibin bilmediği kelime kırmızıdır:** çeviride karar/görev numarası, dosya adı ya da yol
-   geçen çatal kapıdan döner. *Ders: sahip anlamadığı soruya "olur" der.*
+   geçen çatal kapıdan döner. **Benzetme ve uzunluk da öyle** — sahibe giden üç satır sade,
+   gündelik ve kısadır (≤200/240/120 B); kapı kırpmaz, geri çevirir. *Ders: sahip anlamadığı
+   soruya "olur" der; okumadığı açıklamaya da.*
 
-7. **Uzaktan cevap (kanal açıksa):** posta tek-kullanımlık kimlik çapası taşır; sahip
-   yanıtlayıp **yalnız seçenek numarasını** yazar. Kuyruğa yazılan cümle sahibin değil
-   **yapının kendi seçenek metnidir** — gelen tek şey bir indekstir (serbest-metin yasağının
-   simetriği). Kod üç şartla doğar: kanal açık · `UZAKTAN` hükmü uygun · SEÇENEKLER sayılabilir;
-   **kapanış evresinde doğmaz.** Uzaktan cevap kapanmış dönemi **açmaz.**
+7. **Uzaktan cevap (kanal açıksa):** posta tek-kullanımlık kimlik çapası taşır; sahip yanıtlayıp
+   **yalnız seçenek numarasını** yazar. Kuyruğa yazılan cümle sahibin değil **yapının kendi
+   seçeneğidir** — gelen tek şey bir indekstir (serbest-metin yasağının simetriği). Kod üç
+   şartla doğar: kanal açık · `UZAKTAN` uygun · SEÇENEKLER sayılabilir; kapanış evresinde
+   doğmaz. Uzaktan cevap kapanmış dönemi **açmaz.**
 
 Mekanikler: `karar-alani.sh` · `catal-kuyruk.sh` (durum + ekleme + `--cevapla`: kuyruğa yazan
 TEK betik) · `nabiz.sh` (uzaktan cevap; dönem kapısının dışında) · biçim kapısı.

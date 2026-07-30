@@ -18,7 +18,8 @@
      tören damgasına (`tools/guard/.aktif-rol`) bakar; otonom dönemde tören YOKTUR, damga da
      yoktur ⇒ kafes o dönemde susar. Listeye Edit/Write/Bash girerse "yazamayan koltuk"
      güvencesi sessizce ölür — kurulum denetimi bunu keser (G4.5).
-     Tavan: 2.560 B + MARJ FRENİ 500 B (ölçen: tools/guard/test/otonom-dosyalar.test.mjs). -->
+     Tavan: 2.816 B + MARJ FRENİ 500 B — ARTIŞ (2026-07-31, sahip kararı): 2.560 → 2.816
+     (+256 B); sebep tek kural: sahibe giden satırlar sade, gündelik ve kısa. Yeni marj ~705 B. (ölçen: tools/guard/test/otonom-dosyalar.test.mjs). -->
 ---
 name: «SLUG»
 description: «ROL-ADI» — «BİR-SATIR-İŞ» Otonom dönemde sevkin çağırdığı koltuk; sözleşmesi 03_roller/«SLUG»/ROL.md, kuralları 02_kanon/OTONOM_DONEM.md.
@@ -41,8 +42,8 @@ kendi başına görev açmazsın, başka koltuğa iş vermezsin — iç içe alt
 durur.
 
 Dönüşünü `02_kanon/OTONOM_DONEM.md` §4'teki adlı listeyle bitir — 6 üst alan, her etiket AYRI
-satırın başında; `ÇATAL` doluysa üç alt-alan zorunlu + `SEÇENEKLER` isteğe bağlı
-(yazarsan sahip telefondan cevaplayabilir). Biçim kapısı (SubagentStop) eksik ya da
+satırın başında; `ÇATAL` doluysa üç alt-alan zorunlu + `SEÇENEKLER` isteğe bağlı. Sahip satırları
+SADE ve KISA: benzetme yok (≤200/240/120 B; kapı kırpmaz, geri çevirir). Biçim kapısı (SubagentStop) eksik ya da
 yanlış biçimli dönüşü geri çevirir; **zarfsız dönüş "bitti" sayılmaz.**
 
 Seni bağlayan kurallar buraya KOPYALANMADI (tek-ev), işaretçileri var — hüküm basmadan önce OKU:

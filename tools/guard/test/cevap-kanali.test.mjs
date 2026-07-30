@@ -672,3 +672,84 @@ test('KAPALI DEVRE negatifi: Auto-Submitted:no taşıyan GEÇERLİ cevap yine uy
   assert.match(kos(kok, 'catal-kuyruk.sh', ['--durum']).stdout, /Ç-03\tCEVAPLANDI/,
     'Auto-Submitted: no taşıyan geçerli cevap izsiz düştü');
 });
+
+
+// ══ 17 · SADE VE KISA YAZMA KAPISI (sahip kararı 2026-07-31) ══════════════════════════════
+// Sahip kuyruk tavanını 2 KBdan 10 KBa çıkarırken şunu söyledi: "asıl çözüm tavan değil kalem —
+// ajanlar sade, jargonsuz, benzetmesiz yazsın." Tavan artışı TEK BAŞINA yeterli değildi: kuyruğu
+// dolduran şey madde SAYISI değil madde BOYUydu. Kapı artık uzun sahip cümlesini KIRPMAZ,
+// REDDEDER — kırpılmış bir sahip cümlesi yalan söyler ve rol daha kısa yazmayı ancak geri
+// dönerse öğrenir.
+function zarfKur({ ceviri = 'Hangisi olsun?', etki = 'Yarın sabah farkı şu olur', secenekler = null } = {}) {
+  return ['BİTEN: G-07 — iş bitti · kanıt: 00_pano/PANO.md:3',
+    'ÇATAL: dolu', 'ÇEVİRİ: ' + ceviri, 'ETKİ: ' + etki, 'BEKLETİR: G-12',
+    ...(secenekler ? ['SEÇENEKLER: ' + secenekler] : []),
+    'DEĞERLENDİRMEDİKLERİM: yok', 'SIRADAKİ: kapalı', 'TÜRETME-İZİ: yok', 'GERİ-ÇEKİLEN: yok'].join('\n');
+}
+function kapiKos(zarf) {
+  const kok = mkdtempSync(join(tmpdir(), 'kapi-test-'));
+  for (const d of [['00_pano'], ['tools', 'sevk'], ['.claude', 'agents'], ['01_kutular', 'KT-001']]) {
+    mkdirSync(join(kok, ...d), { recursive: true });
+  }
+  for (const b of ['ortak.sh', 'kilit.sh', 'zarf-ekle.sh', 'zarf-bicim-kapisi.sh', 'catal-kuyruk.sh', 'karar-alani.sh']) {
+    copyFileSync(join(KOK_REPO, 'tools', 'sevk', b), join(kok, 'tools', 'sevk', b));
+    chmodSync(join(kok, 'tools', 'sevk', b), 0o755);
+  }
+  copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'cevap-sozlugu.txt'), join(kok, 'tools', 'sevk', 'cevap-sozlugu.txt'));
+  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'D1\tKT-001\tyapim\tgercek\n2026-07-31T00:00:00Z\n');
+  writeFileSync(join(kok, '.claude', 'agents', 'po.md'), '# rol\n');
+  writeFileSync(join(kok, '00_pano', 'PANO.md'), '# pano\n');   // kanıt işaretçisinin hedefi
+  // Kapının beklediği olay biçimi catal.test.mjs ile AYNI: { agent_type, last_assistant_message }
+  const olay = JSON.stringify({ agent_type: 'po', last_assistant_message: zarf });
+  return spawnSync('bash', [join(kok, 'tools', 'sevk', 'zarf-bicim-kapisi.sh')],
+    { encoding: 'utf8', input: olay, env: { ...process.env, CLAUDE_PROJECT_DIR: kok } });
+}
+
+test('kısa ve sade ÇEVİRİ/ETKİ kapıdan GEÇER', () => {
+  const r = kapiKos(zarfKur());
+  assert.notEqual(r.status, 2, 'sade zarf reddedildi: ' + r.stderr);
+});
+
+test('uzun ÇEVİRİ kapıdan DÖNER (kırpılmaz, geri çevrilir)', () => {
+  const r = kapiKos(zarfKur({ ceviri: 'Aynı şeyi ' + 'çok uzun uzun anlatan bir cümle. '.repeat(9) }));
+  assert.equal(r.status, 2, 'uzun ÇEVİRİ geçti — sahip yüzeyi şişer');
+  assert.match(r.stderr, /çok uzun/, 'red sebebi uzunluk değil: ' + r.stderr);
+  assert.match(r.stderr, /SADE ve KISA|benzetme yok/, 'role sade yazması söylenmiyor');
+});
+
+test('uzun ETKİ kapıdan DÖNER', () => {
+  const r = kapiKos(zarfKur({ etki: 'Sabah şu olur ve şu olur ve ayrıca şu da olur. '.repeat(7) }));
+  assert.equal(r.status, 2, 'uzun ETKİ geçti');
+  assert.match(r.stderr, /ETKİ satırı çok uzun/);
+});
+
+test('kapı eşiği kuyruğun kırpma tavanının ALTINDA (kırpma dalı fiilen hiç koşmaz)', () => {
+  const kapi = readFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-bicim-kapisi.sh'), 'utf8');
+  const kuyruk = readFileSync(join(KOK_REPO, 'tools', 'sevk', 'catal-kuyruk.sh'), 'utf8');
+  const kapiCeviri = Number((kapi.match(/"ÇEVİRİ":\s*(\d+)/) || [])[1]);
+  const kapiEtki = Number((kapi.match(/"ETKİ":\s*(\d+)/) || [])[1]);
+  const kisCeviri = Number((kuyruk.match(/kis\(a\.ceviri,\s*(\d+)\)/) || [])[1]);
+  const kisEtki = Number((kuyruk.match(/kis\(a\.etki,\s*(\d+)\)/) || [])[1]);
+  assert.ok(kapiCeviri && kisCeviri && kapiEtki && kisEtki, 'eşikler okunamadı');
+  assert.ok(kapiCeviri < kisCeviri, `kapı eşiği (${kapiCeviri}) kırpma tavanının (${kisCeviri}) altında değil — sahip cümlesi kesilebilir`);
+  assert.ok(kapiEtki < kisEtki, `ETKİ: kapı ${kapiEtki} ≥ kırpma ${kisEtki}`);
+});
+
+test('kuyruk tavanı 10 KB ve ÜÇ yazıcının başlığı BAYT-EŞ', () => {
+  const kalip = readFileSync(join(KOK_REPO, '00_genesis', 'EL_KITABI_KALIBI.md'), 'utf8');
+  assert.match(kalip, /SENDE_BEKLEYEN 10KB/, 'ilan edilen tavan 10KB değil');
+  // Başlığı üç yer yazar (kuyruk --ekle · kuyruk --not · kapanış kancası). Ayrışırlarsa dosya
+  // kimin doğurduğuna göre farklı içerikle doğar — D-02nin tam olarak yasakladığı şey.
+  const blok = (metin) => {
+    const i = metin.indexOf('MADDE SİLİNMEZ');
+    assert.ok(i > 0, 'başlık bloğu bulunamadı');
+    return metin.slice(i, metin.indexOf('-->', i));
+  };
+  const kuyruk = readFileSync(join(KOK_REPO, 'tools', 'sevk', 'catal-kuyruk.sh'), 'utf8');
+  const kapanis = readFileSync(join(KOK_REPO, 'tools', 'guard', 'kapanis.sh'), 'utf8');
+  const hepsi = new Set([blok(kuyruk), blok(kuyruk.slice(kuyruk.indexOf('MADDE SİLİNMEZ') + 20)), blok(kapanis)]);
+  assert.equal(hepsi.size, 1, 'üç başlık ayrışmış (' + hepsi.size + ' farklı sürüm)');
+  assert.match([...hepsi][0], /tavan 10KB/, 'başlıktaki tavan 10KB değil');
+  assert.ok(!/kırpılır/.test([...hepsi][0]),
+    'başlık hâlâ kırpma vaat ediyor ama kırpan kod YOK — "yorumda yazılı, kodda yok" sınıfı');
+});

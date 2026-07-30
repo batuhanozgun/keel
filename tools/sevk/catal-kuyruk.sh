@@ -177,7 +177,8 @@ const imza = "kaynak: zarf-günlüğü satır " + satirNo;
 const BASLIK = [
   "<!-- yazar: kapanış kancası (mekanik ekleme) + cevabı alan rol (kapanış işareti) — EL_KITABI F1 istisna 2.",
   "     Biçim: \"- [ ] <tarih> · <rol> · tek cümle · kaynak: oturum <id>\"; cevaplanınca aynı satır",
-  "     \"- [x] … · cevap: … · <tarih>\" olur. MADDE SİLİNMEZ (tavan 2KB; taşmada en eski KAPALI izler kırpılır). -->",
+  "     \"- [x] … · cevap: … · <tarih>\" olur. MADDE SİLİNMEZ ve KIRPILMAZ (tavan 10KB; aşarsa bekçi SARI basar,",
+  "     iş durmaz — çözüm satırı kırpmak değil, sade ve kısa yazmaktır). -->",
   "# SENDE BEKLEYEN — sahipte bekleyen maddeler",
   "",
   "",
@@ -228,7 +229,8 @@ const bitir = (durum, deger) => { console.log(durum + "\t" + deger); process.exi
 const BASLIK = [
   "<!-- yazar: kapanış kancası (mekanik ekleme) + cevabı alan rol (kapanış işareti) — EL_KITABI F1 istisna 2.",
   "     Biçim: \"- [ ] <tarih> · <rol> · tek cümle · kaynak: oturum <id>\"; cevaplanınca aynı satır",
-  "     \"- [x] … · cevap: … · <tarih>\" olur. MADDE SİLİNMEZ (tavan 2KB; taşmada en eski KAPALI izler kırpılır). -->",
+  "     \"- [x] … · cevap: … · <tarih>\" olur. MADDE SİLİNMEZ ve KIRPILMAZ (tavan 10KB; aşarsa bekçi SARI basar,",
+  "     iş durmaz — çözüm satırı kırpmak değil, sade ve kısa yazmaktır). -->",
   "# SENDE BEKLEYEN — sahipte bekleyen maddeler",
   "",
   "",

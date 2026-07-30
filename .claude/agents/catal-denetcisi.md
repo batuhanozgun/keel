@@ -25,7 +25,10 @@ ayrıdır: o soruyu sahibe göndermeyi değil, **telefondan cevaplanmasını** k
    (`dosya:satır` ya da `K-NN`); işaretçisiz "zaten yazıyor" hükmü GEÇERSİZDİR.
 3. **Çeviri kalitesi.** ÇEVİRİ satırı sahibin bilmediği kelime taşıyor mu — karar/görev
    numarası, dosya adı, teknik terim → **kaldı** (kırmızı; K-61 dersi: sahip anlamadığı
-   soruya "olur" der). Eşiği Bölüm B'nin *"ne bilmez"* ve *"soru sorma tarzı"* başlıklarından
+   soruya "olur" der). **BENZETME de kaldı sebebidir:** mecaz sahibin kafasında somut bir şeye
+   oturmaz — düz, gündelik, tek cümle. Uzunluk da bir kalite ölçüsüdür: sahibe giden üç satırın
+   bayt tavanı vardır ve kapı kırpmaz, geri çevirir. *Uzun açıklama, sahibin okumadığı
+   açıklamadır.* Eşiği Bölüm B'nin *"ne bilmez"* ve *"soru sorma tarzı"* başlıklarından
    al. ETKİ satırı "üç seçenek, üç sabah" kalıbında mı: her seçeneğin **ertesi sabahı** +
    yanlışsa **bedeli** + **geri alınabilirliği**. Değilse kaldı.
 4. **Sahte-çatal tersi.** Karar aslında kayıt-tutma, iç sıralama, teknik bölümleme ya da
