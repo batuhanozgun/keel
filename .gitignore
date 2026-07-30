@@ -41,6 +41,9 @@ tools/sevk/.caffeinate-pid
 00_pano/SABAH.md
 # kurulum kapısının mekanik raporu (E4) — her kurulum oturumunda sevk yeniden üretir
 00_pano/kurulum-kapisi.txt
+# kapanış karnesinin bulgu işaretçisi (F1-5b) — KIRMIZI karnede sevk yeniden üretir; içeriği
+# karne kaydından mekanik kurulur, kalıcı belge değildir (kurulum-kapisi.txt emsali)
+00_pano/kapanis-bulgulari.txt
 # harness worktree'leri (E2) — atılabilir/geçici git worktree'leri; izlenmez ki bekçi porcelain
 # hattı meşru bir riskli-görev worktree'sini [SERT] .claude/ kirliliği sanıp KIRMIZI basmasın
 # (hasım bulgusu). Worktree yazımları zaten file-guard sanal-kök haritasıyla korunur (tool katmanı);

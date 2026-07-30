@@ -1,6 +1,6 @@
 ---
 name: donem
-description: Otonom dönem açılış töreni (E4 · K3 tetiği). Yalnız insan /donem ile tetikler; ajan kendiliğinden tetikleyemez (bilinçli kilit — dönemi başlatan HER ZAMAN sahiptir, D-25 ①). Kullanım: /donem <kutu> [yapim|kurulum|kapanis] [interaktif|bassiz] · kapatmak için /donem kapat
+description: Otonom dönem açılış töreni (E4 · K3 tetiği). Yalnız insan /donem ile tetikler; ajan kendiliğinden tetikleyemez (bilinçli kilit — dönemi başlatan HER ZAMAN sahiptir, D-25 ①). Kullanım: /donem [kutu] [yapim|kurulum|kapanis] [gercek|tatbikat] — kutu adı verilmezse açık kutu aranır · kapatmak için /donem kapat
 disable-model-invocation: true
 ---
 
@@ -9,8 +9,8 @@ disable-model-invocation: true
 # Dönem töreni — otonom kip
 
 Yukarıdaki tören çıktısında **"DÖNEM AÇIK"** yoksa DUR: dönemi açılmış sayma, sebebini sahibe
-jargonsuz söyle. En sık üç sebep: zaten açık bir dönem var · tatbikat damgalarından biri eksik
-("kalkansız motor yok") · sahibin karar alanı yazılı değil (soru kanalı kapalı).
+jargonsuz söyle. En sık üç sebep: zaten açık bir dönem var · kapılanma eksik (dış göz koltuğu ya
+da otonom kural evi kurulmamış — "kalkansız motor yok") · sahibin karar alanı yazılı değil.
 
 **"DÖNEM AÇIK" gördüysen, bu oturumdaki rolün SEVK'tir ve sevk İŞ YAPMAZ.** Tek işin:
 
@@ -23,7 +23,12 @@ jargonsuz söyle. En sık üç sebep: zaten açık bir dönem var · tatbikat da
    "kapandı" demek doğrulayıcının işidir (karnesiz görev Stop'tan geçmez).
 4. Alt-ajan dönüşünü **olduğu gibi** aktar; zarfı sen düzeltme. Biçim kapısı reddederse redde
    İTAAT ET ve gerekçeyi rapora geçir — zarfı kendi kaleminden tamamlama.
-5. Duran kapı bildirimi geldiğinde dönem bitmiştir: sebebi ve kapanış özetini sahibe sade dille
+5. **Üretim bitince dönem KAPANMAZ:** sevk evreyi kendisi `kapanis`e çevirir ve sana önce dış göz
+   brifingini, sonra bağımsız kapanış denetimini açtırır. Sahibe "kapanış için yeni komut yaz"
+   DEME — üçüncü komut kusurdur (F1-5a).
+6. **İzin engeliyle karşılaşan alt-ajan** o adımı atlar ve zarfına `İZİN-ENGELİ` satırını yazar;
+   dönem sürer. Sen de pencere açmaya çalışma — otonom dönemde izin sorusu sorulmaz (F1-5f).
+7. Duran kapı bildirimi geldiğinde dönem bitmiştir: sebebi ve kapanış özetini sahibe sade dille
    aktar, yeni iş İCAT ETME.
 
 Kural evi: `02_kanon/OTONOM_DONEM.md` (dönem tanımı · duruş sözleşmesi · dönüş zarfı · sessizlik

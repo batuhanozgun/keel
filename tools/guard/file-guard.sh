@@ -2,8 +2,12 @@
 # file-guard — araç-kancası (PreToolUse): korunan yollara + (rol kafesi) yazamaz-rol oturumlarında her yola YAZMA araçlarını (Edit/MultiEdit/Write/NotebookEdit) mekanik keser.
 # E2 önleme katmanı (2026-07-27, tasarı: docs/superpowers/plans/2026-07-27-e2-onleme-tasarisi.md):
 #   Hat-1 içerik süzgeci (yazım-öncesi ENGEL; icerik-suzgeci.sh ortak betik) + Bash yazım dikişi ·
-#   Hat-2 dışa-giden SOR (her kipte) + MCP dikişi (dönem-AÇIK iken SOR) ·
+#   Hat-2 dışa-giden SOR (el-sürüşlü) + MCP dikişi ·
 #   Hat-3 worktree sanal-kök değerlendirmesi + dönem-içi git-obje dikişi (SOR-GIT/ENGEL-WT).
+# F1-5f (2026-07-30): otonom dönem AÇIKKEN "sahibe sor" kararı PENCERE AÇMAZ. Kutunun duruş
+#   sözleşmesindeki `İZİN:` satırında yazılı sınıf serbest geçer, yazılı olmayan ENGEL alır
+#   (exit 2 · ENGEL-IZIN) — adım atlanır, kuyruğa not düşer, dönem sürer. El-sürüşlü oturumda
+#   hiçbir şey değişmez. Kural evi ve yapının damga/işaret dosyaları önceden serbest bırakılamaz.
 # Koruma YAZMAYA karşıdır — okuma/komut araçlarına karışılmaz (Faz-1 demo dersi); ÜÇ BELGELİ İSTİSNA (dikişler): (1) rol damgasına (.aktif-rol) dokunan Bash komutu sahibe SORULUR (damganın git-izi yok, bekçi göremez — plan kararı 2); (2) kurulum işaretine (.kurulum-tamam) dokunan Bash komutu, işaret MEVCUTKEN sahibe SORULUR (işaret silinirse koruma kurulum-moduna düşer — soğuk-denetim bulgusu E2, 2026-07-16; işaret yokken sorulmaz ki GENESIS doğumu sürtünmesiz kalsın; ayrıca işaret git-İZLİdir, silinme/kirlilik bekçi porcelain hattında da yakalanır); (3) kilitli-tarih çapasına (.taban-ref) dokunan Bash komutu, kurulum BİTMİŞKEN sahibe SORULUR (çapayı ilerletmek kilitli-ihlal sinyalini söndürür — "ilerletme sahip-onaylı" güvencesinin mekanik kapısı; V2 Öbek-1 düzeltmesi, hasım bulgusu wf_e35b1e11, 2026-07-23).
 # Matcher GENİŞ (*), daraltma bu script'in içinde (anayasa m.5).
 # Girdi: stdin'de Claude Code araç JSON'u. Çıkış sözleşmesi:
@@ -132,12 +136,49 @@ try { j = JSON.parse(readFileSync(0, "utf8")); } catch { console.log("HATA\tstdi
 const ti = j.tool_input || {};
 const donemAcik = existsSync(resolve(ROOT, "tools/sevk/.donem-acik"));
 
+// ── F1-5f · IZIN PENCERESI OTONOM DONEMDE ACILMAZ ────────────────────────────────────────
+// "Sahibe sorulur" karari bir PENCERE acar ve insan bekler — tanim geregi otonomlugun bittigi
+// andir. Otonom donemde bu kararlar ikiye ayrilir: kutunun `İZİN:` satirinda ONCEDEN yazili
+// sinif SERBEST gecer (izni sahip kutu acilisinda vermistir), yazili olmayan ENGELLENIR; adim
+// atlanir, kuyruga not duser, donem SURER. El-suruslu kullanimda hicbir sey degismez: sahip
+// klavyededir, soru ona gider.
+// UC SINIF HICBIR ZAMAN ONCEDEN VERILEMEZ (yapinin kendi kilitleri): rol damgasi · kurulum
+// isareti · kilitli-tarih capasi · donem gostergesi · KURAL EVI (00_genesis/ · OTONOM_DONEM.md ·
+// KARAR_ALANI.md). Bunlari onceden serbest birakabilmek, ajanin kendi kafesini genisletebilmesi
+// demek olurdu — izin listesi bir esneme yeridir, kafesin anahtari degil.
+const IZIN_SOZLUGU = new Set(["git-obje", "disa", "mcp", "yazim", "korumali-yol", "kutu-ciktilari"]);
+let izinListesi = null;
+const izinli = (sinif) => {
+  if (!donemAcik) return true;                 // el-suruslu: karar sahibe gider (SOR)
+  if (!IZIN_SOZLUGU.has(sinif)) return false;  // sozlukte olmayan sinif onceden verilemez
+  if (izinListesi === null) {
+    izinListesi = new Set();
+    try {
+      const g = readFileSync(resolve(ROOT, "tools/sevk/.donem-acik"), "utf8").split("\n")[0].split("\t");
+      const kutu = String(g[1] || "").trim();
+      if (/^[A-Za-z0-9._-]+$/.test(kutu)) {
+        const km = readFileSync(resolve(ROOT, "01_kutular", kutu, "KUTU.md"), "utf8");
+        const satir = (km.split("\n").find((s) => /^\s*İZİN\s*:/.test(s)) || "").replace(/^\s*İZİN\s*:/, "");
+        for (const jeton of satir.split(/[\s,·]+/)) if (IZIN_SOZLUGU.has(jeton)) izinListesi.add(jeton);
+      }
+    } catch { izinListesi = new Set(); }   // okunamayan kutu = izin YOK (fail-closed)
+  }
+  return izinListesi.has(sinif);
+};
+// Karari basar: donemde izinliyse GEC, degilse ENGEL-IZIN; donem yoksa bugunku SOR davranisi.
+const izinKarari = (sinif, sorKodu, detay) => {
+  if (!donemAcik) { console.log(sorKodu + (detay ? "\t" + detay : "")); process.exit(0); }
+  if (izinli(sinif)) { console.log("GEC"); process.exit(0); }
+  console.log("ENGEL-IZIN\t" + sinif + (detay ? " · " + detay : ""));
+  process.exit(0);
+};
+
 // MCP dikisi (E2 Hat-2; E0 §9.1 kor-kanal bulgusu): donem-ACIK iken mcp__* cagrisi sahibe
 // SORULUR — kutu disina is cikarabilen, dosya izi birakmayan kanal donemde sahip kapisindadir
 // (bassiz donemde ask = red + iz; guvence artik harnessin degil bizim). El-suruslu kullanimda
 // (donem yok) MCP serbesttir — bugunku davranis degismez.
 if (String(j.tool_name || "").startsWith("mcp__")) {
-  if (donemAcik) { console.log("SOR-MCP\t" + String(j.tool_name)); process.exit(0); }
+  if (donemAcik) izinKarari("mcp", "SOR-MCP", String(j.tool_name));
   console.log("GEC"); process.exit(0);
 }
 
@@ -173,13 +214,13 @@ if (kurallar.length === 0) { console.log("HATA\tkorunan-yollar.txt bos — korum
 // komut-araci mudahalesi yok; okuma serbest.
 if ((j.tool_name || "") === "Bash") {
   const komut = String(ti.command || "");
-  if (komut.includes(".aktif-rol")) { console.log("SOR-DAMGA\ttools/guard/.aktif-rol"); process.exit(0); }
+  if (komut.includes(".aktif-rol")) izinKarari("damga", "SOR-DAMGA", "tools/guard/.aktif-rol");
   // Capa-dikisi (V2 Obek-1 duzeltmesi 2026-07-23, hasim bulgusu wf_e35b1e11): kilitli-tarih
   // capasina (.taban-ref) dokunan Bash komutu kurulum BITMISKEN sahibe SORULUR — capayi
   // ilerletmek kilitli-ihlal sinyalini sondurur; "ilerletme sahip-onayli" guvencesinin mekanik
   // kapisi budur. Kurulum surerken sorulmaz (capanin G4te dogusu surtunmesiz). Metin-es sinir
   // damga-dikisiyle aynidir (bilinen sinir).
-  if (komut.includes(".taban-ref") && existsSync(resolve(ROOT, ".kurulum-tamam"))) { console.log("SOR-TABAN\t02_kanon/kilitli/.taban-ref"); process.exit(0); }
+  if (komut.includes(".taban-ref") && existsSync(resolve(ROOT, ".kurulum-tamam"))) izinKarari("taban", "SOR-TABAN", "02_kanon/kilitli/.taban-ref");
   // Isaret-dikisi (soguk-denetim E2 + hasim turu 2026-07-16): kurulum isareti MEVCUTKEN ona
   // ".kurulum" iceren bir Bash komutu dokunuyorsa sahibe SORULUR (silinirse koruma kurulum-
   // moduna duser). ".kurulum" alt-dizesi hem ".kurulum-tamam" hem ".kurulum-*" glob desenini
@@ -187,19 +228,19 @@ if ((j.tool_name || "") === "Bash") {
   // yakalanamaz (damga-dikisiyle ayni bilinen sinir) — asil yedek: isaret git-IZLI ve
   // korunan-yollar [SERT] oldugundan silinme bekcinin porcelain hattinda KIRMIZI basar.
   // Isaret yokken serbest (GENESIS dogumu sürtünmesiz).
-  if (komut.includes(".kurulum") && existsSync(resolve(ROOT, ".kurulum-tamam"))) { console.log("SOR-ISARET\t.kurulum-tamam"); process.exit(0); }
+  if (komut.includes(".kurulum") && existsSync(resolve(ROOT, ".kurulum-tamam"))) izinKarari("isaret", "SOR-ISARET", ".kurulum-tamam");
   // Kosu-dikisi (E1 hasim bulgusu A3): donem-ACIK gostergesine (.donem-acik) dokunan Bash komutu
   // sahibe SORULUR — dosya git-izsiz (.gitignore) oldugundan bekci porcelain hatti onu GOREMEZ;
   // tek guvencesi bu dikis + [SERT] arac-katmani. Tek bir rm komutu SubagentStop kapisini
   // sessiz sondururdu; simdi o rm sahibe soru olur. /donem toreninin kendi yazimi da buraya takilir ve
   // sahip onayiyla gecer (rol-toreni damga-dikisi emsali — G3.3c "bu NORMALdir"). Metin-es
   // sinir damga-dikisiyle aynidir (bilinen sinir).
-  if (komut.includes(".donem-acik")) { console.log("SOR-DONEM\ttools/sevk/.donem-acik"); process.exit(0); }
+  if (komut.includes(".donem-acik")) izinKarari("donem", "SOR-DONEM", "tools/sevk/.donem-acik");
   // DUR-dikisi (E4 hasim bulgusu): `.dur` sahibin acil frenidir ve .gitignore icindedir — bekcinin
   // porcelain hatti onu GOREMEZ. Kosu-gostergesiyle ayni sinif: ona dokunan Bash komutu SORULUR
   // (donem icinde modelin freni sessizce silmesini engeller; el-suruslu oturumda da sorulur —
   // dosya zaten yalnizca donem baglaminda anlamlidir).
-  if (komut.includes(".dur")) { console.log("SOR-DONEM\ttools/sevk/.dur"); process.exit(0); }
+  if (komut.includes(".dur")) izinKarari("donem", "SOR-DONEM", "tools/sevk/.dur");
   // Kanal-dikisi (E5): haber.sh ve nabiz.sh disa POSTA gonderir. Mesru cagiranlari yalnizca
   // kancalardir (donem-ac · sevk · SubagentStop kapisi · launchd) ve kanca sureci arac
   // katmanindan GECMEZ — yani bu dikis onlari hic gormez, hicbir mesru yolu kesmez.
@@ -244,7 +285,7 @@ if ((j.tool_name || "") === "Bash") {
     if (gitObje) {
       const wtBaglam = komut.includes(".claude/worktrees") || String(j.cwd || "").includes(".claude/worktrees");
       if (wtBaglam) { console.log("ENGEL-WT"); process.exit(0); }
-      console.log("SOR-GIT"); process.exit(0);
+      izinKarari("git-obje", "SOR-GIT", "");
     }
   }
   // Disa-giden dikisi (HER KIPTE; D-03 mekanigi + E2 Hat-2): makineden disari cikaran komut
@@ -258,7 +299,7 @@ if ((j.tool_name || "") === "Bash") {
     if (c.ad === "npm" && /\bpublish\b/.test(c.kuyruk)) return true;
     return false;
   });
-  if (disa) { console.log("SOR-DISA"); process.exit(0); }
+  if (disa) izinKarari("disa", "SOR-DISA", "");
   // Yazim+korumali-yol dikisi (HER KIPTE; besinci dikis — hasim bulgusu: cp golden/ uc hatti
   // deliyordu): yazim-kalipli komut metninde korunan-yollar kaydi geciyorsa sahibe SORULUR.
   // [SERT] icin de SOR (ENGEL degil): metin-es sezgi hedef/kaynak ayiramaz — goldendan OKUYAN
@@ -276,7 +317,7 @@ if ((j.tool_name || "") === "Bash") {
       // (tools/guard/ + tools/sevk/ + .claude/) anan komutta sorar (A5 ruhu), digerinde susar.
       const kurulumSuruyorB = !existsSync(resolve(ROOT, ".kurulum-tamam"));
       const cekirdekAnildi = anilanlar.some((k) => /^(tools\/guard\/|tools\/sevk\/|\.claude\/)/.test(k.yol));
-      if (!kurulumSuruyorB || cekirdekAnildi) { console.log("SOR-YAZIM\t" + anilanlar[0].yol); process.exit(0); }
+      if (!kurulumSuruyorB || cekirdekAnildi) izinKarari("yazim", "SOR-YAZIM", anilanlar[0].yol);
     }
   }
   console.log("GEC"); process.exit(0);
@@ -405,7 +446,16 @@ if (existsSync(damgaYolu)) {
 // Kurulum-penceresi muafiyeti kafesten SONRA gecer (yukaridaki not).
 if (sertMuaf) { console.log("GEC"); process.exit(0); }
 const sor = kurallar.find((k) => k.bolum === "[SORULUR]" && eslesir(k));
-if (sor) { console.log(kurulumSuruyor ? "GEC" : "SOR\t" + sor.yol); process.exit(0); }
+if (sor) {
+  if (kurulumSuruyor) { console.log("GEC"); process.exit(0); }
+  // Sinif YOLA gore: kural evi ASLA onceden verilemez; ilk kutunun iki urunu kendi sinifindadir;
+  // gerisi (golden dahil, projenin ekledigi yollar dahil) `korumali-yol` sinifidir.
+  const KURAL_EVI = ["00_genesis/", "02_kanon/OTONOM_DONEM.md", "02_kanon/KARAR_ALANI.md"];
+  const KUTU_CIKTILARI = ["02_kanon/BITTI_TANIMI.md", "02_kanon/KUTU_PLANI.md"];
+  const sinif = KURAL_EVI.includes(sor.yol) ? "kural-evi"
+              : (KUTU_CIKTILARI.includes(sor.yol) ? "kutu-ciktilari" : "korumali-yol");
+  izinKarari(sinif, "SOR", sor.yol);
+}
 console.log("GEC");
 ')" || engel "yol çözümleyici koşamadı (fail-closed)"
 
@@ -474,6 +524,10 @@ case "$DURUM" in
     ;;
   ENGEL-WT)
     engel "otonom dönemde worktree bağlamında obje üreten git komutu (add/commit/stash) YASAK — worktree ana depoyla AYNI nesne veritabanını paylaşır, atılan obje worktree silinse de kalır (E0 ölçümü). Kanıt yalnız dosya:satır ile verilir (OTONOM_DONEM §7); taşıma sevkin işidir, dosya-kopyasıyla."
+    ;;
+  ENGEL-IZIN)
+    printf 'file-guard ENGEL: otonom dönemde izin penceresi AÇILMAZ (sınıf: %s).\nBu adım kutunun «İZİN:» satırında önceden serbest bırakılmamış — yani sahibin bu döneme verdiği izinlerin dışında.\nYAPILACAK: bu adımı ATLA, işine devam et ve dönüş zarfına «İZİN-ENGELİ: <ne engellendi>» satırını yaz. Dönem sürüyor; yapı sahibin kuyruğuna atlanan adım için not düşecek.\nSahip bu sınıfı istiyorsa kutunun duruş sözleşmesindeki İZİN satırına ekler (sözlük: git-obje · disa · mcp · yazim · korumali-yol · kutu-ciktilari).\nKural evi (00_genesis/ · OTONOM_DONEM.md · KARAR_ALANI.md) ve yapının damga/işaret dosyaları HİÇBİR ZAMAN önceden verilemez.\n' "$DETAY" >&2
+    exit 2
     ;;
   HATA) engel "$DETAY (fail-closed)" ;;
   *) engel "çözümleyici beklenmeyen karar döndürdü: $KARAR (fail-closed)" ;;

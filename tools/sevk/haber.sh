@@ -41,7 +41,7 @@ fi
 DUR_KONU_METNI="${KANAL_DUR_KONU:-KEEL DUR}"
 
 # ── 1 · Argümanlar (yalnız adlandırılmış; serbest gövde YOK) ──────────────────────────────
-OLAY=""; A_DONEM=""; A_KUTU=""; A_TUR=""; A_KIP=""; A_SINIF=""; A_UYKU=""
+OLAY=""; A_DONEM=""; A_KUTU=""; A_TUR=""; A_SINIF=""; A_UYKU=""
 A_BLOK1=""; A_BLOK2=""; A_BLOK3=""
 A_CATAL=""; A_CEVIRI=""; A_ETKI=""; A_BEKLETIR=""
 A_CINS=""; A_DETAY=""; A_ANAHTAR=""
@@ -53,7 +53,6 @@ while [ $# -gt 0 ]; do
     --donem) A_DONEM="${2:-}"; shift 2 ;;
     --kutu) A_KUTU="${2:-}"; shift 2 ;;
     --tur) A_TUR="${2:-}"; shift 2 ;;
-    --kip) A_KIP="${2:-}"; shift 2 ;;
     --sinif) A_SINIF="${2:-}"; shift 2 ;;
     --uyku) A_UYKU="${2:-}"; shift 2 ;;
     --blok1) A_BLOK1="${2:-}"; shift 2 ;;
@@ -107,8 +106,8 @@ SIMDI="$(date '+%Y-%m-%d %H:%M')"
 case "$OLAY" in
   donem-basladi)
     KONU="KEEL · $A_KUTU · dönem başladı"
-    GOVDE="$(printf 'Dönem açıldı: %s\nKutu: %s\nTür: %s · Kip: %s · Sınıf: %s\nZaman: %s\n\n%s\n\nBu dönem bittiğinde ya da bir çatal sana düştüğünde yeni bir e-posta gelecek.\nDurdurmak için bu adrese "%s" konulu bir posta at.\n' \
-      "$A_DONEM" "$A_KUTU" "${A_TUR:-?}" "${A_KIP:-?}" "${A_SINIF:-?}" "$SIMDI" "${A_UYKU:-}" "$DUR_KONU_METNI")"
+    GOVDE="$(printf 'Dönem açıldı: %s\nKutu: %s\nEvre: %s · Sınıf: %s\nZaman: %s\n\n%s\n\nBu dönem bittiğinde ya da bir çatal sana düştüğünde yeni bir e-posta gelecek.\nDurdurmak için bu adrese "%s" konulu bir posta at.\n' \
+      "$A_DONEM" "$A_KUTU" "${A_TUR:-?}" "${A_SINIF:-?}" "$SIMDI" "${A_UYKU:-}" "$DUR_KONU_METNI")"
     ;;
   donem-bitti)
     KONU="KEEL · $A_KUTU · dönem bitti"

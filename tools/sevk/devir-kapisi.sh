@@ -91,7 +91,9 @@ for (const ham of metin.split("\n")) {
   const ad = m[1].trim().replace("görev", "gorev").replace("sözleşme", "sozlesme");
   if (!(ad in alanlar)) alanlar[ad] = m[2].trim();
 }
-const gorevEs = String(alanlar.gorev || "").match(/^(G-\d+|KURULUM|KAPANIS)$/);
+// BRIFING (F1-5c): dis goz koltugu is zincirinin disindadir, gorev almaz — kapanis evresinde
+// sevkin actigi tek islem onun brifingidir ve jetonu budur (KURULUM/KAPANIS emsali).
+const gorevEs = String(alanlar.gorev || "").match(/^(G-\d+|KURULUM|KAPANIS|BRIFING)$/);
 if (!gorevEs) {
   bitir("ENGEL", "devir metninde gorev satiri yok ya da cozulmuyor — «gorev: G-NN» zorunlu (talimat-fiil dikisi buna baglanir)");
 }

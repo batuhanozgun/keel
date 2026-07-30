@@ -38,8 +38,11 @@ susar ki GENESIS'in işareti doğurması sürtünmesiz kalsın; işaret git-İZL
 silinme ayrıca bekçinin porcelain hattında da görünür); (3) çapa-dikişi —
 `02_kanon/kilitli/.taban-ref`e dokunan Bash komutu, kurulum BİTMİŞKEN sahibe SORULUR
 (çapayı ilerletmek kilitli-tarih sinyalini söndürür — V2 Öbek-1, 2026-07-23);
-(4) dönem-dikişi — `.donem-acik`a dokunan Bash komutu sahibe SORULUR (E1: gösterge silinirse
-SubagentStop kapısı sessiz söner). Hepsi metin-eşleşmelidir, kusursuz değildir; bilinen sınır.
+(4) dönem-dikişi — `.donem-acik`a dokunan Bash komutu (E1: gösterge silinirse SubagentStop
+kapısı sessiz söner). Hepsi metin-eşleşmelidir, kusursuz değildir; bilinen sınır.
+**F1-5f (2026-07-30) bu dört dikişin dönem-içi davranışını değiştirdi:** otonom dönem AÇIKKEN
+"sahibe sor" kararı PENCERE AÇMAZ — dördü de ENGEL olur (bunlar yapının kendi kilitleridir ve
+önceden serbest bırakılamaz). El-sürüşlü oturumda dördü de eskisi gibi SORULUR.
 
 **E2 önleme katmanı (2026-07-27; tasarı `docs/superpowers/plans/2026-07-27-e2-onleme-tasarisi.md`):**
 - **Hat 1 — içerik süzgeci** (`icerik-suzgeci.sh` ortak betik + `gercek-veri-isaretleri.txt`
@@ -54,16 +57,23 @@ SubagentStop kapısı sessiz söner). Hepsi metin-eşleşmelidir, kusursuz deği
   öneki çift hattır, bu dikiş bileşik/çok-satırlı komutu yakalar). Komut-konumu çözümlemesi
   env/sudo/nohup öneklerini ve git global bayraklarını atar, mutlak yolu son parçaya indirir
   → `git -C x push`, `/usr/bin/curl`, `sudo scp` yakalanır (hasım bulgusu). + **MCP dikişi**:
-  dönem-AÇIK iken `mcp__*` araç çağrısı SORULUR (kutu dışına iş çıkaran, dosya izi bırakmayan kanal).
+  dönem-AÇIK iken `mcp__*` araç çağrısı (kutu dışına iş çıkaran, dosya izi bırakmayan kanal).
 - **Hat 3 — worktree**: hedef `.claude/worktrees/<ajan>/` altında VE orada gerçek worktree
   varsa (`<ajan>/.git` dosyası) kurallar worktree SANAL köküne göre değerlendirilir (koruma
   haritası worktree'de aynen; iş alanları serbest — E0 çarpışma bulgusunun çözümü). Gerçek
   worktree yoksa (uydurma yol) sanal kök AÇILMAZ → `.claude/` [SERT] kalır (hasım bulgusu:
   sahte-worktree ile [SERT] delme kapandı). + **git-obje dikişi**: dönem-AÇIK iken
-  `git add/commit/stash` SORULUR; worktree bağlamında ENGEL (ortak nesne deposu).
+  `git add/commit/stash`; worktree bağlamında her hâlde ENGEL (ortak nesne deposu).
 - **Yazım+korumalı-yol dikişi**: yazım-kalıplı Bash komutu (yönlendirme/heredoc/`tee`/`cp`/
   `mv`/`dd`/`rsync`/`sed -i`) korunan-yollar kaydını anıyorsa SORULUR (hedef/kaynak metinden
   ayrılamaz; `2>/dev/null` yazım sayılmaz; kurulum sürerken yalnız çekirdek üçlü sorulur).
+- **İZİN KAPISI (F1-5f, 2026-07-30):** yukarıdaki "SORULUR" kararlarının hepsi otonom dönemde
+  kutunun `İZİN:` satırına bakar. Sözlük: `git-obje` · `disa` · `mcp` · `yazim` ·
+  `korumali-yol` ([SORULUR] yol yazımı) · `kutu-ciktilari` (`BITTI_TANIMI.md`/`KUTU_PLANI.md`).
+  Listede yazan sınıf SERBEST geçer (izni sahip kutu açılışında verdi), yazmayan `exit 2`
+  (ENGEL-IZIN) alır: ajan o adımı atlar, zarfına `İZİN-ENGELİ` yazar, sevk sahibin kuyruğuna
+  sabit cümleli not düşer ve dönem SÜRER. **Kural evi (`00_genesis/` · `OTONOM_DONEM.md` ·
+  `KARAR_ALANI.md`) sözlükte YOKTUR** — önceden serbest bırakılamaz.
 
 **E3 kuyruk dikişi (2026-07-28; tasarı `…-e3-soru-kanali-tasarisi.md`):** dönem-AÇIK iken
 `00_pano/SENDE_BEKLEYEN.md`'ye yazma aracıyla dokunmak **ENGEL**dir. Gerekçesi

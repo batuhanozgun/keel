@@ -144,6 +144,15 @@ vermek, aynı adı iki şeye vermektir — §4 tam bunu yasaklar. Biçim (başl�
 **Durum alanının dört değeri** (birebir, Türkçe harflerle; tanınmayan değer fail-closed):
 `başlamadı` · `açık` · `bekliyor` · `bitti`.
 
+## 2d · Dönem dikişleriyle doğan/ölen adlar (Faz 2 sıra 7, 2026-07-30)
+
+| Kelime | Ne demek | Nerede yaşıyor |
+|---|---|---|
+| **evre** | Bir dönemin üç hâlinden biri: `yapim` → `kapanis` (→ KIRMIZI karnede geri `yapim`). Dönem AYNI dönemdir; kimliği, bütçesi ve günlük dilimi değişmez — yalnız göstergenin 3. alanı yeniden yazılır. "Yeni dönem" DEĞİL | `tools/sevk/.donem-acik` 3. alan · `tools/sevk/ortak.sh` `donem_turu_yaz` · günlükte `evre-gecis` kaydı |
+| **izin sınıfı** | Kutunun `İZİN:` satırında önceden serbest bırakılan komut/yazım cinsi. Kapalı sözlük: `git-obje` · `disa` · `mcp` · `yazim` · `korumali-yol` · `kutu-ciktilari`. Sahibin kutu açılışında verdiği izin; dönem içinde genişletilemez | `KUTU.md` duruş sözleşmesi · `tools/guard/file-guard.sh` · `tools/sevk/kurulum-kapisi.sh` |
+| ~~**kip** (`interaktif` / `bassiz`)~~ | **ÖLDÜ (F1-5e).** Yalnız bir not dizesi üretiyordu; davranışı oturumun nasıl başlatıldığı belirliyordu. İzin penceresi artık hiçbir kipte açılmadığı için anlattığı ayrım da kalmadı | Eski beş-alan gösterge okunmaya devam eder (`ortak.sh` geri uyumu) |
+| ~~**prova fişi** (`tools/sevk/damgalar/T0-T4`)~~ | **ÖLDÜ (F1-5h).** KEEL sürümünün provasını kanıtlıyordu, kullanıcının kurulumunu değil; dolu geldiği için kapı baştan mühürlüydü | Prova kaydının yeni evi `docs/PROVALAR.md` (kapı değil, beyan) |
+
 ## 2c · İlk kutuyla doğan iki ad (Faz 2 sıra 5, 2026-07-30)
 
 `4 · Bu dosyanın kuralı` gereği: ürüne giren her yeni kelime buraya bir satır düşer.
@@ -166,8 +175,7 @@ boşaldığında ve proje bitmediğinde). Sıraya bağlanan kural, ikinci örnek
 | **`koşul`** kelimesi (= şart) | "koşu" ile ilgisi yok; LICENSE'taki "Kullanım Koşulları" dâhil |
 | **`docs/superpowers/plans/`** altındaki tarihli kayıtlar ve **`docs/TASARIM.md`** (2026-07-03 taslağı) | O günün kaydıdır; dilini değiştirmek kaydı çarpıtır. Eski kelimeleri orada okursan karşılığı bu dosyadadır |
 | **`damga`** — rol damgası, kapanış damgası, tarih damgası | Gerçekten damgadır; tek istisna aşağıda |
-| **`tools/sevk/damgalar/T0-T4`** = **prova fişi** | Adı bugün düzeltilmedi: bu dosyalar dağıtılan kopyadan tamamen çıkacak (Faz 2 paket 7). Aynı dosyaya iki kez dokunulmaz |
-| **`yapim` · `kurulum` · `kapanis`** dönem türleri | `yapim` iş üretir; `kurulum` ve `kapanis` hiçbir şey üretmez, **denetim evresidir**. Adlar Faz 2 paket 7'de evre tasarımıyla birlikte ele alınır |
+| **`yapim` · `kurulum` · `kapanis`** dönem **evreleri** | `yapim` iş üretir; `kurulum` ve `kapanis` hiçbir şey üretmez, **denetim evresidir**. Faz 2 sıra 7'de "tür" değil **evre** dendi (aynı dönemin üç hâli) ama makine-okur değerler DEĞİŞMEDİ: gösterge ve `/donem` argümanı aynı üç kelimeyi kullanır — değer değişimi geri-uyum bedeli ister, ad değişimi istemez |
 | kokpitteki İngilizce `gates` · `parseGates` alanları | Türkçe "kapı"nın iki anlamı İngilizce adda çakışmıyor: kodda mekanizmalara hiçbir yerde `gate` denmiyor. Ad kokpitin JSON sözleşmesidir ve üç kopyada bayt-bayt ortaktır — değiştirmek D-02 eşitleme riskini karşılıksız artırırdı |
 | `KURULUM` · `KAPANIS` **görev** kimlikleri ile `kurulum kapısı` · `kapanış kapısı` **mekanizmaları** | İkisi ayrı şey ve ikisi de doğru: kimlik, karnenin konusu olan denetim görevidir; kapı, o mühürden önce geçilmesi gereken denetim noktasıdır |
 

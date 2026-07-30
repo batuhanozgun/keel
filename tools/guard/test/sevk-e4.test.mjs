@@ -44,7 +44,7 @@ const KUTU_ADI = 'KT-900-e4';
 function kutuMetni({ gorevler = [
   { id: 'G-01', is: 'ilk iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t.mjs' },
   { id: 'G-02', is: 'ikinci iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t.mjs' },
-], onkosul = { 'G-01': 'yok', 'G-02': 'G-01' }, risk = {}, butce = '3', durus = true, riskBloku = true } = {}) {
+], onkosul = { 'G-01': 'yok', 'G-02': 'G-01' }, risk = {}, butce = '3', durus = true, riskBloku = true, izin = 'yok' } = {}) {
   const l = ['# ' + KUTU_ADI + ' — tatbikat kutusu', '', '## Görevler', '| Görev | İş | Sahip | Durum | Kanıt |', '|---|---|---|---|---|'];
   for (const k of gorevler) l.push(`| ${k.id} | ${k.is} | ${k.sahip} | ${k.durum} | ${k.kanit} |`);
   if (durus) {
@@ -52,7 +52,8 @@ function kutuMetni({ gorevler = [
       'BİTİŞ HÂLİ: ekranda iki satır görünür',
       'KANIT:      npm test yeşil (tam özet satırı)',
       'KISIT:      02_kanon/golden/ dokunulmaz; altın dosyalara gerçek veri girmez',
-      `BÜTÇE:      dönem başına en çok ${butce} alt-ajan çağrısı · toplam 12 dönem`);
+      `BÜTÇE:      dönem başına en çok ${butce} ÜRETİM çağrısı · toplam 12 dönem`,
+      `İZİN:       ${izin}`);
   }
   if (riskBloku) {
     l.push('', '## Bağımlılık ve risk (yalnız sevk + kurulum denetçisi okur)');
@@ -64,14 +65,14 @@ function kutuMetni({ gorevler = [
   return l.join('\n') + '\n';
 }
 
-function kurulum({ donem = null, kadro = ['uretici', 'dogrulayici', 'catal-denetcisi', 'kurulum-denetcisi'],
-                   damgalar = ['T0', 'T1', 'T2', 'T3'], disgoz = true, profil = true, kurulumTamam = true,
+function kurulum({ donem = null, kadro = ['uretici', 'dogrulayici', 'catal-denetcisi', 'kurulum-denetcisi', 'disgoz'],
+                   disgoz = true, profil = true, kurulumTamam = true, kuralEvi = true,
                    kutu = kutuMetni() } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'e4-test-'));
   mkdirSync(join(kok, '00_pano'), { recursive: true });
   mkdirSync(join(kok, '02_kanon'), { recursive: true });
   mkdirSync(join(kok, '01_kutular', KUTU_ADI), { recursive: true });
-  mkdirSync(join(kok, 'tools', 'sevk', 'damgalar'), { recursive: true });
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
   mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
   mkdirSync(join(kok, '.claude', 'agents'), { recursive: true });
   for (const b of SEVK_BETIKLERI) {
@@ -80,7 +81,6 @@ function kurulum({ donem = null, kadro = ['uretici', 'dogrulayici', 'catal-denet
   }
   copyFileSync(join(KOK_REPO, 'tools', 'guard', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '---\nname: ' + a + '\ntools: Read\n---\n# test ajanı\n');
-  for (const d of damgalar) writeFileSync(join(kok, 'tools', 'sevk', 'damgalar', d), '2026-07-28 · test damgası\n');
   mkdirSync(join(kok, '03_roller', 'uretici'), { recursive: true });
   writeFileSync(join(kok, '03_roller', 'uretici', 'ROL.md'), '# ROL — Üretici\n');
   if (disgoz) {
@@ -90,9 +90,9 @@ function kurulum({ donem = null, kadro = ['uretici', 'dogrulayici', 'catal-denet
   writeFileSync(join(kok, '00_pano', 'PANO.md'), '# pano\n');
   writeFileSync(join(kok, '01_kutular', KUTU_ADI, 'KUTU.md'), kutu);
   writeFileSync(join(kok, '02_kanon', 'KARAR_ALANI.md'), kararAlaniMetni({ profil }));
-  writeFileSync(join(kok, '02_kanon', 'OTONOM_DONEM.md'), '# OTONOM DÖNEM\n\ntatbikat kopyası\n');
+  if (kuralEvi) writeFileSync(join(kok, '02_kanon', 'OTONOM_DONEM.md'), '# OTONOM DÖNEM\n\ntatbikat kopyası\n');
   if (kurulumTamam) writeFileSync(join(kok, '.kurulum-tamam'), '');
-  if (donem) writeFileSync(GOSTERGE(kok), donem === true ? `DONEM-E4\t${KUTU_ADI}\tyapim\tbassiz\ttatbikat\ndamga\t${new Date().toISOString()}\n` : donem);
+  if (donem) writeFileSync(GOSTERGE(kok), donem === true ? `DONEM-E4\t${KUTU_ADI}\tyapim\ttatbikat\ndamga\t${new Date().toISOString()}\n` : donem);
   return kok;
 }
 
@@ -136,24 +136,26 @@ const karneZarfi = ({ ajan = 'dogrulayici', gorevAd = 'G-01', hukum = 'YEŞİL',
 
 test('donem-ac: temiz kurulumda DÖNEM AÇIK — gösterge dört alan + bağımsız donem-acilis kaydı', () => {
   const kok = kurulum();
-  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz', 'tatbikat']);
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /DÖNEM AÇIK/);
   const satir = readFileSync(GOSTERGE(kok), 'utf8').split('\n')[0].split('\t');
-  assert.equal(satir.length, 5, 'gösterge beş alan taşımalı: ' + satir.join('|'));
+  // KİP ALANI KALKTI (F1-5e): gösterge DÖRT alandır — kimlik · kutu · evre · sınıf.
+  assert.equal(satir.length, 4, 'gösterge dört alan taşımalı: ' + satir.join('|'));
   assert.equal(satir[1], KUTU_ADI);
   assert.equal(satir[2], 'yapim');
-  assert.equal(satir[3], 'bassiz');
-  assert.equal(satir[4], 'tatbikat');
+  assert.equal(satir[3], 'tatbikat');
   const a = gunluk(kok).filter((j) => j.tip === 'donem-acilis');
   assert.equal(a.length, 1, 'açılış kaydı sevkten bağımsız düşmeli (E5 watchdog çapası)');
   assert.match(String(a[0].izin_zemini), /--allowedTools/, 'izin zemini kayda damgalanmalı');
 });
 
 test('donem-ac: kapılanma eksikse dönem HİÇ açılmaz (kalkansız motor yok)', () => {
-  for (const eksik of [{ damgalar: ['T0', 'T1', 'T2'] }, { disgoz: false }]) {
+  // Çapalar F1-5h ile değişti: prova fişleri yerine BU kurulumda ölçülebilen üç şey —
+  // dış göz klasörü · dış gözün alt-ajan koltuğu · otonom kural evi.
+  for (const eksik of [{ disgoz: false }, { kadro: ['uretici', 'dogrulayici', 'catal-denetcisi', 'kurulum-denetcisi'] }, { kuralEvi: false }]) {
     const kok = kurulum(eksik);
-    const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz', 'tatbikat']);
+    const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
     assert.equal(r.status, 1, 'eksik kalkanda tören geçmemeli');
     assert.match(r.stderr, /kapılanma eksik/);
     assert.ok(!existsSync(GOSTERGE(kok)), 'gösterge yazılmamalı');
@@ -162,7 +164,7 @@ test('donem-ac: kapılanma eksikse dönem HİÇ açılmaz (kalkansız motor yok)
 
 test('donem-ac: sahibin karar alanı boşsa dönem açılmaz (D-25 ③ ön koşulu)', () => {
   const kok = kurulum({ profil: false });
-  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz', 'tatbikat']);
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
   assert.equal(r.status, 1);
   assert.match(r.stderr, /soru kanalı kapalı/);
   assert.ok(!existsSync(GOSTERGE(kok)));
@@ -170,7 +172,7 @@ test('donem-ac: sahibin karar alanı boşsa dönem açılmaz (D-25 ③ ön koşu
 
 test('donem-ac: geçersiz kutu / tür / kip → red (uydurma ada damga basılmaz)', () => {
   const kok = kurulum();
-  for (const arg of [['KT-YOK'], [KUTU_ADI, 'uydurma'], [KUTU_ADI, 'yapim', 'yarim'], [KUTU_ADI, 'yapim', 'bassiz', 'yarimsinif']]) {
+  for (const arg of [['KT-YOK'], [KUTU_ADI, 'uydurma'], [KUTU_ADI, 'yapim', 'yarimsinif']]) {
     const r = kos(kok, 'donem-ac.sh', arg);
     assert.equal(r.status, 1, 'geçersiz argüman geçti: ' + arg.join(' '));
     assert.ok(!existsSync(GOSTERGE(kok)));
@@ -179,18 +181,18 @@ test('donem-ac: geçersiz kutu / tür / kip → red (uydurma ada damga basılmaz
 
 test('donem-ac: kurulum işareti yoksa açılmaz; açık dönem varken ikincisi açılmaz', () => {
   const yok = kurulum({ kurulumTamam: false });
-  assert.match(kos(yok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz', 'tatbikat']).stderr, /kurulum işareti yok/);
+  assert.match(kos(yok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']).stderr, /kurulum işareti yok/);
 
   const kok = kurulum();
-  assert.equal(kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz', 'tatbikat']).status, 0);
-  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz', 'tatbikat']);
+  assert.equal(kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']).status, 0);
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
   assert.equal(r.status, 1);
   assert.match(r.stderr, /zaten açık bir dönem var/);
 });
 
 test('donem-ac kapat: gösterge silinir + donem-kapanis kaydı düşer', () => {
   const kok = kurulum();
-  kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz', 'tatbikat']);
+  kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
   const r = kos(kok, 'donem-ac.sh', ['kapat']);
   assert.equal(r.status, 0, r.stderr);
   assert.ok(!existsSync(GOSTERGE(kok)));
@@ -227,13 +229,13 @@ test('sevk: açık görev varsa exit 2 + işaretçi şemalı talimat + sevk-kara
 });
 
 test('sevk: gösterge bozuk / kapılanma eksik → dönem KAPANIR (fail-closed, sessiz sürmez)', () => {
-  const bozuk = kurulum({ donem: '\tKT-900-e4\tyapim\tbassiz\n' });
+  const bozuk = kurulum({ donem: '\tKT-900-e4\tyapim\ttatbikat\n' });
   const r1 = sevk(bozuk);
   assert.equal(r1.status, 0);
   assert.match(r1.stdout, /DÖNEM KAPANDI/);
   assert.ok(!existsSync(GOSTERGE(bozuk)));
 
-  const kalkansiz = kurulum({ donem: true, damgalar: ['T0'] });
+  const kalkansiz = kurulum({ donem: true, kuralEvi: false });
   const r2 = sevk(kalkansiz);
   assert.match(r2.stdout, /kapılanma eksik/);
   assert.ok(!existsSync(GOSTERGE(kalkansiz)));
@@ -278,9 +280,14 @@ test('sevk/karne şartı: taze YEŞİL karne görevi kapatır; KIRMIZI karne dur
   ekle(yesil, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
   ekle(yesil, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
   const r1 = sevk(yesil);
-  assert.equal(r1.status, 0, r1.stderr);
-  assert.match(r1.stdout, /açık iş yok/);
-  assert.match(r1.stdout, /GECE NE OLDU/);
+  // F1-5a: açık üretim görevi kalmayınca dönem KAPANMAZ — evre `kapanis` olur ve sevk kapanış
+  // evresinin ilk gözünü (dış göz brifingi) açtırır. "Kapanış için ikinci komut yaz" devri bitti.
+  assert.equal(r1.status, 2, 'kapanış evresi sevk üretmeli: ' + r1.stdout);
+  assert.match(r1.stderr, /subagent_type: disgoz/);
+  assert.equal(readFileSync(GOSTERGE(yesil), 'utf8').split('\n')[0].split('\t')[2], 'kapanis',
+    'göstergenin evre alanı yerinde değişmeli (kimlik ve damga korunur)');
+  const eg = gunluk(yesil).find((j) => j.tip === 'evre-gecis');
+  assert.ok(eg && eg.hedef === 'kapanis', 'evre geçişi günlüğe düşmeli');
 
   const kirmizi = kurulum({ donem: true, kutu: kutuMetni(tek) });
   bekciKur(kirmizi, 'YEŞİL');
@@ -393,7 +400,7 @@ test('sevk/şema: görev durumu sözlük dışıysa ve sahibi kadroda yoksa dura
   const sozluk = kurulum({ donem: true, kutu: kutuMetni({ gorevler: [{ id: 'G-01', is: 'x', sahip: 'uretici', durum: 'yarım', kanit: 't' }], onkosul: { 'G-01': 'yok' } }) });
   assert.match(sevk(sozluk).stdout, /gorev durumu sozlukte yok/);
 
-  const kadro = kurulum({ donem: true, kadro: ['dogrulayici'], kutu: kutuMetni({ gorevler: [{ id: 'G-01', is: 'x', sahip: 'hayalet', durum: 'açık', kanit: 't' }], onkosul: { 'G-01': 'yok' } }) });
+  const kadro = kurulum({ donem: true, kadro: ['dogrulayici', 'disgoz'], kutu: kutuMetni({ gorevler: [{ id: 'G-01', is: 'x', sahip: 'hayalet', durum: 'açık', kanit: 't' }], onkosul: { 'G-01': 'yok' } }) });
   assert.match(sevk(kadro).stdout, /sahibi kadroda yok/);
 });
 
@@ -417,7 +424,7 @@ test('sevk/bekçi dönem-içi: yeni karne düştüğü turda bekçi koşar; KIRM
 });
 
 test('sevk/kurulum türü: kurulum-denetcisi ZORUNLU açılır; YEŞİL karnesiz kapanmaz', () => {
-  const kok = kurulum({ donem: `DONEM-E4\t${KUTU_ADI}\tkurulum\tbassiz\ttatbikat\ndamga\t${new Date().toISOString()}\n` });
+  const kok = kurulum({ donem: `DONEM-E4\t${KUTU_ADI}\tkurulum\ttatbikat\ndamga\t${new Date().toISOString()}\n` });
   bekciKur(kok, 'YEŞİL');
   const r = sevk(kok);
   assert.equal(r.status, 2);
@@ -631,8 +638,9 @@ test('bekçi: KUTU tavan KIRMIZI"sı dönemi DURDURMAZ (kanonun iki yerde yazdı
   ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
   ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
   const r = sevk(kok);
-  assert.equal(r.status, 0);
-  assert.ok(!/bekçi KIRMIZI/.test(r.stdout), 'tavan kırmızısı duran kapı DEĞİLDİR (kapanış kilididir): ' + r.stdout);
+  // Dönem sürer (F1-5a ile artık kapanış evresine geçerek sürer): tavan kırmızısı duran kapı değil.
+  assert.equal(r.status, 2, r.stdout);
+  assert.ok(!/bekçi KIRMIZI/.test(r.stdout + r.stderr), 'tavan kırmızısı duran kapı DEĞİLDİR (kapanış kilididir): ' + r.stdout);
   const b = gunluk(kok).find((j) => j.tip === 'bekci');
   assert.equal(b.isik, 'TAVAN-KIRMIZI', 'ışık ayrı sınıflanmalı ki iz kaybolmasın');
 });
@@ -650,11 +658,14 @@ test('bekçi: çıkış kodu fail-CLOSED — çıktısında KIRMIZI olmayan çö
   assert.match(r.stdout, /çıkış kodu 3/);
 });
 
-test('gerçek-kutu şartı: T6 damgası + watchdog yoksa `gercek` dönem AÇILMAZ (tatbikat muaf)', () => {
+test('gerçek-kutu şartı: watchdog CANLI değilse `gercek` dönem AÇILMAZ (tatbikat muaf)', () => {
   const kok = kurulum();
-  const g = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz']);   // varsayılan sınıf: gercek
+  const g = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim']);   // varsayılan sınıf: gercek
   assert.equal(g.status, 1, 'varsayılan gerçek dönem, E5 kurulmadan açılmamalı');
-  assert.match(g.stderr, /T6-damgasi/);
+  // T6 PROVA FİŞİ ŞARTI KALKTI (F1-5h): o dosya KEEL sürümünün provasını kanıtlıyordu, bu
+  // kurulumun hazırlığını değil — ve şablonla dolu geldiği için kapıyı baştan açıyordu.
+  // Kalan şartların hepsi BU makinede ÖLÇÜLÜR.
+  assert.doesNotMatch(g.stderr, /T6/, 'T6 prova fişi artık şart olmamalı');
   assert.match(g.stderr, /watchdog-kaydi/);
   assert.ok(!existsSync(GOSTERGE(kok)));
 
@@ -664,28 +675,27 @@ test('gerçek-kutu şartı: T6 damgası + watchdog yoksa `gercek` dönem AÇILMA
   // gösterdiği launchd işi `launchctl print` ile aranır, son nabız damgasının tazeliği ölçülür.
   // Sahte işaret ARTIK YETMEZ — kâğıt üstünde korunan bir gece, korunmayan gecedir (E4'ün
   // "dosyada duran ölü kural" dersinin E5'teki karşılığı). Gerçek yol T6e'de canlı sınanır.
-  writeFileSync(join(kok, 'tools', 'sevk', 'damgalar', 'T6'), '2026-07-28 · test\n');
   writeFileSync(join(kok, 'tools', 'sevk', 'watchdog-kurulu'), 'launchd: test\n');
-  const g2 = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz']);
+  const g2 = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim']);
   assert.equal(g2.status, 1, 'ŞEKİLSİZ (etiketsiz) watchdog işareti gerçek dönemi AÇMAMALI');
   assert.match(g2.stderr, /watchdog-kaydinda-etiket-yok/);
 
   // Etiketi olan ama launchd'ye YÜKLENMEMİŞ işaret de yetmez (T6e'nin birim karşılığı).
   writeFileSync(join(kok, 'tools', 'sevk', 'watchdog-kurulu'),
     'etiket=dev.keel.nabiz.olmayan-is-' + process.pid + '\nplist=/yok\n');
-  const g3 = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz']);
+  const g3 = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim']);
   assert.equal(g3.status, 1, 'yüklü OLMAYAN launchd işi gerçek dönemi AÇMAMALI');
   assert.match(g3.stderr, /watchdog-isi-YUKLU-DEGIL/);
   assert.ok(!existsSync(GOSTERGE(kok)));
 
   // Tatbikat sınıfı muafiyeti korunur (E4/E5 tatbikatları döngüsel bağımlılığa girmesin).
-  const g4 = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'bassiz', 'tatbikat']);
+  const g4 = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
   assert.equal(g4.status, 0, 'tatbikat sınıfı bu şartlardan muaf olmalı: ' + g4.stderr);
 });
 
 test('bayat gösterge: 12 saatten eski dönem duran kapıdır (watchdogun 2. hattı)', () => {
   const eski = new Date(Date.now() - 30 * 3600 * 1000).toISOString();
-  const kok = kurulum({ donem: `DONEM-E4\t${KUTU_ADI}\tyapim\tbassiz\ttatbikat\ndamga\t${eski}\n` });
+  const kok = kurulum({ donem: `DONEM-E4\t${KUTU_ADI}\tyapim\ttatbikat\ndamga\t${eski}\n` });
   const r = sevk(kok);
   assert.equal(r.status, 0);
   assert.match(r.stdout, /BAYAT/);

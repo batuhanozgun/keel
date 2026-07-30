@@ -64,6 +64,25 @@ else {
       cik.push("EKSIK\tLİSTE satiri sevkin tanidigi degeri tasimiyor (beklenen: dönem içinde doğar): " + l.trim().slice(0, 70));
     } else if (l) cik.push("GECTI\tLİSTE: planlama kutusu isareti gecerli");
   }
+  // İZİN (F1-5f): otonom dönemde izin penceresi açılmaz; hangi sınıfın önceden serbest olduğu
+  // BURADA yazılıdır. Satır ZORUNLUDUR — yokluğu "hiçbir şey serbest değil" ile aynı sonucu
+  // verir ama SESSİZDİR: sahip izin konusunun hiç konuşulmadığını göremez. Değerler KAPALI
+  // sözlüktendir; sözlük dışı jeton yazım hatasıdır ve sessizce "izin yok"a düşerdi.
+  {
+    const IZIN_SOZLUGU = ["git-obje", "disa", "mcp", "yazim", "korumali-yol", "kutu-ciktilari"];
+    const s = durus.split("\n").find((x) => /^\s*İZİN\s*:/.test(x));
+    if (!s) cik.push("EKSIK\tdurus sozlesmesinde İZİN satiri yok — otonom donemde izin penceresi acilmaz; hangi sinifin onceden serbest oldugu yazilmali (yoksa «İZİN: yok»)");
+    else {
+      const deger = s.replace(/^\s*İZİN\s*:/, "").trim();
+      if (!deger || deger.includes("«")) cik.push("EKSIK\tİZİN satiri bos/doldurulmamis (serbest sinif yoksa «yok» yazilir)");
+      else if (!/^yok\b/.test(deger)) {
+        const jetonlar = deger.split(/[\s,·]+/).filter(Boolean);
+        const bilinmeyen = jetonlar.filter((t) => !IZIN_SOZLUGU.includes(t));
+        if (bilinmeyen.length) cik.push("EKSIK\tİZİN satirinda sozluk disi jeton: " + bilinmeyen.join(" ") + " (izinli: " + IZIN_SOZLUGU.join(" · ") + ")");
+        else cik.push("GECTI\tİZİN: " + jetonlar.join(" "));
+      } else cik.push("GECTI\tİZİN: yok (hicbir sinif onceden serbest degil)");
+    }
+  }
   for (const ad of ["BİTİŞ HÂLİ", "KANIT", "KISIT", "BÜTÇE"]) {
     const s = durus.split("\n").find((x) => new RegExp("^\\s*" + ad + "\\s*:").test(x));
     if (!s) { cik.push("EKSIK\tdurus sozlesmesi satiri yok: " + ad); continue; }

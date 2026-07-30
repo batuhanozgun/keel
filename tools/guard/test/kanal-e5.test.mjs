@@ -83,8 +83,9 @@ test('haber: tanınmayan olay reddedilir; alarm --cins zorunludur', () => {
 // ── 2 · Dört olay ─────────────────────────────────────────────────────────────────────────
 test('haber: dört olayın gövdesi şablondan kurulur (prova)', () => {
   const kok = kurulum();
+  // --kip argümanı F1-5e ile KALKTI: haber.sh onu artık tanımaz (bilinmeyen argüman = hata).
   const a = haber(kok, ['--olay', 'donem-basladi', '--donem', 'K1', '--kutu', 'KT-900',
-                        '--tur', 'yapim', '--kip', 'bassiz', '--sinif', 'gercek', '--prova']);
+                        '--tur', 'yapim', '--sinif', 'gercek', '--prova']);
   assert.equal(a.status, 0);
   assert.match(a.stdout, /PROVA\tdonem-basladi\tTEMIZ/);
   assert.match(a.stdout, /Dönem açıldı: K1/);

@@ -13,6 +13,11 @@
 #                        metnini ORADAN alır (denetçinin kaleminden değil — §9 sahip-atfı kuralı),
 #                        Ç-NN türetir, tekilleştirir, kuyruğa tek satır ekler.
 #                        stdout: "EKLENDI\tÇ-NN" | "ATLANDI\t<sebep>"
+#   --not izin <G-NN> <dönem> → ÇATAL DEĞİL, bilgi maddesi (F1-5f): otonom dönemde izin kapısına
+#                        takılıp ATLANAN adımı sahibin kuyruğuna düşürür. Cümle SABİT ŞABLONDUR
+#                        (serbest metin yasağı: ajanın kalemi sahip yüzeyine geçmez); tekilleştirme
+#                        kaynak imzasıyla. Bu madde ÇATAL sınıfı olmadığı için hiçbir işi KİLİTLEMEZ
+#                        — sahibin görmesi gereken bir haberdir, cevap beklenen bir soru değil.
 # FAIL-CLOSED: geçersiz girdi / okunamayan günlük / yazım hatası → exit 1 + stderr gerekçe.
 # Türkçe harf güvenliği: eşleştirme birebir bayt; küçük-harfe indirgeme YALNIZ ASCII üzerinde
 #   (tr komutu İ/ı bozmasın diye node tarafında ve yalnız desen listesinde yapılır).
@@ -183,7 +188,47 @@ bitir("EKLENDI", id);
     exit 0
     ;;
 
+  --not)
+    SINIF="${2:-}"; GOREV="${3:-}"; DONEM="${4:-}"
+    [ "$SINIF" = "izin" ] || hata "--not yalnız 'izin' sınıfını tanır (gelen: '${SINIF}') — serbest metin kuyruğa girmez"
+    case "$GOREV" in G-[0-9]*|KAPANIS|KURULUM) : ;; *) hata "--not icin gecerli gorev gerekli (ornek: G-12), gelen: '${GOREV}'" ;; esac
+    case "$DONEM" in ''|*[!A-Za-z0-9._-]*) hata "--not icin gecerli donem kimligi gerekli, gelen: '${DONEM}'" ;; esac
+
+    . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/kilit.sh"
+    trap 'kilit_birak; hata "ic hata (fail-closed): kuyruk yazici beklenmedik durdu"' ERR
+    kilit_al "$KUYRUK.kilit" || hata "kuyruk kilidi alinamadi: $KILIT_HATA"
+
+    CIKTI="$(NOT_GOREV="$GOREV" NOT_DONEM="$DONEM" NOT_KUYRUK="$KUYRUK" "$NODE_BIN" --input-type=module -e '
+import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
+const ky = process.env.NOT_KUYRUK;
+const gorev = process.env.NOT_GOREV, donem = process.env.NOT_DONEM;
+const bitir = (durum, deger) => { console.log(durum + "\t" + deger); process.exit(0); };
+const BASLIK = [
+  "<!-- yazar: kapanış kancası (mekanik ekleme) + cevabı alan rol (kapanış işareti) — EL_KITABI F1 istisna 2.",
+  "     Biçim: \"- [ ] <tarih> · <rol> · tek cümle · kaynak: oturum <id>\"; cevaplanınca aynı satır",
+  "     \"- [x] … · cevap: … · <tarih>\" olur. MADDE SİLİNMEZ (tavan 2KB; taşmada en eski KAPALI izler kırpılır). -->",
+  "# SENDE BEKLEYEN — sahipte bekleyen maddeler",
+  "",
+  "",
+].join("\n");
+if (!existsSync(ky)) writeFileSync(ky, BASLIK);
+const mevcut = readFileSync(ky, "utf8");
+const imza = "kaynak: izin-engeli " + gorev + " · dönem " + donem;
+if (mevcut.includes(imza)) bitir("ATLANDI", "ayni izin notu zaten kuyrukta (" + imza + ")");
+const d = new Date(), p2 = (n) => String(n).padStart(2, "0");
+const bugun = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
+// SABİT CÜMLE: değişken yalnız görev numarasıdır. Sahibin kuyruğuna ajan kalemi girmez.
+const satir = "- [ ] " + bugun + " · yapı · Gece bir adım izin kapısına takıldı ve ATLANDI (" + gorev +
+  "); iş sürdü. Bu adımın yapılmasını istiyorsan kutunun İZİN satırına ilgili sınıfı ekle. · " + imza;
+appendFileSync(ky, satir + "\n");
+bitir("EKLENDI", gorev);
+')" || { kilit_birak; hata "kuyruk yazici kosamadi (fail-closed)"; }
+    kilit_birak
+    printf '%s\n' "$CIKTI"
+    exit 0
+    ;;
+
   *)
-    hata "bilinmeyen kip: '${KIP}' (--durum | --ekle <G-NN>)"
+    hata "bilinmeyen kip: '${KIP}' (--durum | --ekle <G-NN> | --not izin <G-NN> <dönem>)"
     ;;
 esac

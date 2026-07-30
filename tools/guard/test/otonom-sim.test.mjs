@@ -18,7 +18,7 @@ const KUTU_SARI = 10 * 1024; // EL_KITABI F3 (değişmedi; buraya kopya değil �
 // dosyanın KENDİ yorum satırından okuyordu — metni büyüten kişi aynı düzenlemede sayıyı da
 // büyütünce hem tavan testi hem marj freni yeşil kalıyordu, yani fren fren değildi.
 // Artık tavanı değiştirmek İKİ ayrı dosyada bilinçli edim ister ve diff'te görünür.
-const TAVANLAR = { OTONOM_DONEM: 14848, KARAR_ALANI: 8192 };
+const TAVANLAR = { OTONOM_DONEM: 16640, KARAR_ALANI: 8192 };
 
 function kalipTavani(kalip, ad) {
   const m = kalip.match(/Tavan:\s*([\d.]+)\s*B/);
@@ -95,7 +95,8 @@ function durusBlogu() {
     'BİTİŞ HÂLİ: ekstre ekranında kart hareketleri tarih·tutar·açıklama sütunlarıyla görünür; boş ayda "hareket yok" satırı çıkar; dışa aktarım düğmesi CSV indirir.',
     'KANIT:      npm test yeşil (tam özet satırı) + tarayıcıda /ekstre?ay=2026-06 ekran tarifi',
     'KISIT:      02_kanon/golden/ dokunulmaz; altın dosyalara gerçek kişisel veri girmez (İÇERİK cinsi); tools/ ve .claude/ [SERT]',
-    'BÜTÇE:      dönem başına en çok 3 alt-ajan çağrısı · aynı görevde iki maxTurns dayanması = bölünmeli · toplam 12 dönem',
+    'BÜTÇE:      dönem başına en çok 3 ÜRETİM çağrısı · aynı görevde iki maxTurns dayanması = bölünmeli · toplam 12 dönem',
+    'İZİN:       git-obje korumali-yol',
     '',
   ].join('\n');
 }
@@ -127,7 +128,7 @@ test('KUTU-sim (25 görev): duruş tavana dahil ve küçük; risk bloğu tavan-d
 
 test('KUTU-sim şeması bekçi tarifinin aradığı biçimle eş (satır desenleri)', () => {
   const metin = yeniBloklar(25);
-  for (const etiket of ['BİTİŞ HÂLİ:', 'KANIT:', 'KISIT:', 'BÜTÇE:']) assert.ok(metin.includes(etiket), etiket + ' eksik');
+  for (const etiket of ['BİTİŞ HÂLİ:', 'KANIT:', 'KISIT:', 'BÜTÇE:', 'İZİN:']) assert.ok(metin.includes(etiket), etiket + ' eksik');
   const riskSatirlari = metin.split('\n').filter((s) => /^G-\d+:/.test(s));
   assert.equal(riskSatirlari.length, 25);
   for (const s of riskSatirlari) {

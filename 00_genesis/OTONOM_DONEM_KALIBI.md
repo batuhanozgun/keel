@@ -8,8 +8,17 @@
      otonom kural evi BU dosyadır. Keşfi ÜÇ yoldan: sevkin devir metnindeki `kural:` işaretçisi ·
      rolün alt-ajan koltuğundaki açılış okuma listesi (G3.3e) · rol sözleşmesinin "Açılış
      ek-okumaları" satırı. İlk ikisi mekaniktir, üçüncüsü serbest metin.
-     Tavan: 14.848 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
+     Tavan: 16.640 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
      ölçer; kurulu bekçiye girmez — F3 tablosu EL_KITABI'nda ve ona dokunulmuyor).
+     DÖRDÜNCÜ ARTIŞ (2026-07-30, Faz 2 sıra 7 · dönem dikişleri): 14.848 → 16.640 (+1.792 B).
+     Sebep yine ek KURAL, üslup değil — ve bu paketin getirdiği kural sayısı öncekilerden büyük:
+     (i) dönemin ÜÇ EVRESİ ve evreler arası geçiş kuralı (§1) · (ii) duruş sözleşmesine beşinci
+     zorunlu satır `İZİN:` + kapalı izin sözlüğü ve "kural evi asla önceden verilemez" sınırı
+     (§2) · (iii) BÜTÇE'nin ne saydığının düzeltilmesi (§2) · (iv) kapanış evresinin iki zorunlu
+     gözü ve KIRMIZI karnenin `BULGU-GOREV` şartı (§11). Metin ÖNCE sıkıştırıldı: kip bayrağının
+     anlatımı (§1), prova-damgası listesi (§10) ve izin dikişlerinin tekrarı (§4/§7) çıkarıldı;
+     brifing biçimi ile karne biçimi kural evine KOPYALANMADI — ikisi de kendi koltuk
+     sözleşmesinde yaşıyor (tek-ev). Artış ondan sonra kalan. Yeni marj 564 B.
      Tavan 14.336'dan çıkarıldı (2026-07-29, dil paketi): fren ateşledi ve sebebi ek KURAL
      değil, kelime uzunluğuydu — eski tek kelimenin altı anlamı altı gerçek ada ayrıldı ("otonom dönem",
      "alt-ajan çağrısı", "bekçi denetimi", …) ve aynı içerik 65 B büyüdü. Karar: metni
@@ -41,19 +50,25 @@ alt-ajan dosyasına `memory` alanı yazılmaz (zorunlu unutmanın ölüm noktas�
 KIRMIZI basar). Döngü: sevk görevi seçer → alt-ajan çağrısı → dönüş zarfı → SubagentStop biçim
 kapısı → sevk karne/görev koşullarına bakar → sıradaki.
 
-**Dönem dört hâlden biriyle biter:** açık iş kalmadı · duran kapı (çatal/mühür) · bütçe tavanı
-doldu · bekçi KIRMIZI'sı ya da DUR işareti. **İzin kapısı (`ask`) bunlardan biri DEĞİLDİR —
-iki dalda da dönemi bitirmez (E0 ölçümü, 2026-07-27):** başsız kipte ask = anında red + iz
-(görev raporlar, dönem sürer; engel zarfın İZİN-ENGELİ satırına düşer); **interaktif kipte ask
-cevapsızsa dönem süresiz ASILI KALIR** — sahip klavye başında değilken tek çıkış
-watchdog/DUR'dur (E5). Kip bilinçli tercihtir ve göstergenin 4. alanında yazılıdır (§11).
+**Dönem ÜÇ EVRELİDİR ve evre geçişi için tuş gerekmez:** ÜRETİM (görevler işlenir) → açık üretim
+görevi kalmayınca göstergenin tür alanı yerinde `kapanis` olur ve üretim kilitlenir → KAPANIŞ
+(dış göz brifingi + bağımsız kapanış karnesi). Karne YEŞİL ise dönem biter, **kapanış mührü
+sahibindedir**; KIRMIZI ise tür yerinde `yapim`a döner, karnenin `BULGU-GOREV` satırında yazılı
+görev sevk edilir ve bulgu kapatılır (en çok **2 gidiş-dönüş**, sonra dönem kapanır).
+
+**Dönem dört hâlden biriyle biter:** kapanış karnesi YEŞİL (mühür bekler) · duran kapı
+(çatal/mühür/gidiş-dönüş tavanı) · bütçe tavanı doldu · bekçi KIRMIZI'sı ya da DUR işareti.
+**İzin penceresi (`ask`) bunlardan biri DEĞİLDİR — otonom dönemde HİÇ AÇILMAZ (§2 İZİN):**
+kutunun izin listesinde yazmayan sınıf engellenir, o adım ATLANIR, zarfın İZİN-ENGELİ satırına
+düşer ve sahibin kuyruğuna not gider; dönem sürer. Pencere açıp insan beklemek, tanım gereği
+otonomluğun bittiği andır.
 
 **Dönemi durduran KIRMIZI'lar sayılıdır:** bekçi KIRMIZI'sı · zarf günlüğü bütünlük
 KIRMIZI'sı. **KUTU tavan KIRMIZI'sı bunlardan DEĞİLDİR:** bugünkü davranışını korur —
 kapanış kilididir, duran kapı değil (F3'ün aynısı). SARI hiçbir yerde durdurmaz; kapanış
 bloğuna yazılır.
 
-## 2 · Duruş sözleşmesi (kutu kurulumuna dört zorunlu satır)
+## 2 · Duruş sözleşmesi (kutu kurulumuna beş zorunlu satır)
 
 Otonom döneme girecek her kutunun `KUTU.md`'sinde `## Duruş sözleşmesi` bloğu:
 
@@ -61,7 +76,8 @@ Otonom döneme girecek her kutunun `KUTU.md`'sinde `## Duruş sözleşmesi` blo�
 BİTİŞ HÂLİ: <gözlemlenebilir; "bu kutu bitince gözünle göreceklerin" ile eş>
 KANIT:      <hangi komut koşulur, hangi çıktı görülür — kanıt-komutu zarfı emsali>
 KISIT:      <neye dokunulmaz — golden İÇERİK cinsleri dahil (yalnız yol değil)>
-BÜTÇE:      <dönem başına en çok N alt-ajan çağrısı · ilerleme-yok eşiği · toplam dönem tavanı>
+BÜTÇE:      <dönem başına en çok N ÜRETİM çağrısı · ilerleme-yok eşiği · toplam dönem tavanı>
+İZİN:       <önceden serbest sınıflar; hiçbiri gerekmiyorsa: yok>
 LİSTE:      <yalnız planlama kutusunda; değeri BİREBİR: dönem içinde doğar>
 ```
 
@@ -69,8 +85,14 @@ LİSTE:      <yalnız planlama kutusunda; değeri BİREBİR: dönem içinde doğ
   yeni iş bu süzgeçten geçer: *bitti tanımına hizmet ediyor mu?* — tek satır beyanla görev
   tablosuna girer; etmiyorsa ERTELENENLER'e. Yazılmamışsa kurulum denetçisi kurulumu geçirmez.
 - **BÜTÇE = "sahip bakmadan en fazla ne kadar şey kurulabilir"** (K-G) — kontrol vidası, para
-  değil. İlk dönemlerde küçük başlar (dönem başına 3 alt-ajan çağrısı), veriyle gevşetilir.
-  RAF'taki "Sert bütçe tavanı" (maliyet/zaman durdurucusu) AYRI kayıttır — birleştirilmez.
+  değil. **Yalnız ÜRETİM çağrılarını sayar:** doğrulama, çatal süzgeci, brifing ve kapanış
+  denetimi bir şey KURMAZ; onların freni tur tavanı ve gidiş-dönüş tavanıdır. (Hepsi sayılınca
+  3 bütçeli kutuda 1,5 görev koşulabiliyordu — kutu mekanik olarak kapanamıyordu.)
+- **İZİN = sahibin kutu açılışında verdiği önceden-izin listesi.** Kapalı sözlük: `git-obje` ·
+  `disa` · `mcp` · `yazim` · `korumali-yol` ([SORULUR] yol, golden dahil) · `kutu-ciktilari`
+  (`BITTI_TANIMI.md` · `KUTU_PLANI.md`); hiçbiri gerekmiyorsa `yok`. **Kural evi (`00_genesis/` ·
+  `OTONOM_DONEM.md` · `KARAR_ALANI.md`) ve yapının damga/işaret dosyaları HİÇBİR ZAMAN önceden
+  verilemez** — izin listesi bir esneme yeridir, kafesin anahtarı değil.
 - **LİSTE (beşinci, seçimli):** yalnız görev listesi dönem İÇİNDE doğan kutuda yazılır. İki
   fren ona bağlı: şişme çapası liste doğana dek çakılmaz (yoksa plan doğar doğmaz alarm çalar) ·
   görev tavanı 5 değil, iş zincirindeki rol sayısı + 1 olur. Değer kayarsa kutu sessizce sıradan
@@ -117,17 +139,17 @@ TÜRETME-İZİ: yok | "sormadım çünkü VIZYON/karar <satır>"
 GERİ-ÇEKİLEN: yok | <dönem içinde açılıp geri çekilen çatal/karar — tek satır iz>
 ```
 
-- **Koşullu 7. satır — İZİN-ENGELİ:** dönemde izin reddi (`ask`/deny/kanca engeli) yaşandıysa
-  zarfa `İZİN-ENGELİ: <ne engellendi>` yazılır; kapı bunu transkriptten ÇİFT kaynakla doğrular
-  (`permission_denials` + kanca-hata deseni) — yaşanmışken yazılmamış zarf geri döner.
+- **Koşullu 7. satır — İZİN-ENGELİ:** izin engeli yaşandıysa (§2 İZİN) zarfa
+  `İZİN-ENGELİ: <ne engellendi>` yazılır; kapı bunu transkriptten ÇİFT kaynakla doğrular —
+  yaşanmışken yazılmamış zarf geri döner. Engellenen adım ATLANIR; iş durmaz.
 - Zarf ekrana değil **diske** düşer: `00_pano/zarf-gunlugu.jsonl`. Günlüğe append eden TEK
   betik `tools/sevk/zarf-ekle.sh`'dir (fail-closed, şema denetimli, kilitli append); kancalar
   doğrudan yazmaz. Güvence katmanları ayrık: günlük araç katmanında [SERT] (Edit/Write
   kesilir) · bozuk/yarım satır bekçide KIRMIZI + dönemde duran kapı · şema-GEÇERLİ sahte satıra
   karşı mekanik yakalayıcı YOK — bilinen sınır, süreç disiplini (E2+ adayı).
-- **Dönem-AÇIK göstergesi** `tools/sevk/.donem-acik`tir (1. satır: kimlik · kutu · tür · kip ·
-  sınıf; 2. satır damga; yazarı `/donem`, sileni sevk). Git-izlenmez; güvencesi bekçi değil **dönem
-  dikişidir**: göstergeye dokunan Bash komutu sahibe SORULUR (rol-damgası emsali). Bozuk
+- **Dönem-AÇIK göstergesi** `tools/sevk/.donem-acik`tir (1. satır: kimlik · kutu · evre · sınıf;
+  2. satır damga; yazarı `/donem`, evresini değiştiren ve silen sevk). Git-izlenmez; güvencesi
+  bekçi değil **dönem dikişidir**: göstergeye dokunan Bash komutu dönemde ENGELLENİR. Bozuk
   gösterge (dizin/boş kimlik) biçim kapısında fail-closed'dur — "dönem yok" sayılmaz.
 - **Dönüş mekaniği:** çatal cevabı ya da kapı düzeltmesi gelince rol TAZE çağrıyla sürer;
   aynı alt-ajan sürdürülmez. Durum dosyada yaşar, hafızada değil.
@@ -183,9 +205,9 @@ biçim kapısı (jargon · TÜRETME-İZİ çapası · BEKLETİR kilidi · denet�
   bloğunun tanımlı alanlarından kurulur; serbest metin eklenmez. Her gönderim önce içerik
   süzgecinden geçer; süzgeç red verirse gövde GİTMEZ (sansürlü sabit-şablon alarm gider).
 - **E2 mekaniği:** `tools/guard/icerik-suzgeci.sh` (+işaret listesi) yazım-öncesi keser —
-  Edit/Write/Bash-yazımı ve MCP içeriği (her kanalda fail-closed). Dönemde MCP ve
-  `git add/commit/stash` SORULUR (worktree bağlamında git-obje ENGEL); worktree'de koruma
-  haritası aynen kurulur. Dışa-giden (`git push`/`curl`/`gh`/…) her kipte SORULUR.
+  Edit/Write/Bash-yazımı ve MCP içeriği (her kanalda fail-closed). MCP · git-obje · dışa-giden
+  komut sınıfları el-sürüşlü kullanımda SORULUR, dönemde §2 İZİN listesine bakılır (worktree
+  bağlamında git-obje her hâlde ENGEL); worktree'de koruma haritası aynen kurulur.
 
 ## 8 · Aynı-model uyarısı
 
@@ -202,21 +224,28 @@ denetçi/dış göz bulgusudur.
 
 ## 10 · Sevkin kapılanma şartları (kalkansız motor yok)
 
-Sevk betiği (E4) açılışta şunları arar; eksikte HİÇ başlamaz ve sebebini yazar:
-dış göz koltuğu kurulu · **T0 damgası** (E0 ölçüm raporu) · **T1 damgası** (E1 tatbikatı) ·
-**önleme-tatbikat damgası** (T2/E2) · **soru-kanalı-tatbikat damgası** (T3/E3). Gerçek-kutu
-döneminde ek iki şart: T6 damgası (E5) + watchdog fiilen kurulu. Damga evi:
-`tools/sevk/damgalar/` (tek satır: tarih + kanıt-rapor işaretçisi). Tatbikat damgası düşmeden
-otonom dönem YOKTUR — bu sahibin kararıdır (D-25 ②③) ve betiğin ilk satırlarıdır.
+Tören ve sevk açılışta şunları arar; eksikte dönem HİÇ başlamaz ve sebep yazılır: dış göz
+koltuğu (`03_roller/disgoz/` + `BRIFING.md` iskeleti) · dış gözün alt-ajan koltuğu
+(`.claude/agents/disgoz.md`) · bu kural evi (`02_kanon/OTONOM_DONEM.md`) · sahibin karar alanı.
+**Gerçek-kutu döneminde ek üç şart ÖLÇÜLEREK aranır:** watchdog fiilen yüklü · nabzı taze ·
+haber kanalı canlı (kimlik doğrulaması ağa çıkar). Hepsi BU kurulumda ölçülür; şablonla gelen
+"prova fişi" dosyaları kapı olmaktan çıktı — dolu geldikleri için baştan mühürlü geçiyorlardı.
 
 ## 11 · Sevk döngüsü ve kanal (E4-E5)
 
-Tören: `/donem <kutu> [yapim|kurulum|kapanis] [interaktif|bassiz] [gercek|tatbikat]`.
-Sevk (Stop kancası) iş yapmaz, karar basmaz, görev kapatmaz; işi seçer ve talimatı üretir.
-Görev seçimi, frenler ve izin zemini mekaniktir: `tools/sevk/README.md`. Seni bağlayanlar:
+Tören: `/donem [kutu] [yapim|kurulum|kapanis] [gercek|tatbikat]` — kutu adı verilmezse açık kutu
+aranır; tam bir tane varsa o seçilir. Sevk (Stop kancası) iş yapmaz, karar basmaz, görev
+kapatmaz; işi seçer ve talimatı üretir. Mekaniği: `tools/sevk/README.md`. Seni bağlayanlar:
 
 **Karne şartı (K2):** görev ancak tabloda `kapalı` + TAZE YEŞİL karne varsa kapalı SAYILIR
-(taze = son iş-zarfından sonra). **Kendi işine karne yazamazsın.**
+(taze = son iş-zarfından sonra). Kapanış karnesi de aynı kurala tabidir. **Kendi işine karne
+yazamazsın.**
+
+**Kapanış evresinin iki zorunlu gözü:** dış göz brifingi + kapanış karnesi. İkisinin de dönüş
+biçimi kendi koltuk sözleşmesindedir (dış göz: beş `BRIFING-N` satırı, dosyayı biçim kapısı
+yazar — koltuk yazamaz kalır; doğrulayıcı: KIRMIZI kapanış karnesinde `BULGU-GOREV: G-NN`).
+Düzeltilecek görevi **hükmü veren göz** söyler; sevk görev İCAT ETMEZ ve o görevin satırı
+yeniden AÇILMAZ — düzeltme aynı görevin altında yapılır, yeni karne kendiliğinden istenir.
 
 **Devir metni yalnız işaretçidir** (`gorev · kutu · sozlesme · kural · ek-okuma`; tavan 800 B).
 Serbest metin, `memory` alanı ve sevkin açmadığı (rol, görev) ikilisi çağrı anında kesilir —

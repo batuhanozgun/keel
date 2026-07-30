@@ -407,7 +407,12 @@ test('kablo: settings.json SubagentStop girdisi + korunan-yollar tools/sevk [SER
   assert.ok(bolumler['[SORULUR]'].includes('02_kanon/OTONOM_DONEM.md'), 'OTONOM_DONEM [SORULUR] olmalı');
   assert.ok(bolumler['[SERT]'].includes('00_pano/zarf-gunlugu.jsonl'), 'zarf günlüğü [SERT] olmalı (A4)');
   assert.match(readFileSync(join(KOK_REPO, '.gitignore'), 'utf8'), /tools\/sevk\/\.donem-acik/);
-  assert.ok(existsSync(join(KOK_REPO, 'tools', 'sevk', 'damgalar', 'T0')), 'T0 damgası düşmüş olmalı');
+  // PROVA FİŞLERİ DAĞITIMDAN ÇIKTI (F1-5h): eskiden burada `tools/sevk/damgalar/T0` aranıyordu —
+  // yani test, KEEL'in kendi prova dosyasının şablonda DURDUĞUNU doğruluyordu. O dosya bir kapıydı
+  // ve dolu geldiği için baştan mühürlüydü. Yeni çapa: dosya YOK + prova kaydı doğru evinde.
+  assert.ok(!existsSync(join(KOK_REPO, 'tools', 'sevk', 'damgalar')),
+    'prova fişleri dağıtılan kopyadan çıkmalı (F1-5h) — tools/sevk/damgalar/ olmamalı');
+  assert.ok(existsSync(join(KOK_REPO, 'docs', 'PROVALAR.md')), 'prova kaydının evi docs/PROVALAR.md olmalı');
 });
 
 // ---------- file-guard E1 dikişleri (dönem-dikişi + kurulum çekirdeği + günlük [SERT]) ----------
@@ -439,8 +444,8 @@ test('file-guard dönem-dikişi: .donem-acik dokunan Bash komutu sahibe SORULUR 
 
 test('file-guard kurulum çekirdeği: kurulum sürerken tools/sevk yazımı ENGEL (A5); günlük [SERT] (A4)', () => {
   const suruyor = guardKurulum({ kurulumTamam: false });
-  const r1 = kosGuard(suruyor, { tool_name: 'Write', tool_input: { file_path: join(suruyor, 'tools', 'sevk', 'damgalar', 'T2'), content: 'sahte damga' } });
-  assert.equal(r1.status, 2, 'kurulum penceresinde sahte damga yazılamamalı: ' + r1.stderr);
+  const r1 = kosGuard(suruyor, { tool_name: 'Write', tool_input: { file_path: join(suruyor, 'tools', 'sevk', 'sevk.sh'), content: '# sahte motor' } });
+  assert.equal(r1.status, 2, 'kurulum penceresinde sevk kodu yeniden yazılamamalı: ' + r1.stderr);
   const tamam = guardKurulum();
   const r2 = kosGuard(tamam, { tool_name: 'Write', tool_input: { file_path: join(tamam, '00_pano', 'zarf-gunlugu.jsonl'), content: '{"surum":1}' } });
   assert.equal(r2.status, 2, 'günlüğe araç-katmanı yazımı kesilmeli: ' + r2.stderr);

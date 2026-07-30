@@ -35,10 +35,20 @@ her biri AYRI satırın başında:
 KARNE-GOREV: G-NN | KURULUM | KAPANIS
 HÜKÜM:       YEŞİL | KIRMIZI | DOĞRULANAMADI
 MADDELER:    <iddia=hüküm çiftleri, tek satır>
+BULGU-GOREV: G-NN [G-NN …]   ← YALNIZ «KARNE-GOREV: KAPANIS» + hüküm YEŞİL DEĞİLKEN; zorunlu
 ```
 
 `HÜKÜM: YEŞİL` yalnız her maddesi DOĞRU olan karnede verilir; bir madde bile YANLIŞ ise KIRMIZI,
 bir madde DOĞRULANAMADI ve gerisi doğruysa DOĞRULANAMADI. **Görevi bu satır kapatır:** sevk bir
 görevi ancak taze ve YEŞİL bir karne varsa kapalı sayar — "kimse kendi işine yeşil diyemez"
 kuralının mekanik yüzü budur. **Kendi yaptığın işe karne yazamazsın** (kapı bunu keser: öz-karne
-yasağı). El-sürüşlü kullanımda bu üç satır aranmaz; bugünkü kısa karne biçimin aynen geçerlidir.
+yasağı). El-sürüşlü kullanımda bu satırlar aranmaz; bugünkü kısa karne biçimin aynen geçerlidir.
+
+**Kapanış karnesi KIRMIZI ise düzeltmenin adresini SEN verirsin (F1-5b).** `BULGU-GOREV` satırına
+kutunun **var olan** görevlerinden bulguyu taşıyan(lar)ı yaz; kapı uydurma numarayı keser.
+Gerekçe: kapanış evresinde üretim görevi açılmaz ve **sevk kendi görev icat etmez** — bulguyu
+kapatacak çağrıyı ancak bu satırı okuyarak açabilir. Satırı yazmazsan dönem senin hükmünle
+KİLİTLENİR ve sahip üçüncü bir komut yazmak zorunda kalır (düzeltilen kusur tam buydu). Bulgu tek
+bir görevin altına düşmüyorsa en yakın görevi yaz ve MADDELER satırında bunu açıkça söyle.
+Düzeltme geldiğinde o görevin satırı **yeniden açılmaz**; sen taze bir karne istenerek yeniden
+çağrılırsın.

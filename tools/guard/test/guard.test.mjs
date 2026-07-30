@@ -47,6 +47,18 @@ function kos(kok, girdi) {
   });
 }
 
+// F1-5f · dönem fixture'ı: gösterge + kutunun `İZİN:` satırı. İzin listesi KUTUDAN okunur;
+// kutu yoksa ya da satır yoksa liste BOŞTUR (fail-closed) — "okuyamadım" ile "serbest" ayrı şeydir.
+function donemAc(kok, { kutu = 'KT-900', izin = null } = {}) {
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
+  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), `DONEM-1\t${kutu}\tyapim\ttatbikat\ndamga\t2026-07-30T10:00:00Z\n`);
+  if (izin !== null) {
+    mkdirSync(join(kok, '01_kutular', kutu), { recursive: true });
+    writeFileSync(join(kok, '01_kutular', kutu, 'KUTU.md'),
+      `# ${kutu}\n\n## Duruş sözleşmesi\nBİTİŞ HÂLİ: x\nKANIT: y\nKISIT: z\nBÜTÇE: 3 ÜRETİM çağrısı\nİZİN:       ${izin}\n`);
+  }
+}
+
 const edit = (kok, yol) => ({ tool_name: 'Edit', tool_input: { file_path: join(kok, yol) } });
 const write = (kok, yol) => ({ tool_name: 'Write', tool_input: { file_path: join(kok, yol), content: 'x' } });
 
@@ -450,17 +462,26 @@ test('E2 Hat-2 dışa-giden komut-konumu: gömülü kelime yakalanmaz (alt-dize 
   }
 });
 
-test('E2 MCP dikişi: dönem-AÇIK iken mcp__ çağrısı sorulur; dönem yokken serbest (el-sürüşlü değişmez)', () => {
+test('F1-5f MCP dikişi: dönem-AÇIK iken izin penceresi AÇILMAZ — listede yoksa ENGEL, varsa serbest', () => {
   const kok = kurulum();
   const cagri = { tool_name: 'mcp__ornek__gonder', tool_input: { x: 'y' } };
   const kapali = kos(kok, cagri);
   assert.equal(kapali.status, 0);
-  assert.equal(kapali.stdout.trim(), '');
-  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
-  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'DONEM-1\tkutu\t2026-07-27T10:00:00Z\n');
-  const acik = kos(kok, cagri);
-  assert.equal(acik.status, 0);
-  assert.match(askJson(acik).permissionDecisionReason, /MCP/);
+  assert.equal(kapali.stdout.trim(), '', 'dönem yokken el-sürüşlü davranış değişmez');
+
+  // Kutunun İZİN satırı yok → sınıf önceden serbest bırakılmamış → ENGEL (pencere YOK).
+  donemAc(kok, { izin: 'yok' });
+  const engel = kos(kok, cagri);
+  assert.equal(engel.status, 2, 'dönemde ask penceresi açılmamalı: ' + engel.stdout);
+  assert.match(engel.stderr, /izin penceresi AÇILMAZ/);
+  assert.match(engel.stderr, /mcp/);
+  assert.match(engel.stderr, /İZİN-ENGELİ/, 'ajana ne yapacağı söylenmeli (adımı atla + zarfa yaz)');
+
+  // Sahip kutu açılışında sınıfı önceden serbest bıraktıysa çağrı GEÇER.
+  donemAc(kok, { izin: 'mcp git-obje' });
+  const serbest = kos(kok, cagri);
+  assert.equal(serbest.status, 0);
+  assert.equal(serbest.stdout.trim(), '', 'önceden izinli sınıfta soru da engel de olmamalı');
 });
 
 test('E2 git-obje dikişi: dönem-AÇIK iken commit sorulur; worktree bağlamında ENGEL; dönem yokken serbest', () => {
@@ -468,10 +489,13 @@ test('E2 git-obje dikişi: dönem-AÇIK iken commit sorulur; worktree bağlamın
   const commit = { tool_name: 'Bash', tool_input: { command: 'git commit -m x' } };
   assert.equal(kos(kok, commit).status, 0);
   assert.equal(kos(kok, commit).stdout.trim(), '', 'dönem yokken dikiş yok');
-  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
-  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'DONEM-1\tkutu\t2026-07-27T10:00:00Z\n');
-  const soru = kos(kok, commit);
-  assert.match(askJson(soru).permissionDecisionReason, /doğrulayıcı yeşili/);
+  donemAc(kok, { izin: 'yok' });
+  const engel = kos(kok, commit);
+  assert.equal(engel.status, 2, 'dönemde commit sorusu pencere açmamalı: ' + engel.stdout);
+  assert.match(engel.stderr, /git-obje/);
+  donemAc(kok, { izin: 'git-obje' });
+  assert.equal(kos(kok, commit).status, 0, 'İZİN listesindeki sınıf serbest geçmeli');
+  donemAc(kok, { izin: 'yok' });
   const wtKomut = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git -C .claude/worktrees/ag-1 add .' } });
   assert.equal(wtKomut.status, 2);
   assert.match(wtKomut.stderr, /nesne veritabanını paylaşır/);
@@ -576,13 +600,14 @@ test('E2 hasım/dışa-giden negatif: git log, npm test, ssh-içeren-yol GEC', (
 
 test('E2 hasım/git-obje: dönem-AÇIK git -C commit worktree bağlamında ENGEL, dışında SOR-GIT', () => {
   const kok = kurulum();
-  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
-  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'K\tkutu\t2026-07-27T10:00:00Z\n');
+  donemAc(kok, { izin: 'git-obje' });
+  // İZİN listesinde git-obje OLSA BİLE worktree bağlamı ENGEL kalır: ortak nesne deposu
+  // sır-cinsi için geri alınamaz (E0 ölçümü) — bu sınıf önceden verilebilir olan değildir.
   const wt = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git -C .claude/worktrees/ag-1 commit -m x' } });
   assert.equal(wt.status, 2);
   assert.match(wt.stderr, /nesne veritabanını paylaşır/);
   const dis = kos(kok, { tool_name: 'Bash', tool_input: { command: 'git -C /elsewhere commit -m y' } });
-  assert.match(askJson(dis).permissionDecisionReason, /doğrulayıcı yeşili/);
+  assert.equal(dis.status, 0, 'izinli sınıf worktree dışında serbest geçmeli');
 });
 
 test('E2 hasım/yazım-kalıbı: sed -i korumalı yolda SOR-YAZIM; sed (yerinde-değil) serbest', () => {

@@ -8,7 +8,7 @@
 # Girdi: stdin'de TEK satır JSON. Şema (surum:1): zorunlu alanlar surum=1 · ts (ISO) · tip
 #   (bilinen liste) · donem (dize ya da null). Tip listesi: donem-acilis · donem-kapanis · nabiz ·
 #   zarf · bicim · sevk-karar · catal-suzgec · sahip-temas · izin-engel · bulgu · karne · devir ·
-#   bekci · haber · dur-alindi · gorev-sayaci (son üçü E5).
+#   bekci · haber · dur-alindi · gorev-sayaci (E5) · evre-gecis · brifing (F1-5).
 # FAIL-CLOSED: geçersiz girdi / kilit alınamadı / yazım hatası → exit 1 + stderr gerekçe;
 #   satır SESSİZCE düşmez (bozuk satır bütün gözleri köreltir — günlük tek-nokta veri katmanı).
 # Kilit: mkdir kilidi (macOS tabanında flock yok) + tek printf-append. Bayat kilit (PID ölü)
@@ -46,7 +46,11 @@ const TIPLER = new Set(["donem-acilis","donem-kapanis","nabiz","zarf","bicim","s
                         // isaretinin gorulme ani (kaynak: isaret|posta) · gorev-sayaci = sisme
                         // alarminin capasi. Beyaz liste FAIL-CLOSED: listede olmayan tip
                         // reddedilir ve sevkin uc freni gunlukten sayildigi icin donem KAPANIR.
-                        "haber","dur-alindi","gorev-sayaci","alarm"]);
+                        "haber","dur-alindi","gorev-sayaci","alarm",
+                        // F1-5a/c: evre-gecis = donemin uretim<->kapanis evre degisimi (gidis-donus
+                        // freni bu kayittan sayilir) · brifing = dis gozun kapanis brifinginin
+                        // diske yazildigi an (sevk "bu donemde brifing var mi" sorusunu buradan okur).
+                        "evre-gecis","brifing"]);
 let ham = "";
 try { ham = readFileSync(0, "utf8"); } catch { console.log("HATA\tstdin okunamadi"); process.exit(0); }
 if (ham.trim().split("\n").length !== 1) { console.log("HATA\tgirdi tek satir degil"); process.exit(0); }

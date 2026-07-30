@@ -83,7 +83,7 @@ fi
 CIKTI="$(printf '%s' "$GIRDI" | KAPI_KOK="$KOK" KAPI_DONEM="$DONEM_ID" KAPI_KUTU="$DONEM_KUTU" \
   KAPI_KARAR_ALANI="$KARAR_ALANI_DURUM" KAPI_KUYRUK="$KUYRUK_DURUM" KAPI_KUYRUK_HATA="$KUYRUK_HATA" \
   "$NODE_BIN" --input-type=module -e '
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 
 const KOK = process.env.KAPI_KOK || ".";
@@ -138,7 +138,8 @@ const red = (sebep, ipucu) => {
 // Alan ayristirma: satir basinda (liste imi/kalin toleransli) ETIKET: deger
 const ETIKETLER = ["BİTEN", "ÇATAL", "DEĞERLENDİRMEDİKLERİM", "SIRADAKİ", "TÜRETME-İZİ", "GERİ-ÇEKİLEN", "İZİN-ENGELİ", "ÇEVİRİ", "ETKİ", "BEKLETİR",
                    "ÇATAL-KAYNAK", "HÜKÜM", "KALEMLER",    // E3: denetçi dönüş sözleşmesi
-                   "KARNE-GOREV", "MADDELER"];              // E4: karne dönüş sözleşmesi
+                   "KARNE-GOREV", "MADDELER", "BULGU-GOREV", // E4 + F1-5b: karne dönüş sözleşmesi
+                   "BRIFING-1", "BRIFING-2", "BRIFING-3", "BRIFING-4", "BRIFING-5"];  // F1-5c: dış göz
 // E3 · denetçi sınıfı: dönüşü ZARF + üç ek satır taşıyan yazamaz koltuklar. Bu koltukların
 // dönüşü "iş" değil "hüküm"dür — BEKLETİR kilidi (aşağıda) onlara uygulanmaz.
 const DENETCILER = new Set(["catal-denetcisi"]);
@@ -146,9 +147,16 @@ const DENETCILER = new Set(["catal-denetcisi"]);
 // diyemez" kuralının mekanik yüzü). Dönüşleri ZARF + KARNE-GOREV/HÜKÜM/MADDELER taşır ve
 // günlüğe ayrıca `karne` kaydı düşer; sevk görevi YALNIZ o kayda bakarak kapalı sayar.
 const KARNECILER = new Set(["dogrulayici", "kurulum-denetcisi"]);
+// F1-5c · gözlemci sınıfı: dış göz koltuğu. YAZAMAZ kalır (araç listesi Read/Grep/Glob) — brifingi
+// o yazmaz, DÖNÜŞ ZARFIYLA getirir ve diske BU KAPI yazar. Gerekçe: koltuğa Write vermek "yazamayan
+// göz" güvencesini öldürürdü; dönem içinde başka her koltuğa dar bir yol açmak ise brifingi ölçtüğü
+// tarafın yazabildiği bir satıra çevirirdi (sıra 6 dersi). Kanca süreci araç katmanından
+// geçmez — meşru yazıcı odur (catal-kuyruk.sh emsali).
+const GOZLEMCILER = new Set(["disgoz"]);
 // Hüküm üreten koltuklar: iş değil yargı döndürürler — BEKLETİR kilidi ve çatal-iz şüphesi
 // onlara uygulanmaz (T3a dersi: denetçinin İŞİ çatal değerlendirmektir, şüphe değil beklentidir).
-const HUKUM_SINIFI = new Set([...DENETCILER, ...KARNECILER]);
+// Dış göz de buradadır: işi zaten sapma aramaktır, "ÇATAL" kelimesini görmek beklenendir.
+const HUKUM_SINIFI = new Set([...DENETCILER, ...KARNECILER, ...GOZLEMCILER]);
 const alan = {};
 for (const satirHam of (metin || "").split("\n")) {
   const satir = satirHam.replace(/^[\s>*+-]*(?:\d+[.)])?\s*/, "").replace(/\*\*/g, "");
@@ -197,13 +205,18 @@ const kanit = kanitEs[1].trim().split(/\s+/)[0].replace(/[.,;:)\]"»]+$/, "");
 // Virgullu bicim T3a canli olcumunde geldi (2026-07-28): ajan iki ayri satiri tek isaretcide
 // gosterdi, dar desen eslesmedi ve gecerli kanit "kopuk" sayildi — yanlis-pozitif.
 const satirEkiniSoy = (y) => y.replace(/:[0-9][0-9,\-]*$/, "");
-const gorevEs = biten.match(/G-\d+/);
+// Dış göz koltuğunun BİTEN jetonu `BRIFING`tir: iş zincirinin dışındadır, görev almaz (sözleşme).
+// Gevşetme SINIFA BAĞLIDIR — üretim rolünde G-NN zorunluluğu aynen sürer.
+const gozlemciMi = GOZLEMCILER.has(tipHam);
+const gorevEs = biten.match(gozlemciMi ? /(G-\d+|BRIFING)/ : /G-\d+/);
 const gorev = gorevEs ? gorevEs[0] : null;
 // GÖREV NUMARASI ZORUNLU (hasim bulgusu): sema zaten "BİTEN: G-NN — …" diyor ama kapi yalniz
 // «kanıt:»i mekanik zorluyordu. G-NNsiz zarf iki kapiyi birden deliyordu: BEKLETİR kilidi hic
 // calismiyor (gorev null) VE kuyruk teslimati eslesmiyor (catal sahibe hic ulasmiyor).
 // Sozlesmenin bir yarisini kesip digerini serbest birakmak kapinin varlik sebebine aykiri.
-if (!gorev) red("BİTEN satırında görev numarası yok", "«BİTEN: G-NN — <tek cümle> · kanıt: …» biçimini kullan (OTONOM_DONEM §4); G-NN olmadan kilit ve sahip kuyruğu bağlanamaz");
+if (!gorev) red("BİTEN satırında görev numarası yok", gozlemciMi
+  ? "«BİTEN: BRIFING — <tek cümle> · kanıt: <dosya:satır>» biçimini kullan (dış göz görev almaz, brifing üretir)"
+  : "«BİTEN: G-NN — <tek cümle> · kanıt: …» biçimini kullan (OTONOM_DONEM §4); G-NN olmadan kilit ve sahip kuyruğu bağlanamaz");
 if (/^(00_pano|01_kutular|02_kanon|03_roller|tools)\//.test(kanit)) {
   const yol = satirEkiniSoy(kanit);
   if (!existsSync(resolve(KOK, yol))) red("kanit isaretcisi kopuk: " + kanit, "dosya bulunamadi — gercek yolu yaz");
@@ -481,8 +494,86 @@ if (karneciMi) {
   }
   dikisGorev = gorev;
   karneKaydi = { tip: "karne", ajan: tipHam, gorev, hukum: hukumK, maddeler: maddeler.slice(0, 400) };
+
+  // ── F1-5b · KAPANIS karnesi KIRMIZI ise DUZELTILECEK GOREV ADIYLA yazilir ───────────────
+  // Gerekce: kirmizi kapanis karnesi bugune kadar donemi KILITLIYORDU (bulgulari kapatmak uretim
+  // isidir ama kapanis evresinde uretim acilmaz ⇒ sahip ucuncu bir komut yazmak zorundaydi, B-15).
+  // Cozum, sevkin gorev ICAT ETMESI DEGIL: hukmu veren goz hangi gorevin acilacagini SOYLER.
+  // Boylece "sevk kendi gorev acmaz" siniri korunur ve kilit mekanik olarak cozulur.
+  if (gorev === "KAPANIS" && hukumK !== "YEŞİL") {
+    const bulguHam = (alan["BULGU-GOREV"] || "").trim();
+    if (!bulguHam) {
+      red("kapanis karnesi " + hukumK + " ama BULGU-GOREV satiri yok",
+          "hangi gorevin altinda duzeltilecegini yaz: «BULGU-GOREV: G-07 G-09» — kutunun VAR OLAN gorevlerinden en az biri (sevk yeni gorev acamaz)");
+    }
+    const bulguGorevler = bulguHam.match(/G-\d+/g) || [];
+    if (!bulguGorevler.length) {
+      red("BULGU-GOREV cozulmuyor: " + bulguHam.slice(0, 80), "gorev numarasi yaz (ör. «BULGU-GOREV: G-07»)");
+    }
+    // Gorev KUTUDA VAR MI (capa, uydurma numara degil): donemin kutusu okunur.
+    if (KUTU) {
+      let tabloda = new Set();
+      try {
+        for (const s of readFileSync(join(KOK, "01_kutular", KUTU, "KUTU.md"), "utf8").split("\n")) {
+          if (!/^\s*\|/.test(s)) continue;
+          const h = s.split("|").map((x) => x.trim());
+          if (h.length >= 6 && /^G-\d+$/.test(h[1])) tabloda.add(h[1]);
+        }
+      } catch { tabloda = new Set(); }
+      if (tabloda.size) {
+        const yok = bulguGorevler.filter((g) => !tabloda.has(g));
+        if (yok.length) {
+          red("BULGU-GOREV kutuda olmayan gorev(ler) gosteriyor: " + yok.join(" "),
+              "yalnizca 01_kutular/" + KUTU + "/KUTU.md gorev tablosundaki numaralari yaz");
+        }
+      }
+    }
+    karneKaydi.bulgu_gorev = bulguGorevler.join(" ");
+  }
 }
 // ═══ E4 sonu ════════════════════════════════════════════════════════════════════════════
+
+// ═══ F1-5c · DIŞ GÖZ BRİFİNGİ (gözlemci sınıfı) ═════════════════════════════════════════
+// Koltuk yazamaz; brifingi zarfla getirir, diske BU KAPI yazar. Denetlenen: beş başlığın hepsi
+// dolu · 3. başlık sapma sayıyorsa KANIT taşıyor (kanıt satırı zorunluluğu — koltuğun kendi
+// sözleşmesindeki fren) · 2KB tavanı. Metin YARGILANMAZ, biçim denetlenir.
+let brifingKaydi = null;
+if (gozlemciMi) {
+  const BASLIKLAR = ["BRIFING-1", "BRIFING-2", "BRIFING-3", "BRIFING-4", "BRIFING-5"];
+  const ADLAR = ["Ne yapılıyor", "Neden", "Normal mi", "Sırada ne var + senden ne istenecek", "Bakamadığım/bilmediğim"];
+  const eksikB = BASLIKLAR.filter((b) => !(b in alan) || !alan[b].trim());
+  if (eksikB.length) {
+    red("brifing eksik: " + eksikB.join(", "),
+        "beş başlığın hepsi AYRI satırın başında ve dolu olmalı: BRIFING-1 (ne yapılıyor) · BRIFING-2 (neden) · BRIFING-3 (normal mi) · BRIFING-4 (sırada ne var) · BRIFING-5 (bakamadığım). Boş bırakılamaz — «bakamadığım» yoksa açıkça yaz");
+  }
+  const sapmaMetni = alan["BRIFING-3"].trim();
+  const normalMi = /^normal\b/i.test(sapmaMetni);
+  const kanitVar = /(?:00_pano|01_kutular|02_kanon|03_roller|00_genesis|tools|\.claude)\/\S+/.test(sapmaMetni) ||
+                   /(?:^|\s)[0-9a-f]{7,40}(?:$|\s)/.test(sapmaMetni);
+  if (!normalMi && !kanitVar) {
+    red("BRIFING-3 sapma sayıyor ama arkasında kanıt yok",
+        "her sapma maddesinin arkasına tek satır kanıt koy (dosya:satır ya da commit); sapma yoksa satırı «normal» diye başlat — bulgu icat etmek yasak, kanıtsız sapma da bulgu sayılmaz");
+  }
+  const d = new Date(), p2 = (n) => String(n).padStart(2, "0");
+  const govde = "<!-- yazar: disgoz (dönüş zarfından mekanik yazıldı — koltuk yazamaz) -->\n" +
+    "# DIŞ GÖZ — brifing\n" +
+    "Tarih: " + d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + "\n" +
+    "Dönem: " + (DONEM || "?") + (KUTU ? " · Kutu: " + KUTU : "") + "\n\n" +
+    BASLIKLAR.map((b, i) => "## " + (i + 1) + " · " + ADLAR[i] + "\n" + alan[b].trim() + "\n").join("\n");
+  const bayt = Buffer.byteLength(govde, "utf8");
+  if (bayt > 2048) {
+    red("brifing tavanı aşıldı (" + bayt + " B > 2048 B)",
+        "brifing TEK EKRANDIR: beş başlığı kısalt (tavan EL_KITABI F3 tablosunda yazılı). Kırpma YOK — kesilen brifing yalan söyler");
+  }
+  const brifingYol = join(KOK, "03_roller", tipHam, "BRIFING.md");
+  if (!existsSync(join(KOK, "03_roller", tipHam))) {
+    red("dış göz koltuğunun klasörü yok: 03_roller/" + tipHam + "/", "brifing yazılacak yer yok — kurulum eksik (G3.4)");
+  }
+  try { writeFileSync(brifingYol, govde); }
+  catch (e) { red("brifing diske yazılamadı: " + String(e && e.message), "03_roller/" + tipHam + "/BRIFING.md yazılabilir mi, bak"); }
+  brifingKaydi = { tip: "brifing", ajan: tipHam, yol: "03_roller/" + tipHam + "/BRIFING.md", bayt, sapma: normalMi ? "yok" : "var" };
+}
+// ═══ F1-5c sonu ═════════════════════════════════════════════════════════════════════════
 
 // Talimat↔fiil dikişi (DÖNÜŞ ucu; çağrı ucu E4te devir-kapisi.sh): günlükte sevk-karar kaydi
 // varsa zarfin gorevi o kümede aranir; küme BOSSA atlanir. Sapma ENGELLEMEZ: kirmizi iz düşer,
@@ -518,7 +609,7 @@ if (dikis === "sapma") {
 // oz-karne kaynak aramasinda bu zarflar disarida birakilir (aksi halde karne kendi zarfindan
 // eski gorunur ve sevk sonsuza dek yeniden dogrulayici acardi).
 kayit({
-  tip: "zarf", ajan: tipHam, gorev, sinif: karneciMi ? "karne" : (denetciMi ? "hukum" : "is"),
+  tip: "zarf", ajan: tipHam, gorev, sinif: karneciMi ? "karne" : (denetciMi ? "hukum" : (gozlemciMi ? "brifing" : "is")),
   alanlar: {
     biten: biten, catal: catalYok ? "yok" : "dolu",
     ceviri: alan["ÇEVİRİ"] || null, etki: alan["ETKİ"] || null, bekletir: alan["BEKLETİR"] || null,
@@ -529,8 +620,10 @@ kayit({
   dikis, ham: (metin || "").slice(0, 4000),
 });
 // Karne kaydi ZARFTAN SONRA duser: tazelik "karne indeksi > son is-zarfi indeksi" ile olculur;
-// sira tersine donerse kendi zarfi karneyi bayat gosterirdi.
+// sira tersine donerse kendi zarfi karneyi bayat gosterirdi. Brifing kaydi da ayni sirada:
+// sevk "bu donemde brifing var mi" sorusunu bu kayittan okur.
 if (karneKaydi) kayit(karneKaydi);
+if (brifingKaydi) kayit(brifingKaydi);
 kayit({ tip: "bicim", ajan: tipHam, gorev, sonuc: "gecti", sebep: null });
 bitir(0, SHA, "");
 ')" || engel "bicim cozumleyicisi kosamadi (fail-closed)"

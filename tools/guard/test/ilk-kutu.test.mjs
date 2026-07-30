@@ -335,7 +335,7 @@ function sevkFixture({ kutu = kabukMetni(), kadro = ['koordinator', 'uretici'],
   mkdirSync(join(kok, '00_pano'), { recursive: true });
   mkdirSync(join(kok, '02_kanon'), { recursive: true });
   mkdirSync(join(kok, '01_kutular', KABUK_AD), { recursive: true });
-  mkdirSync(join(kok, 'tools', 'sevk', 'damgalar'), { recursive: true });
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
   mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
   mkdirSync(join(kok, '.claude', 'agents'), { recursive: true });
   mkdirSync(join(kok, '03_roller', 'disgoz'), { recursive: true });
@@ -345,12 +345,11 @@ function sevkFixture({ kutu = kabukMetni(), kadro = ['koordinator', 'uretici'],
   }
   copyFileSync(join(KOK_REPO, 'tools', 'guard', 'gercek-veri-isaretleri.txt'),
                join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
-  for (const a of [...kadro, ...koltuk]) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), `---\nname: ${a}\ntools: Read\n---\n# ajan\n`);
+  for (const a of [...kadro, ...koltuk, 'disgoz']) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), `---\nname: ${a}\ntools: Read\n---\n# ajan\n`);
   for (const r of kadro) {
     mkdirSync(join(kok, '03_roller', r), { recursive: true });
     writeFileSync(join(kok, '03_roller', r, 'ROL.md'), `# ROL — ${r}\n\n## Yazma yetkisi (beyaz-liste)\nMod: **tam**.\n`);
   }
-  for (const d of ['T0', 'T1', 'T2', 'T3']) writeFileSync(join(kok, 'tools', 'sevk', 'damgalar', d), '2026-07-30 · damga\n');
   writeFileSync(join(kok, '03_roller', 'disgoz', 'BRIFING.md'), '# DIŞ GÖZ — brifing\n');
   // Dış göz kadroda DEĞİLDİR: iş zincirinin dışındadır ve görev alamaz (G2.1.5) — sayımdan düşer.
   writeFileSync(join(kok, '03_roller', 'disgoz', 'ROL.md'), '# ROL — Dış göz\n\n## Yazma yetkisi (beyaz-liste)\nMod: **yazamaz**.\n');
@@ -360,7 +359,7 @@ function sevkFixture({ kutu = kabukMetni(), kadro = ['koordinator', 'uretici'],
   writeFileSync(join(kok, '02_kanon', 'OTONOM_DONEM.md'), '# OTONOM DÖNEM\n');
   writeFileSync(join(kok, '.kurulum-tamam'), '2026-07-30\n');
   writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'),
-    `DONEM-S5\t${KABUK_AD}\tyapim\tbassiz\ttatbikat\ndamga\t${new Date().toISOString()}\n`);
+    `DONEM-S5\t${KABUK_AD}\tyapim\ttatbikat\ndamga\t${new Date().toISOString()}\n`);
   return kok;
 }
 const sevkKos = (kok) => spawnSync('bash', [join(kok, 'tools', 'sevk', 'sevk.sh')], {
@@ -374,11 +373,11 @@ const gunluk = (kok) => {
 
 test('DÖNEM AÇILIYOR: kabuk /donem töreninin önünde engel değil', () => {
   // Sıra 5'in kendi payı: kabuk, tören ve motorun okuduğu her şemayı taşıyor. Sıra 6-7'ye ait
-  // ön koşullar (KARAR_ALANI · OTONOM_DONEM · damgalar) burada elle kondu — ölçülen şey
+  // ön koşullar (KARAR_ALANI · OTONOM_DONEM · dış göz koltuğu) burada elle kondu — ölçülen şey
   // "kabuk dönem açmaya engel değil", "taze kurulumdan dönem açılıyor" DEĞİL (o F3-2'dir).
   const kok = sevkFixture();
   rmSync(join(kok, 'tools', 'sevk', '.donem-acik'));
-  const r = spawnSync('bash', [join(kok, 'tools', 'sevk', 'donem-ac.sh'), KABUK_AD, 'yapim', 'bassiz', 'tatbikat'],
+  const r = spawnSync('bash', [join(kok, 'tools', 'sevk', 'donem-ac.sh'), KABUK_AD, 'yapim', 'tatbikat'],
     { encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: kok } });
   assert.match(r.stdout, /DÖNEM AÇIK/, `tören açmadı:\n${r.stdout}\n${r.stderr}`);
   assert.match(r.stdout, new RegExp(`kutu : ${KABUK_AD}`));

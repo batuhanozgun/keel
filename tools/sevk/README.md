@@ -9,13 +9,16 @@ hiçbir parça devreye girmez (dönem-AÇIK şartı).
   (D-02 dersi). **Kaynak alınmak değer EZMEZ** — kitaplık yalnız tanımlar (yaşanmış kırılma:
   düz atama, biçim kapısının okuduğu kutu adını siliyordu).
 - **`donem-ac.sh`** — `/donem` töreni (E4, K3 tetiği; `rol-ac.sh` emsali, insan-kilitli beceri).
-  Argüman doğrular → **kapılanma çapalarını arar** (dış göz + T0-T3 damgaları) → karar alanını
-  denetler → göstergeyi yazar (`<dönem-id>·<kutu>·<tür>·<kip>`) → **sevkten bağımsız**
+  Argüman doğrular (**kutu adı seçimli** — verilmezse açık kutu aranır, tam bir tane olmalı) →
+  **kapılanma çapalarını arar** (dış göz koltuğu + alt-ajan koltuğu + kural evi) → karar alanını
+  denetler → göstergeyi yazar (`<dönem-id>·<kutu>·<evre>·<sınıf>`) → **sevkten bağımsız**
   `donem-acilis` kaydını düşürür (E5 watchdog çapası) → izin zeminini basar. `donem-ac.sh kapat`
   dönemi sahip eliyle kapatır. Damga-değiştirmez: açık dönem varken ikincisi açılmaz.
 - **`sevk.sh`** — dönemin MOTORU (E4): **Stop kancası.** Her turda sırayla: gösterge · kapılanma
-  · DUR işareti · günlük bütünlüğü · frenler (bütçe/ilerleme-yok/mutlak tur tavanı) · çatal
-  süzgeci · **karne şartı** · görev seçimi · kapanış. `exit 2` = durmayı engeller, stderr'daki
+  · DUR işareti · günlük bütünlüğü · frenler (ilerleme-yok/mutlak tur tavanı; **bütçe yalnız
+  üretim sevkinden önce**) · çatal süzgeci · **karne şartı** · görev seçimi · **evre geçişi**.
+  Üretim bitince göstergenin evre alanını `kapanis` yapar ve aynı dönem içinde dış göz brifingi
+  ile kapanış karnesini ister; karne KIRMIZI ise evre `yapim`a döner (en çok 2 gidiş-dönüş). `exit 2` = durmayı engeller, stderr'daki
   talimat modele ulaşır; `exit 0` = dönem kapandı. **Fail-closed YÖNÜ terstir:** sevkin kendi
   hatası dönemi sürdürmez, KAPATIR (aksi sonsuz Stop döngüsü olurdu). İş yapmaz, karar basmaz,
   görev kapatmaz. Bekçiyi görev-turunda konvansiyon-yoldan kendisi koşturur (KIRMIZI = duran kapı).
@@ -50,12 +53,16 @@ hiçbir parça devreye girmez (dönem-AÇIK şartı).
   Ayrı kuyruk açılmaz: D-21 kuyruğunun ÇATAL sınıfıdır, madde SİLİNMEZ. "Anlamadım" ile geri
   dönen madde silinmez, **devreder** (`devretti: Ç-NN`) — yoksa bağlı işler kalıcı kilitlenir.
   Dönem-AÇIK iken kuyruğa ARAÇLA yazım file-guard'da ENGEL: cevabı yalnız sahip yazar.
-- **`.donem-acik`** — dönem-AÇIK göstergesi (git-izlenmez; yazarı `/donem`, sileni sevk). DÖRT alan:
-  `dönem-id · kutu · tür (kurulum|yapim|kapanis) · kip (interaktif|bassiz)`.
+- **`.donem-acik`** — dönem-AÇIK göstergesi (git-izlenmez; yazarı `/donem`, evresini değiştiren
+  ve sileni sevk). DÖRT alan: `dönem-id · kutu · evre (kurulum|yapim|kapanis) · sınıf
+  (gercek|tatbikat)`. Kip alanı F1-5e ile kalktı: yalnız bir not dizesi üretiyordu.
 - **`.dur`** — DUR işareti (E4: sevkin okuduğu 2. hat; birincil hat SubagentStop, E5). Varsa
   dönem duran kapıya gider; ilk satırı sebeptir.
-- **`damgalar/`** — tatbikat damgaları (`T0`, `T1`, …): tek satır `tarih · kanıt işaretçisi`.
-  Tören ve sevk damgasız AÇILMAZ — "kalkansız motor yok" ikisinin de ilk satırlarıdır (çift hat).
+- **Prova fişleri (`damgalar/`) KALKTI** (F1-5h): KEEL sürümünün provasını kanıtlıyorlardı,
+  kullanıcının kurulumunu değil — ve dolu geldikleri için kapı baştan mühürlü geçiyordu.
+  Prova kaydının yeni evi `docs/PROVALAR.md`; kapılanma çapaları artık BU kurulumda ölçülüyor
+  (dış göz koltuğu + alt-ajan koltuğu + kural evi + karar alanı; gerçek sınıfta ayrıca watchdog
+  canlılığı ve haber kanalı yoklaması).
 
 Yazamaz koltuklar (`.claude/agents/`): `dogrulayici` (dosya-gerçeği **+ E4 karne sözleşmesi**) ·
 `catal-denetcisi` (sahibe gitmeden önceki çatal süzgeci, beş kalem — E3) · `kurulum-denetcisi`

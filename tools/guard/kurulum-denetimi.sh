@@ -715,7 +715,7 @@ else
   #     dışına kaydığında kapıyı yeşil bırakıyordu; sevk ise bloğu okur ve kutuyu sıradan kutu
   #     sayardı — iki göz ayrışıyordu.
   DURUS_BLOK="$(awk '/^## Duruş sözleşmesi/ { f = 1; next } f && /^## / { exit } f' "$KABUK" 2>/dev/null || true)"
-  for S in "BİTİŞ HÂLİ" "KANIT" "KISIT" "BÜTÇE" "LİSTE"; do
+  for S in "BİTİŞ HÂLİ" "KANIT" "KISIT" "BÜTÇE" "İZİN" "LİSTE"; do
     if printf '%s\n' "$DURUS_BLOK" | grep -qE "^[[:space:]]*$S[[:space:]]*:[[:space:]]*[^[:space:]]"; then :; else
       kirmizi "ilk kutu kabuğunda duruş sözleşmesi satırı eksik/boş (blok İÇİNDE aranır): $S"
     fi
@@ -728,6 +728,16 @@ else
     gecti "ilk kutu kabuğu: LİSTE satırı sevkin tanıdığı değeri taşıyor"
   else
     kirmizi "ilk kutu kabuğunda LİSTE satırı sevkin tanıdığı değeri taşımıyor (beklenen: 'dönem içinde doğar') — planlama kutusu muafiyeti sessizce düşer"
+  fi
+  # (vi-a) İZİN'in DEĞERİ (F1-5f). Otonom dönemde izin penceresi açılmaz: kutunun izin listesinde
+  #        yazmayan sınıf engellenir. İlk kutunun ekibi iki kanon dosyasını (BITTI_TANIMI ·
+  #        KUTU_PLANI) YAZMAK ZORUNDADIR — onlar bu kutunun ÜRÜNÜDÜR. `kutu-ciktilari` sınıfı
+  #        listede yoksa kutu mekanik olarak bitirilemez ve bu SESSİZ olur (adım atlanır, iş
+  #        sürer, dört çıktının ikisi hiç doğmaz). LİSTE emsali: değer EŞLENİR, "dolu mu" denmez.
+  if printf '%s\n' "$DURUS_BLOK" | grep -qE "^[[:space:]]*İZİN[[:space:]]*:.*kutu-ciktilari"; then
+    gecti "ilk kutu kabuğu: İZİN satırı kutu çıktılarını serbest bırakıyor"
+  else
+    kirmizi "ilk kutu kabuğunun İZİN satırında 'kutu-ciktilari' yok — ekip 02_kanon/BITTI_TANIMI.md ve 02_kanon/KUTU_PLANI.md dosyalarını yazamaz; kutunun dört çıktısının ikisi sessizce doğmaz (F1-5f)"
   fi
   # (vi-b) Bağımlılık/risk SATIRI: kurulum kapısının (tools/sevk/kurulum-kapisi.sh) ve sevkin
   #        birebir aradığı biçim. Başlığın varlığı yetmez — blok boşsa sevk `dur()` ile durur.

@@ -68,8 +68,16 @@ günceller (`03_roller/<slug>/ROL.md`) — GENESIS oraya "ilk kutuda güncellene
 BİTİŞ HÂLİ: dört ortak çıktı yazılı ve sahibe okunmuş
 KANIT:      demo: dört dosya sahibe açılıp okunur · `02_kanon/BITTI_TANIMI.md` ile `02_kanon/KUTU_PLANI.md` iskelet olmaktan çıkmıştır
 KISIT:      ürün kodu yazılmaz · `02_kanon/kilitli/` ve `02_kanon/golden/` içeriğine dokunulmaz · yeni arşiv/klasör düzeni icat edilmez (kayıt düzeni MEVCUT dosyaları adresler)
-BÜTÇE:      dönem başına en çok 6 alt-ajan çağrısı · ilerleme-yok eşiği 2 tur · toplam dönem tavanı 6
+BÜTÇE:      dönem başına en çok 6 ÜRETİM çağrısı · ilerleme-yok eşiği 2 tur · toplam dönem tavanı 6
 LİSTE:      dönem içinde doğar — bu kutunun görev listesini G-01 üretir (planlama kutusu)
+İZİN:       kutu-ciktilari
+
+**İZİN satırı ne yapar:** otonom dönemde "sahibe sor" penceresi açılmaz — pencere açmak, gözetimsiz
+çalışmanın bittiği andır. Bu kutunun ekibi yalnız `02_kanon/BITTI_TANIMI.md` ile
+`02_kanon/KUTU_PLANI.md` dosyalarına yazabilsin diye tek sınıf önceden serbesttir
+(`kutu-ciktilari`); listede olmayan bir izin gerekirse o adım ATLANIR ve sahibin kuyruğuna not
+düşer. Sözlük: `git-obje` · `disa` · `mcp` · `yazim` · `korumali-yol` · `kutu-ciktilari` (hiçbiri
+gerekmiyorsa `yok`). Ekibin commit atması isteniyorsa `git-obje` eklenir — bu kutuda gerekmez.
 
 ## Bağımlılık ve risk (yalnız sevk + kurulum denetçisi okur)
 G-01: onkosul=yok · risk=düşük — süreç işi; ürün koduna dokunmaz, geri dönüşü dosya silmektir

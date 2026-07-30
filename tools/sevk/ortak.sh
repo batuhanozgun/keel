@@ -6,9 +6,11 @@
 #
 # Sağladıkları:
 #   node_bul                → NODE_BIN'i doldurur; bulunamazsa 1 döner (GUI oturumunda PATH dardır)
-#   donem_oku <kök>          → .donem-acik'ı okur: DONEM_ID · DONEM_KUTU · DONEM_TUR · DONEM_KIP
+#   donem_oku <kök>          → .donem-acik'ı okur: DONEM_ID · DONEM_KUTU · DONEM_TUR · DONEM_SINIF
 #                             0 = dönem açık ve gösterge sağlam · 1 = dönem YOK · 2 = gösterge BOZUK
 #                             (2 fail-closed'dur: "okunamıyor" ile "dönem yok" AYNI ŞEY DEĞİLDİR)
+#   donem_turu_yaz <kök> <tür> → göstergenin TÜR alanını yerinde değiştirir (evre geçişi, F1-5a);
+#                             kimlik ve damga KORUNUR — dönem aynı dönemdir, evresi değişir
 #   gunluge_yaz <kök>       → stdin'deki tek satır JSON'u zarf-ekle.sh ile günlüğe append eder
 #   json_kur                → J_/JN_ önekli env değişkenlerinden güvenli JSON kurar
 #   kanal_oku <kök>         → kanal.conf'u AYRIŞTIRIR (source ETMEZ); KANAL_* doldurur
@@ -22,7 +24,7 @@ ORTAK_DIZIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # sessizce "kaba dal"a düşüyordu. Kitaplık yalnız TANIMLAR, değer EZMEZ.
 NODE_BIN="${NODE_BIN:-}"
 DONEM_ID="${DONEM_ID:-}"; DONEM_KUTU="${DONEM_KUTU:-}"; DONEM_TUR="${DONEM_TUR:-}"
-DONEM_KIP="${DONEM_KIP:-}"; DONEM_SINIF="${DONEM_SINIF:-}"; DONEM_DAMGA="${DONEM_DAMGA:-}"
+DONEM_SINIF="${DONEM_SINIF:-}"; DONEM_DAMGA="${DONEM_DAMGA:-}"
 DONEM_HATA="${DONEM_HATA:-}"
 
 node_bul() {
@@ -36,13 +38,16 @@ node_bul() {
   [ -n "$NODE_BIN" ]
 }
 
-# Dönem göstergesi — DÖRT alan (E4): donem-id · kutu-dizini · tür · kip.
-# Geri uyum (E1/E3 kitleri): 2. ya da 3. alan ISO damga biçimindeyse eski biçimdir; eksik alanlar
-# varsayılana düşer ve bu SESSİZ olmaz (DONEM_HATA doldurulur, çağıran bulgu düşürür).
+# Dönem göstergesi — DÖRT alan: donem-id · kutu-dizini · tür (evre) · sınıf.
+# KİP ALANI KALKTI (F1-5e, 2026-07-30): `interaktif`/`bassiz` bayrağı yalnız bir NOT DİZESİ
+# üretiyordu; davranışı oturumun nasıl başlatıldığı belirliyordu. İzin penceresi artık hiçbir
+# kipte açılmaz (F1-5f) — bayrağın anlattığı ayrım da böylece ortadan kalktı.
+# Geri uyum: eski beş-alan göstergede 4. alan `interaktif|bassiz`tır; o hâlde sınıf 5. alandan
+# okunur ve bu SESSİZ olmaz (DONEM_HATA doldurulur, çağıran bulgu düşürür).
 donem_oku() {
-  local KOK="${1:-.}" YOL SATIR
+  local KOK="${1:-.}" YOL SATIR ESKI_KIP
   YOL="$KOK/tools/sevk/.donem-acik"
-  DONEM_ID=""; DONEM_KUTU=""; DONEM_TUR=""; DONEM_KIP=""; DONEM_HATA=""
+  DONEM_ID=""; DONEM_KUTU=""; DONEM_TUR=""; DONEM_SINIF=""; DONEM_HATA=""
   [ -e "$YOL" ] || return 1
   if [ ! -f "$YOL" ]; then
     DONEM_HATA="gösterge dosya değil (dizin/başka tür): tools/sevk/.donem-acik"
@@ -52,32 +57,32 @@ donem_oku() {
   DONEM_ID="$(printf '%s' "$SATIR" | cut -f1)"
   DONEM_KUTU="$(printf '%s' "$SATIR" | cut -f2)"
   DONEM_TUR="$(printf '%s' "$SATIR" | cut -f3)"
-  DONEM_KIP="$(printf '%s' "$SATIR" | cut -f4)"
-  DONEM_SINIF="$(printf '%s' "$SATIR" | cut -f5)"
+  DONEM_SINIF="$(printf '%s' "$SATIR" | cut -f4)"
   DONEM_DAMGA="$(sed -n '2p' "$YOL" 2>/dev/null | cut -f2 || true)"
   if [ -z "$DONEM_ID" ]; then
     DONEM_HATA="gösterge boş: ilk satırda dönem kimliği yok"
     return 2
   fi
   case "$DONEM_KUTU" in
-    *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) DONEM_KUTU=""; DONEM_TUR=""; DONEM_KIP=""; DONEM_HATA="eski 2-alan gösterge biçimi (kutu/tür/kip yok)" ;;
+    *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) DONEM_KUTU=""; DONEM_TUR=""; DONEM_SINIF=""; DONEM_HATA="eski 2-alan gösterge biçimi (kutu/tür yok)" ;;
   esac
   case "$DONEM_TUR" in
-    *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) DONEM_TUR=""; DONEM_KIP=""; DONEM_HATA="eski 3-alan gösterge biçimi (tür/kip yok)" ;;
+    *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) DONEM_TUR=""; DONEM_SINIF=""; DONEM_HATA="eski 3-alan gösterge biçimi (tür yok)" ;;
+  esac
+  case "$DONEM_SINIF" in
+    interaktif|bassiz)
+      ESKI_KIP="$DONEM_SINIF"
+      DONEM_SINIF="$(printf '%s' "$SATIR" | cut -f5)"
+      DONEM_HATA="eski gösterge biçimi: 4. alan kip ($ESKI_KIP) — kip bayrağı kalktı (F1-5e), sınıf 5. alandan okundu"
+      ;;
   esac
   [ -n "$DONEM_TUR" ] || DONEM_TUR="yapim"
-  [ -n "$DONEM_KIP" ] || DONEM_KIP="interaktif"
   case "$DONEM_TUR" in
     kurulum|yapim|kapanis) : ;;
     *) DONEM_HATA="tanınmayan dönem türü: $DONEM_TUR"; return 2 ;;
   esac
-  case "$DONEM_KIP" in
-    bassiz|interaktif) : ;;
-    *) DONEM_HATA="tanınmayan dönem kipi: $DONEM_KIP"; return 2 ;;
-  esac
-  # Sınıf (E4, hasım bulgusu): kanon "gerçek-kutu döneminde T6 damgası + watchdog şart" diyordu
-  # ama kodda ne şart ne AYRIM vardı. Beşinci alan o ayrımı taşır; eski göstergede yoksa
-  # güvenli taraf GERÇEK'tir (fail-closed: muafiyet açıkça istenmedikçe verilmez).
+  # Sınıf: gerçek kutu dönemi ile tatbikat dönemini ayırır (gerçekte watchdog + haber kanalı
+  # ÖLÇÜLEREK aranır). Alan yoksa güvenli taraf GERÇEK'tir — muafiyet açıkça istenmedikçe verilmez.
   [ -n "$DONEM_SINIF" ] || DONEM_SINIF="gercek"
   case "$DONEM_SINIF" in
     gercek|tatbikat) : ;;
@@ -86,16 +91,18 @@ donem_oku() {
   return 0
 }
 
-# Gerçek-kutu döneminin ek iki şartı (OTONOM_DONEM §10; tatbikat dönemleri MUAF — E4/E5
+# Gerçek-kutu döneminin ek şartları (OTONOM_DONEM §10; tatbikat dönemleri MUAF — E4/E5
 # tatbikatları döngüsel bağımlılığa girmesin diye tasarımın bilinçli istisnası).
 # Çıktı: eksiklerin listesi (boşsa şart karşılanmış).
 # İŞARET DEĞİL CANLILIK (E5): "dosya var" ile "iş fiilen koşuyor" AYRI şeylerdir. E4'ün en
 # pahalı ders sınıfı dosyada duran ölü kuraldı — bu denetim işaretin gösterdiği launchd işini
 # `launchctl print` ile arar ve son nabız damgasının tazeliğine bakar. Kanal da aynı hatta:
 # haber kanalı kırıkken gerçek bir kutu koşarsa, gece sessiz geçer ve kimse bilmez.
+# T6 PROVA FİŞİ ŞARTI KALKTI (F1-5h, 2026-07-30): o dosya KEEL sürümünün provasını kanıtlıyordu,
+# KULLANICININ kurulumunu değil — ve şablonla DOLU geldiği için kapı baştan mühürlü geçiyordu
+# (B-06). Yerini alan şey daha sert: aşağıdaki üç ölçüm bu makinede, bu an koşuyor.
 gercek_kutu_eksikleri() { # $1: sevk dizini
   local D="${1:-$ORTAK_DIZIN}" E="" ETIKET="" YAS=""
-  [ -s "$D/damgalar/T6" ] || E="$E T6-damgasi(E5-kanal-tatbikati)"
   if [ ! -s "$D/watchdog-kurulu" ]; then
     E="$E watchdog-kaydi(tools/sevk/watchdog-kurulu)"
   else
@@ -172,6 +179,31 @@ kanal_oku() { # $1: kök
     KANAL_HATA="kanal.conf doldurulmamış — eksik alan:$EKSIK"
     return 2
   fi
+  return 0
+}
+
+# Evre geçişi (F1-5a/b): göstergenin TÜR alanını yerinde değiştirir. Dönem KİMLİĞİ ve AÇILIŞ
+# DAMGASI korunur — bu YENİ bir dönem değildir, aynı dönemin başka evresidir (bütçe, tur sayacı
+# ve günlük dilimi aynı kimliğe bağlı kalır; yeni kimlik üretmek üç freni birden sıfırlardı).
+# Yazar YALNIZ sevktir (kanca süreci); ajan eliyle çağrılması file-guard'ın dönem dikişine takılır.
+# Dönüş: 0 = yazıldı · 1 = gösterge yok/okunamadı (çağıran fail-closed davranır).
+donem_turu_yaz() { # $1: kök · $2: yeni tür
+  local KOK="${1:-.}" YENI="${2:-}" YOL SATIR DAMGA SINIF
+  YOL="$KOK/tools/sevk/.donem-acik"
+  case "$YENI" in kurulum|yapim|kapanis) : ;; *) return 1 ;; esac
+  [ -f "$YOL" ] || return 1
+  SATIR="$(head -n1 "$YOL" 2>/dev/null || true)"
+  [ -n "$SATIR" ] || return 1
+  DAMGA="$(sed -n '2p' "$YOL" 2>/dev/null || true)"
+  # Sınıf ALANI eski biçimde 5. sıradadır (4. alan kipti) — donem_oku ile AYNI çözüm burada da
+  # uygulanır, yoksa geçiş eski göstergede kipi sınıf hücresine yazardı.
+  SINIF="$(printf '%s' "$SATIR" | cut -f4)"
+  case "$SINIF" in interaktif|bassiz) SINIF="$(printf '%s' "$SATIR" | cut -f5)" ;; esac
+  [ -n "$SINIF" ] || SINIF="gercek"
+  printf '%s\t%s\t%s\t%s\n%s\n' \
+    "$(printf '%s' "$SATIR" | cut -f1)" "$(printf '%s' "$SATIR" | cut -f2)" \
+    "$YENI" "$SINIF" "$DAMGA" > "$YOL" || return 1
+  DONEM_TUR="$YENI"
   return 0
 }
 

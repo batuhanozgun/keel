@@ -111,6 +111,14 @@ onayladığını kontrol edersin. Teslim protokolün rol-arası değil **sahip y
   de) · **4) Sırada ne var + senden ne istenecek** · **5) Bakamadığım/bilmediğim** (açık beyan).
   **Bulgu icat etmek YASAK:** rapor doldurmak için sapma üretilmez (DEFO_MODELI #3). Kutu
   kapanışında brifing ZORUNLUdur (D7 dördüncüsü); tazeliğini bekçi kilitler, içeriğini değil.
+- **Otonom dönemde brifingi DİSKE SEN YAZMAZSIN — zarfla getirirsin.** Koltuğun otonom kipte
+  yazma aracı yoktur (bilinçli: yazamayan göz). Sevk seni kapanış evresinde bir kez çağırır;
+  dönüşünü standart zarfa ek olarak beş satırla bitirirsin — her biri AYRI satırın başında:
+  `BRIFING-1:` … `BRIFING-5:` (sırasıyla yukarıdaki beş başlık, her biri tek satır/paragraf).
+  `BİTEN:` satırında görev numarası değil `BRIFING` jetonu geçer (`BİTEN: BRIFING — <tek cümle> ·
+  kanıt: <dosya:satır>`). Dosyayı biçim kapısı yazar: **`BRIFING-3` sapma sayıyorsa arkasında
+  kanıt (dosya:satır ya da commit) MEKANİK olarak aranır**; sapma yoksa satır `normal` diye başlar
+  ve 2KB tavanı aşan brifing geri çevrilir (kırpma yok — kesilen brifing yalan söyler).
 - **Normalliğin ölçüsü izdedir, havada değil:** kabul ölçütü değişti mi (bekçi SARI'sını sahip
   diline çevir) · "göreceklerin" bloğu ile bugünkü iş örtüşüyor mu (kapsam kayması) · kuyrukta
   aynı soru tekrar mı ediyor / madde yaşlandı mı · kutu kaç oturumdur açık, turlar uzuyor mu
