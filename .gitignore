@@ -14,6 +14,13 @@ tools/guard/.keel-kaynak
 # rol töreni damgası — oturum-durumu, izlenmez (bekçi koruma-hattı yanlış-KIRMIZI basmasın;
 # damga-güvencesi bekçi değil: file-guard damga-dikişi + SessionStart temizliği)
 tools/guard/.aktif-rol
+# kurulum sürücüsünün döngü-fren sayacı (F1-1) — oturum durumu, izlenmez (.aktif-rol emsali).
+# Yalnız "aynı hâlde kaç kez durdurdum" sayısını tutar; kurulumun kendi durumu
+# 00_genesis/GENESIS_DURUM.md'nin makine bloğunda yaşar ve o İZLENİR.
+tools/guard/.kurulum-surucu-durum
+# çekilme kapısının YEŞİL koştuğunun izi (F1-1) — çift hattın ters yönü: sürücü son adımı
+# açarken bunu arar. Makine durumu, izlenmez; kapı KIRMIZI verirse silinir.
+tools/guard/.kurulum-denetimi-son
 # dönem-AÇIK göstergesi (E1) — dönem-durumu, izlenmez (.aktif-rol emsali; yazarı /donem, sileni sevk)
 tools/sevk/.donem-acik
 # DUR işareti (E4) — dönem-durumu; sevkin okuduğu tek satır, izlenmez (dönem-göstergesi emsali)

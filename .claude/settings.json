@@ -45,6 +45,14 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/sevk/sevk.sh\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/guard/kurulum-surucu.sh\""
+          }
+        ]
       }
     ],
     "SessionStart": [

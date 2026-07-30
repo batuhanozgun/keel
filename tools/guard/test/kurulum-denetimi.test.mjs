@@ -39,7 +39,32 @@ function disGozKur(kok, { koltuk = true, brifing = true, skill = '---\ndescripti
   writeFileSync(join(kok, '.claude', 'skills', 'rol-disgoz', 'SKILL.md'), skill);
 }
 
-function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null } = {}) {
+// Kurulum TARİFİ (F1-1): indeks + adım dosyaları + sıra verisi + bekçi kontratı + makine bloğu.
+// Kurulu bir projede bunların hepsi bulunur (şablonla gelir; GENESIS onları YAZMAZ, okur).
+// Fixture bunu yansıtmazsa 4d/4e kapıları gerçek dünyada hiç görülmeyecek bir hâl üzerinden
+// sınanmış olur. SIRA listesi bilerek KISA (iki adım): kapı sayıya değil EŞLİĞE bakar; kısa
+// liste onu yeterince sınar ve testi gerçek adım metinlerine bağlamaz.
+function tarifKur(kok, { adimlar = true, kontrat = true, indeks = true, gdurum = 'açık' } = {}) {
+  mkdirSync(join(kok, '00_genesis', 'adimlar'), { recursive: true });
+  // İndeks, sıradaki HER adımın işaretçisini taşır (4d ikinci tanık): iki liste ayrışırsa
+  // çekilme kilitlenir. Fixture bunu yansıtmazsa o kapı hiç sınanmamış olur.
+  if (indeks) writeFileSync(join(kok, 'GENESIS.md'),
+    '# GENESIS — indeks\n- `00_genesis/adimlar/G0.md`\n- `00_genesis/adimlar/G5.md`\n');
+  if (kontrat) writeFileSync(join(kok, '00_genesis', 'BEKCI_TARIFI.md'), '# BEKÇİ-TARİFİ KONTRATI\n- madde\n');
+  if (adimlar) {
+    writeFileSync(join(kok, '00_genesis', 'adimlar', 'SIRA.txt'),
+      '# sıra\nG0\tG0.md\tSeni tanıyorum\nG5\tG5.md\tÇekiliyorum\n');
+    writeFileSync(join(kok, '00_genesis', 'adimlar', 'G0.md'), '### G0 · başlangıç\n');
+    writeFileSync(join(kok, '00_genesis', 'adimlar', 'G5.md'), '### G5 · çekilme\n');
+  }
+  if (gdurum != null) {
+    writeFileSync(join(kok, '00_genesis', 'GENESIS_DURUM.md'),
+      '# GENESIS DURUM\n\n## KURULUM DURUMU — makine okur\n```\n' +
+      `Adım: G5\nDurum: ${gdurum}\nTamamlanan: G0\n` + '```\n');
+  }
+}
+
+function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null, tarif = {}, altAjan = true } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
   // Kurulu bir KEEL projesi her zaman bir git deposudur (G0.1 klasör hazırlığı bunu garanti
   // eder; tarih çapası, koruma-hattı ve geri-alma güvencesi buna dayanır). Fixture bunu
@@ -59,6 +84,13 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
     writeFileSync(join(kok, 'tools', 'guard', 'ortam-kalemleri.txt'), '[node]\n');
   }
   disGozKur(kok, disgoz);
+  tarifKur(kok, tarif);
+  // Alt-ajan dosyaları şablonla SABİT gelir (üç tane); yoklukları aktarım eksiğidir ve kapı onu
+  // KIRMIZI basar. Fixture bunu yansıtmazsa "tam kurulum" senaryosu gerçeği yansıtmaz.
+  if (altAjan) {
+    mkdirSync(join(kok, '.claude', 'agents'), { recursive: true });
+    writeFileSync(join(kok, '.claude', 'agents', 'dogrulayici.md'), '---\nname: dogrulayici\ntools: Read\n---\nsen\n');
+  }
   if (ek != null) writeFileSync(join(kok, '02_kanon', 'EL_KITABI.md'), ek);
   if (defo) writeFileSync(join(kok, '00_genesis', 'DEFO_MODELI.md'), '# DEFO\n## On defo — itki\n');
   if (retro) writeFileSync(join(kok, '00_genesis', 'RETRO_KALIBI.md'), '# RETRO\n1. **Tavan kalibrasyonu:** soru.\n');
@@ -122,6 +154,63 @@ test('DEFO_MODELI kopyalanmamış → KIRMIZI (bilinç katmanı inmemiş)', () =
   const r = kos(kurulum({ defo: false }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /DEFO_MODELI\.md yok/);
+});
+
+// Kardeş kapının negatif kanıtı bugüne kadar YOKTU (fixture `retro` anahtarını taşıyordu ama
+// hiçbir test onu false yapmıyordu) — kapı sessizce ölebilirdi. Tek satırla kapatıldı.
+test('RETRO_KALIBI kopyalanmamış → KIRMIZI', () => {
+  const r = kos(kurulum({ retro: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /RETRO_KALIBI\.md yok/);
+});
+
+// ── Kurulum tarifi (4d) ve kurulum durumu (4e) — TAM kurulum bağlamında ─────────────────
+// genesis-iskelet.test.mjs bu iki kapıyı asgari bir fixture'la sınar; burada aynı kapılar
+// gerçek bir "her şeyi tamam" kurulumun içinde ölçülür: tek eksik onları KIRMIZI yapıyor mu.
+
+test('4d: adım dosyaları eksikse → KIRMIZI (tarif yarım aktarılmış)', () => {
+  const r = kos(kurulum({ tarif: { adimlar: false } }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /SIRA\.txt yok/);
+});
+
+test('4d: bekçi kontratı eksikse → KIRMIZI', () => {
+  const r = kos(kurulum({ tarif: { kontrat: false } }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /BEKCI_TARIFI\.md yok/);
+});
+
+test('4d: indeks hiç yoksa → KIRMIZI', () => {
+  const r = kos(kurulum({ tarif: { indeks: false } }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /GENESIS indeksi yok/);
+});
+
+test('4e: makine bloğu yoksa → KIRMIZI (sürücü hiç devreye girmemiş)', () => {
+  const r = kos(kurulum({ tarif: { gdurum: null } }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /GENESIS_DURUM\.md yok/);
+});
+
+test('4e: blok "başlamadı" diyorsa → KIRMIZI', () => {
+  const r = kos(kurulum({ tarif: { gdurum: 'başlamadı' } }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /blok hiç güncellenmemiş/);
+});
+
+test('4e: tanınmayan Durum değeri → KIRMIZI (fail-closed)', () => {
+  const r = kos(kurulum({ tarif: { gdurum: 'yolunda' } }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /tanınmayan Durum değeri/);
+});
+
+test('6b: hiç alt-ajan dosyası yoksa → KIRMIZI (yokluk körlüğü yok)', () => {
+  // `nullglob` altında döngü hiç koşmuyor, altındaki "geçti" koşulsuz basıyordu: "ölçemedim"
+  // ile "hepsi yerinde" karışıyordu (hasım turu 2026-07-30). Betiğin kendi ilkesi zaten
+  // "sıfır rol = KIRMIZI" diyor; aynı ilke burada uygulanmamıştı.
+  const r = kos(kurulum({ altAjan: false }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /hiç alt-ajan dosyası yok/);
 });
 
 test('TAM kadranda bekçi ilanında kategori eksikse → KIRMIZI; KÜÇÜK kadranda aynı bekçi YEŞİL', () => {

@@ -96,10 +96,11 @@ keel/
 ├── README.md            ← bu dosya
 ├── LICENSE              ← telif ve kullanım koşulları
 ├── CLAUDE.md            ← ilk oturumu yönlendiren giriş ("kurulu mu?")
-├── GENESIS.md           ← GENESIS'in sabit kurulum planı (G0–G5)
+├── GENESIS.md           ← kurulum planının indeksi (sekiz adım, G0–G5)
 ├── .claude/             ← koruma kablosu (kanca + sor-izin) · yazamayan doğrulayıcı ajan · rol becerileri (kurulumda doğar)
 ├── 00_genesis/          ← GENESIS koltuğu + yarım-kurulum toparlama çapası
-├── tools/guard/         ← koruma kancası (file-guard) + rol töreni (rol-ac) + kapanış kancası (kapanis) + ortam/klasör hazırlığı + korunan-yollar
+│   └── adimlar/         ← adımların tarifi, adım başına bir dosya + sıra listesi
+├── tools/guard/         ← koruma kancası (file-guard) + rol töreni (rol-ac) + kapanış kancası (kapanis) + ortam/klasör hazırlığı + kurulum sürücüsü + korunan-yollar
 └── tools/kokpit/        ← salt-okunur izleme panosu + format sözleşmesi + testler
 ```
 

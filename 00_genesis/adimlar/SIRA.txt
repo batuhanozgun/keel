@@ -1,0 +1,26 @@
+# SIRA — kurulum sürücüsünün (tools/guard/kurulum-surucu.sh) okuduğu VERİ dosyası (kod değil).
+#
+# Biçim: satır başına bir adım, SOLDAN SAĞA sıra. Üç alan, ayıraç TAB:
+#   <adım-kimliği>	<dosya adı>	<sahibin diliyle tek satır>
+# "#" ile BAŞLAYAN satır yorumdur; boş satır yok sayılır.
+#
+# Sıra BU DOSYADAKİ SATIR SIRASIDIR — dosya adlarının alfabetik sırası DEĞİL ("G4.5" ile "G5"
+# alfabetik olarak ters düşer; sıra veriden okunmazsa sürücü sessizce yanlış adımı açar).
+#
+# Adım eklemek/çıkarmak: bu dosyaya bir satır + 00_genesis/adimlar/ altına o dosya.
+# İkisi ayrışırsa `tools/guard/kurulum-denetimi.sh` (4d) KIRMIZI basar ve çekilme kilitlenir —
+# "listede var, diskte yok" ile "diskte var, listede yok" iki ayrı sessiz kusurdur, ikisi de kapalı.
+#
+# ÜÇÜNCÜ ALAN SAHİBİN DİLİNDE YAZILIR. Sürücü durduğunda bu cümleyi talimatına koyar; talimat
+# modele gider (Stop kancasının stderr'ı) ve model sahiple onun üzerinden konuşur — yani cümle
+# sahibe DOLAYLI ulaşır, doğrudan ekrana basılmaz (Stop kancasının stdout'u sahibe görünmez).
+# Şart aynı kalır: KEEL sözlüğü kullanılmaz — "kadran", "kanon", "çapa", "mühür", "dönem" gibi
+# kelimeler bu sütunda geçmez.
+G0	G0.md	Seni tanıyorum: adın, projenin ölçeği ve riski
+G1	G1.md	Projenin kabaca haritasını çıkarıyorum
+G2	G2.md	Ekibi kuruyorum: hangi roller gerekli
+G3a	G3a.md	Ekibin el kitabını ve otomatik denetimini yazıyorum
+G3b	G3b.md	Kayıt düzenini, korumayı ve panoyu bağlıyorum
+G4	G4.md	İlk işi kuruyorum ve senin onayına getiriyorum
+G4.5	G4.5.md	Kurulumun eksiksiz olduğunu makineyle denetliyorum
+G5	G5.md	Kullanım kılavuzunu bırakıp çekiliyorum

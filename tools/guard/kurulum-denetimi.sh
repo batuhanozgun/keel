@@ -123,6 +123,186 @@ else
   fi
 fi
 
+# 4d · Kurulum TARİFİ eksiksiz mi (F1-1 · GENESIS iskeleti). Bu kapı yeni değil, YERİ yeni:
+#      `GENESIS.md` 48 KB tek dosyaydı ve tarifin aktarıldığını hiçbir şey ölçmüyordu (bu betikte
+#      'GENESIS.md' dizesi bile geçmiyordu). Bölünmüş tarifte denetimsiz yüzey 1 dosyadan 10'a
+#      çıkar; kapı olmazsa "yarım kopyalanmış tarif" sessizce çekilme alır.
+#      DÖRT ŞEY: (a) sıra verisi ↔ adım dosyaları ÇİFT YÖNLÜ eşlik, (b) dosya başına tavan,
+#      (c) toplam tavan, (d) indeks ve bekçi-tarifi kontratı yerinde.
+ADIM_TAVANI=12288    # bayt · dosya başına (aşan adım ikiye bölünür: G3a/G3b emsali)
+ADIM_TOPLAM=60000    # bayt · indeks + adımlar + BEKCI_TARIFI. Bölmek büyümenin bahanesi olamaz —
+                     # asıl fren budur, dosya-başı tavan değil.
+                     # ÇAPA VE BEYANLI ARTIŞ (2026-07-30): ilk değer 57.660 = bölmeden önceki
+                     # GENESIS.md 48.050 B × 1,20 idi ve bölmenin kendisi ona sığdı. Hasım turu
+                     # (46 ham bulgu) sonrası marj 99 B'ye indi; bir tur SIKIŞTIRMAYLA 518 B'ye
+                     # çıkarıldı, sonra kalan bulgular yeni MEKANİK KURALLAR getirdi (G0'ın sıra
+                     # açma maddesi · G5'in blok dilbilgisi · G4.5'in eksik denetim listesi) ve
+                     # ikinci bir sıkıştırma turu, hafızasız oturumun ihtiyaç duyduğu gerekçeleri
+                     # silmeye başlayacaktı. Tavan 60.000'e çıkarıldı (= 48.050 × 1,249).
+                     # Artışın sebebi kelime uzunluğu değil, EKLENEN KURAL: bölme sırasında
+                     # bilinmeyen 11 kusurun mekanik karşılığı tarifin içinde yaşamak zorunda.
+                     # Bu satır beyandır: sonraki artış yeniden beyan ister (D-27 emsali).
+SIRA_TAVANI=4096     # bayt · sıra verisinin KENDİ tavanı. Toplama DAHİL DEĞİL, ayrı ölçülür:
+                     # dahil edilmesi toplam tavan kararını yeniden almayı gerektirir (bugünkü
+                     # tarif toplama girse marj 500B freninin altına inerdi) ve tavan kararı
+                     # beyanlı olmak zorundadır. Ama tavansız da bırakılmaz: sürücü bu dosyayı
+                     # HER Stop turunda okur, sınırsız büyümesi kancayı pahalılaştırır
+                     # (hasım turu 2026-07-30: dosya 99.885 B yapıldı, hiçbir kapı kıpırdamadı).
+SIRA="$KOK/00_genesis/adimlar/SIRA.txt"
+if [ ! -r "$SIRA" ]; then
+  kirmizi "00_genesis/adimlar/SIRA.txt yok — kurulum sırasının verisi eksik (F1-1); sürücü hangi adımın sırada olduğunu bilemez"
+else
+  # (a1) Listede var → diskte yok
+  SIRA_BOY=$(wc -c < "$SIRA" | tr -d ' ')
+  if [ "$SIRA_BOY" -gt "$SIRA_TAVANI" ]; then
+    kirmizi "sıra verisi kendi tavanını aşıyor: ${SIRA_BOY}B > ${SIRA_TAVANI}B (SIRA.txt her Stop turunda okunur)"
+  fi
+  ADIM_EKSIK=""; ADIM_SAYISI=0; TOPLAM=0; ASAN=""; SIRA_DOSYALARI=""
+  while IFS="$(printf '\t')" read -r k d c || [ -n "${k:-}" ]; do
+    case "$k" in ''|'#'*) continue ;; esac
+    # CRLF güvenliği: son alan `\r` taşırsa dosya adına yapışır ("G0.md\r" yoktur).
+    d="${d%$'\r'}"
+    ADIM_SAYISI=$((ADIM_SAYISI + 1))
+    SIRA_DOSYALARI="$SIRA_DOSYALARI $d "
+    if [ -n "$d" ] && [ -r "$KOK/00_genesis/adimlar/$d" ]; then
+      B=$(wc -c < "$KOK/00_genesis/adimlar/$d" | tr -d ' ')
+      TOPLAM=$((TOPLAM + B))
+      if [ "$B" -gt "$ADIM_TAVANI" ]; then ASAN="$ASAN $d(${B}B)"; fi
+    else
+      ADIM_EKSIK="$ADIM_EKSIK ${d:-<dosya adı boş>}"
+    fi
+  done < "$SIRA"
+  [ "$ADIM_SAYISI" -gt 0 ] || kirmizi "SIRA.txt içinde hiç adım satırı yok — kurulum tarifi boş"
+  [ -z "$ADIM_EKSIK" ] || kirmizi "sırada yazılı adım dosyası yok:$ADIM_EKSIK (listede var, diskte yok — tarif yarım aktarılmış)"
+  # (a2) Diskte var → listede yok. Ters yön ayrı bir sessiz kusurdur: sürücü o dosyayı hiç
+  #      açmaz, içindeki tarif hiç uygulanmaz ve kimse fark etmez.
+  #      Desen 'G*.md' DEĞİL '*.md': 'G' ile başlamayan bir adım dosyası (ileride bölünen bir
+  #      adımın adı değişirse) ters yönde görünmez kalırdı — kapının kör noktası olurdu.
+  #      Eşleşme SIRA satırlarından toplanan dosya adları listesine bakar; ham grep DEĞİL, çünkü
+  #      üçüncü alanı boş bırakılmış bir satırda sondaki TAB yoktur ve grep yanlış "listede yok" derdi.
+  #      Tarama DERİN ve SEMBOLİK BAĞLARI da görür: ilk yazım `-maxdepth 1 -type f` idi ve iki kör
+  #      noktası vardı — `adimlar/alt/G9.md` (alt dizin) ve symlink hâlindeki adım dosyası ikisi de
+  #      sessizce geçiyordu (hasım turu 2026-07-30). Ad öneki kör noktası kapatılmıştı, konum ve
+  #      dosya-tipi kör noktaları açıktaydı.
+  #      Uzantı süzgeci de KALDIRILDI: `-name '*.md'` iken aynı içerik `.md` ile KIRMIZI, `.txt`
+  #      ile sessiz geçiyordu (aynı denetimin kendi gerekçesiyle çelişen asimetri). Artık
+  #      `adimlar/` altındaki SIRA.txt DIŞINDA her dosya sırada kayıtlı olmak zorunda.
+  KAYITSIZ=""
+  for f in $(find "$KOK/00_genesis/adimlar" \( -type f -o -type l \) ! -name 'SIRA.txt' | sort); do
+    AD=$(basename "$f")
+    case "$SIRA_DOSYALARI" in *" $AD "*) : ;; *) KAYITSIZ="$KAYITSIZ $AD" ;; esac
+  done
+  [ -z "$KAYITSIZ" ] || kirmizi "adım dosyası sırada kayıtlı değil:$KAYITSIZ (diskte var, listede yok — sürücü onu hiç açmaz)"
+  # (b) dosya başına tavan
+  [ -z "$ASAN" ] || kirmizi "adım dosyası kendi tavanını aşıyor:$ASAN > ${ADIM_TAVANI}B (aşan adım ikiye bölünür)"
+  # (c) toplam tavan — indeks + adımlar + kontrat. İndeks G5.3.a'da 00_genesis/'e TAŞINIR,
+  #     bu kapı ise taşımadan ÖNCE koşar: iki yer de meşrudur, ama İKİSİ BİRDEN olamaz —
+  #     G5.3.a "taşı" der; kopyalanırsa iki indeks doğar, biri sessizce eskir ve kapı hangisine
+  #     baktığını söylemez (hasım turu 2026-07-30; indeksin kendi testi bunu "drift kapısı" sayıyor).
+  #     TAVANIN KAPSAMI (beyan): burada ölçülen şey TARİFTİR — indeks + adımlar + bekçi kontratı.
+  #     `00_genesis/` KALIP dosyaları (EL_KITABI_KALIBI · OTONOM_DONEM_KALIBI · KARAR_ALANI_KALIBI …)
+  #     bu toplama GİRMEZ ve girmemeleri bilinçlidir: onların kendi tavanları var ve ayrı ölçülüyor
+  #     (EL_KITABI 16KB burada, ötekiler kurulu-sim/otonom-sim testlerinde). Yani "tarif tavanı" ile
+  #     "kalıp tavanları" iki ayrı hat; bir paragrafı kalıba taşıyarak bu tavandan kaçan taraf
+  #     ötekine çarpar. Kalıpsız yeni bir dosya icat edilirse HİÇBİR tavana girmez — ilan edilmiş sınır.
+  KOK_INDEKS=""; ARSIV_INDEKS=""
+  [ -r "$KOK/GENESIS.md" ] && KOK_INDEKS="$KOK/GENESIS.md"
+  [ -r "$KOK/00_genesis/GENESIS.md" ] && ARSIV_INDEKS="$KOK/00_genesis/GENESIS.md"
+  INDEKS="${KOK_INDEKS:-$ARSIV_INDEKS}"
+  if [ -n "$KOK_INDEKS" ] && [ -n "$ARSIV_INDEKS" ]; then
+    kirmizi "İKİ indeks var (kökte ve 00_genesis/ altında) — G5.3.a TAŞI der, kopyalamaz; biri sessizce eskir"
+  fi
+  # Boyut okumaları AYRI ADIMDA: `$(( TOPLAM + $(wc -c …) ))` biçimi, iç komut patladığında
+  # ARİTMETİK SÖZDİZİMİ HATASI üretir — o hata ERR trap'i TETİKLEMEZ ve `set -e` betiği DURDURMAZ,
+  # yalnız içinde bulunduğu bileşik komutu iptal eder: 4d'nin geri kalanı (toplam tavan + ikinci
+  # tanık) sessizce atlanır ve SONUÇ YEŞİL basılır. Dosyanın 6. satırındaki "betiğin KENDİ hatası da
+  # KIRMIZI'dır" ilanının tersi. (Hasım turu 2026-07-30 — yeniden koşulan mercek bunu yakaladı.)
+  boy_ekle() { # $1: yol · $2: insan adı
+    local b
+    b="$(wc -c < "$1" 2>/dev/null | tr -d ' ')" || b=""
+    case "$b" in
+      ''|*[!0-9]*) kirmizi "$2 boyutu ÖLÇÜLEMEDİ ($1) — toplam tavan hesaplanamaz, fail-closed"; return 0 ;;
+    esac
+    TOPLAM=$((TOPLAM + b))
+  }
+  if [ -z "$INDEKS" ]; then
+    kirmizi "GENESIS indeksi yok (ne kökte ne 00_genesis/ altında) — kurulum tarifinin girişi eksik"
+  else
+    boy_ekle "$INDEKS" "GENESIS indeksi"
+  fi
+  if [ -r "$KOK/00_genesis/BEKCI_TARIFI.md" ]; then
+    boy_ekle "$KOK/00_genesis/BEKCI_TARIFI.md" "bekçi kontratı"
+  else
+    kirmizi "00_genesis/BEKCI_TARIFI.md yok — bekçi yazım kontratı aktarılmamış (G3.2 ona işaret ediyor)"
+  fi
+  if [ "$TOPLAM" -gt "$ADIM_TOPLAM" ]; then
+    kirmizi "kurulum tarifi toplam tavanını aşıyor: ${TOPLAM}B > ${ADIM_TOPLAM}B (bölmek büyümenin bahanesi değildir)"
+  else
+    gecti "kurulum tarifi: $ADIM_SAYISI adım · toplam ${TOPLAM}B / ${ADIM_TOPLAM}B"
+  fi
+  # (e) İKİNCİ TANIK — indeks ↔ sıra. Yukarıdaki denetimler SIRA.txt ile diski karşılaştırır;
+  #     ikisi de kurulum penceresinde yazılabilir, yani sırayı atlamak isteyen taraf İKİSİNİ
+  #     birden kırpıp tutarlı bir yalan kurabilir (hasım turu 2026-07-29: bu yolla `G4.5` — bu
+  #     kapının kendisi — sıradan çıkarılabiliyordu). İndeks üçüncü, BAĞIMSIZ bir kayıttır:
+  #     adımların işaretçilerini taşır ve iki liste ayrışırsa çekilme kilitlenir.
+  #     İşaretçi İKİ BİÇİMDE meşrudur: kökteki indeks `00_genesis/adimlar/G0.md` yazar, taşınmış
+  #     indeks `adimlar/G0.md` (G5.3.a onları bilerek kısaltır — aynı klasördedir). Yalnız uzun
+  #     biçimi aramak, çekilme SONRASI her koşuşta kalıcı yanlış KIRMIZI üretiyordu; üstelik
+  #     teşhis yanlıştı ("okuyan onu bulamaz" derken indeks doğruydu) — yanlış rapor, raporsuzluktan
+  #     beter (hasım turu 2026-07-30).
+  if [ -n "$INDEKS" ]; then
+    INDEKS_EKSIK=""
+    for d in $SIRA_DOSYALARI; do
+      if grep -qF "00_genesis/adimlar/$d" "$INDEKS" || grep -qE "(^|[^/])adimlar/$(printf '%s' "$d" | sed 's/\./\\./g')" "$INDEKS"; then :;
+      else INDEKS_EKSIK="$INDEKS_EKSIK $d"; fi
+    done
+    [ -z "$INDEKS_EKSIK" ] || kirmizi "sırada olup indekste GEÇMEYEN adım:$INDEKS_EKSIK (indeks tarifin girişidir; ayrışırsa okuyan onu bulamaz)"
+    SIRADA_YOK=""
+    for d in $(grep -oE '(00_genesis/)?adimlar/[A-Za-z0-9._-]*\.md' "$INDEKS" | sed 's|.*/||' | sort -u); do
+      case "$SIRA_DOSYALARI" in *" $d "*) : ;; *) SIRADA_YOK="$SIRADA_YOK $d" ;; esac
+    done
+    [ -z "$SIRADA_YOK" ] || kirmizi "indekste yazılı olup SIRADA olmayan adım:$SIRADA_YOK (sıra kırpılmış — sürücü o adımı hiç açmaz)"
+    [ -n "$INDEKS_EKSIK$SIRADA_YOK" ] || gecti "indeks ↔ sıra eşliği (ikinci tanık)"
+  fi
+fi
+
+# 4e · Kurulum DURUMU makine-okur mu (F1-1). Sıra ikinci bir Stop kancasına bağlıdır ve o kanca
+#      tek bir yerden okur: `## KURULUM DURUMU` bloğu. Blok yoksa sürücü hiç devreye girmemiştir,
+#      yani sıra bu kurulum boyunca MEKANİK OLARAK HİÇ denetlenmemiştir — çıktı doğru görünse de
+#      güvence yoktur. G4.5'e gelmiş bir kurulum "başlamadı" da diyemez.
+GDURUM="$KOK/00_genesis/GENESIS_DURUM.md"
+if [ ! -r "$GDURUM" ]; then
+  kirmizi "00_genesis/GENESIS_DURUM.md yok — kurulumun nerede kaldığı hiçbir yerde yazılı değil"
+else
+  # Alan sayımı sürücüyle AYNI mantıkta (hasım turu 2026-07-30): sürücü tekrarlı alanda
+  # fail-closed duruyor, bu kapı ise aynı bloğa "geçti" basıyordu — iki göz ayrı hüküm veriyordu.
+  KD_HAM=$(awk '
+    /^## KURULUM DURUMU/ { basladi = 1; next }
+    basladi && /^```/    { if (icinde) { exit } ; icinde = 1; next }
+    icinde {
+      p = index($0, ":")
+      if (p > 0 && substr($0, 1, p - 1) == "Durum") {
+        n++
+        if (n == 1) { d = substr($0, p + 1); sub(/^[[:space:]]+/, "", d); sub(/[[:space:]]+$/, "", d) }
+      }
+    }
+    END { printf "%d\t%s\n", n + 0, d }
+  ' "$GDURUM" || true)
+  KD_KAC="${KD_HAM%%	*}"; KD="${KD_HAM#*	}"
+  case "$KD_KAC" in ''|*[!0-9]*) KD_KAC=0 ;; esac
+  if [ "$KD_KAC" -gt 1 ]; then
+    kirmizi "GENESIS_DURUM makine bloğunda 'Durum' alanı $KD_KAC kez yazılmış — makine ilkini okur, insan ikincisini görür (sessiz ayrışma)"
+    KD="__tekrarli__"
+  fi
+  case "$KD" in
+    __tekrarli__) : ;;
+    açık|bekliyor|bitti) gecti "kurulum durumu makine-okur (Durum: $KD)" ;;
+    başlamadı) kirmizi "GENESIS_DURUM makine bloğu 'başlamadı' diyor ama kurulum G4.5'e gelmiş — blok hiç güncellenmemiş, sıra mekanik olarak denetlenmemiş" ;;
+    '') kirmizi "GENESIS_DURUM içinde '## KURULUM DURUMU' makine bloğu okunamadı — kurulum sürücüsü bu kurulum boyunca hiç devreye girmemiş olabilir" ;;
+    *) kirmizi "GENESIS_DURUM makine bloğunda tanınmayan Durum değeri: '$KD' (geçerli: başlamadı · açık · bekliyor · bitti)" ;;
+  esac
+fi
+
 # 5 · Bekçi: mevcut + sözdizimi + kadranın zorunlu kategorileri İLAN edilmiş
 #     (ilan `# kategoriler:` satırıdır — GENESIS tarifi zorunlu kılar; beyanın İÇERİĞİNİ
 #     G3.2'nin fiilî bozuk-girdi kanıtı tartar, bu betik yalnız ilan-varlığını denetler)
@@ -160,11 +340,18 @@ gecti "SKILL frontmatter + kilit taraması"
 #      Roller arası zorunlu unutma bu yapının en eski korunanıdır (Değişmeyenler m.1) ve
 #      alt-ajan `memory` alanı onun TEK ölüm noktasıdır: taze bağlam kalkarsa "beş varsayımın
 #      beşi yazılı olmadığı için yakalandı" ölçümü de kalkar. Kural yazılıydı, kapısı yoktu.
-MEM_KIRLI=""
+#      YOKLUK KÖRLÜĞÜ YOK (hasım turu 2026-07-30): `nullglob` altında hiç alt-ajan dosyası
+#      olmadığında döngü hiç koşuyor, altındaki `gecti` koşulsuz basıyordu — "ölçemedim" ile
+#      "hepsi yerinde" karışıyordu. Şablon üç alt-ajanla gelir; sıfır dosya aktarım eksiğidir
+#      (aynı ilke betiğin kendi "sıfır rol = KIRMIZI" kararında yazılı).
+MEM_KIRLI=""; MEM_SAYI=0
 for a in "$KOK"/.claude/agents/*.md; do
+  MEM_SAYI=$((MEM_SAYI + 1))
   if grep -qE '^[[:space:]]*memory[[:space:]]*:' "$a"; then MEM_KIRLI="$MEM_KIRLI $(basename "$a")"; fi
 done
-if [ -n "$MEM_KIRLI" ]; then
+if [ "$MEM_SAYI" -eq 0 ]; then
+  kirmizi "hiç alt-ajan dosyası yok (.claude/agents/*.md) — şablon üçüyle gelir; yokluk aktarım eksiğidir, 'memory yasağı geçti' denemez"
+elif [ -n "$MEM_KIRLI" ]; then
   kirmizi "alt-ajan dosyasında memory alanı var:$MEM_KIRLI — roller arası zorunlu unutma delinir (hiçbir rol alt-ajan dosyasına memory yazılmaz)"
 else
   gecti "alt-ajan memory yasağı"
@@ -232,9 +419,19 @@ else
 fi
 
 if [ "$SORUN" -eq 0 ]; then
+  # KOŞTUĞUNUN İZİ (F1-1 · hasım turu 2026-07-30). İlan edilen "çift hat" tek yönlüydü: sürücü
+  # devreye girmediyse bu kapı yakalıyordu, ama BU KAPININ hiç koşmadığını hiçbir şey yakalamıyordu
+  # — betik hiçbir kancada değil, diske iz bırakmıyordu ve üç ayrı çürütme "ama kapı KIRMIZI
+  # basar" savına dayanıyordu. İz, sürücünün son adımı açarken aradığı şeydir.
+  # İzlenmez (makine durumu); YEŞİL değilken yazılmaz ve eski iz silinir.
+  # `rmdir` yedeği: iz yerinde bir DİZİN varsa `rm -f` onu silemez ve sürücü (`-f` aradığı için)
+  # izi hiç göremez — kilit KALICI olur ve çare mesajı yanlış yönü gösterir. Önce temizle, sonra yaz.
+  rm -f "$KOK/tools/guard/.kurulum-denetimi-son" 2>/dev/null || rmdir "$KOK/tools/guard/.kurulum-denetimi-son" 2>/dev/null || true
+  { printf '%s\n' "$(date '+%Y-%m-%d %H:%M')" > "$KOK/tools/guard/.kurulum-denetimi-son"; } 2>/dev/null || true
   printf 'SONUÇ: YEŞİL — aktarım tam, çekilme serbest\n'
   exit 0
 else
+  rm -f "$KOK/tools/guard/.kurulum-denetimi-son" 2>/dev/null || rmdir "$KOK/tools/guard/.kurulum-denetimi-son" 2>/dev/null || true
   printf 'SONUÇ: KIRMIZI — aktarım eksik, çekilme YOK (G4.5)\n'
   exit 2
 fi

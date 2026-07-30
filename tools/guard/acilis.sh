@@ -97,32 +97,76 @@ fi
 ORTAM="$KOK/tools/guard/ortam-kontrol.sh"
 [ -r "$ORTAM" ] && bash "$ORTAM" --satir 2>/dev/null || true
 
-# ── (5) Yarım kalan kurulum (F1-2f) — başlamış ama bitmemiş kurulumun tek işaretçisi ───────
-# Gerekçe: kurulum yarıda kalırsa hiçbir yüzey bunu söylemiyordu. Sahip ertesi gün klasörü
-# açar; pano yok, kokpit boş, sistem "kurulu değil" diye görünür ama nerede kalındığı
+# ── (5) Kurulum nerede kaldı (F1-2f + F1-1) — kurulmamış klasörün tek işaretçisi ────────────
+# Gerekçe: kurulum başlamazsa ya da yarıda kalırsa hiçbir yüzey bunu söylemiyordu. Sahip ertesi
+# gün klasörü açar; pano yok, kokpit boş, sistem "kurulu değil" diye görünür ama nerede kalındığı
 # yalnız 00_genesis/GENESIS_DURUM.md içinde yazılıdır ve oraya kimse bakmaz.
-# Koşul İKİ parçalı: kurulum işareti YOK **ve** kurulum durumu "başlamadı" DEĞİL.
-# Şablonun kendi kökünde satır DOĞMAZ (durum dosyası orada "kurulum başlamadı" der) —
-# kurulmamışı kurulmuş-yarım sanmak yanlış alarmdır.
-# Durum satırı okunamıyor/bozuksa satır BASILIR (sessiz geçmek yerine haber vermek): kurulum
-# işareti yokken durum dosyasının bozuk olması zaten anormaldir.
+#
+# TEK KAYNAK (F1-1 düzeltmesi): durum artık makine bloğundan okunur (`## KURULUM DURUMU` →
+# `Durum:`), insan cümlesinden DEĞİL. Eski hâl insan cümlesini (`**Durum:** kurulum başlamadı.`)
+# satır-çapalı arıyordu ve iki ölçülmüş kusuru vardı: (a) aynı cümlenin bir KOPYASI dosyanın
+# başka bir yerinde satır başında geçerse hatırlatma KALICI SUSUYORDU (bayrak sıfırlanmıyor,
+# ilk eşleşme yetiyor) — sessiz ölüm; (b) cümlenin biçimi azıcık kayarsa (liste maddesi, kalın
+# yazımın kayması) taze şablonda YANLIŞ ALARM doğuyordu. Aynı olguyu iki yerde yazmak drift
+# kapısıdır; makine bloğu tek kaynak, insan cümlesi yalnız okunacak metin.
+#
+# DÖRT HÂL, İKİ CÜMLE (kodda gerçekten iki printf var — sayıyı abartmıyoruz):
+#   başlamadı → "henüz başlamadı" (yeni: bugüne kadar bu hâlde HİÇBİR yüzey konuşmuyordu)
+#   açık · bekliyor · blok yok/okunamıyor/tanınmayan değer → "yarım kalmış" (sessiz geçmek
+#     yerine haber vermek; kurulum işareti yokken durum dosyasının bozuk olması zaten anormaldir)
+# "bekliyor" hâlinin sahibe ayrı bir cümlesi YOK ve bu bilinçli bir sınırdır: o hâlde top
+# gerçekten sahiptedir ("mührünü bekliyorum"), ama hangi mühür olduğunu bu yüzey bilemez —
+# adım etiketi basmak yasak (jargon), sorunun metnini ise adım dosyası taşır. Sahibe soru
+# taşıyan yüzey ayrıdır (00_pano/SENDE_BEKLEYEN.md) ve kurulum penceresinde henüz doğmamıştır.
+# KEEL'in KENDİ kopyalarında (mutfak/vitrin) hiçbiri doğmaz: `.keel-kaynak` işareti susturur.
+# O işaret DAĞITILMAZ (.gitignore), yani sahibin indirdiği kopyada bulunması imkânsızdır.
+#
 # Satır BEKLEYEN ADIMIN ADINI TAŞIMAZ (hasım turu 2026-07-29): "G2 · Rol türetme + çapraz-
 # kontrol" sahibin sözlüğünde olmayan bir etikettir ve sahibin yapacağı şeyi değiştirmez —
 # nereye gideceğini söylemek yeterli. Etiketi basmaya çalışan ilk sürüm üç ayrı kusur
 # doğurmuştu (boş bölümde sonraki başlığı adım sanmak · CRLF'in cümleye sızması · jargon).
 # Nerede kalındığını GENESIS zaten kendi açılışında bu dosyadan okur.
 GDURUM="$KOK/00_genesis/GENESIS_DURUM.md"
-if [ ! -e "$KOK/.kurulum-tamam" ] && [ -r "$GDURUM" ]; then
+kurulum_durumu_oku() {
+  [ -r "$GDURUM" ] || return 0
   awk '
-    # Susturma ÇAPALI: yalnız şablonun KENDİ cümlesi susturur. Alt-dize araması
-    # ("başlamadı" geçen her satır) "G3 başlamadı." gibi bir cümlede yanlış yerde susuyordu.
-    BEGIN { baslamadi = 0 }
-    /^\*\*Durum:\*\*[[:space:]]*kurulum başlamadı\.?[[:space:]]*$/ { baslamadi = 1 }
-    END {
-      if (baslamadi == 1) exit 0
-      printf "ℹ️ Kurulum yarım kalmış — 00_genesis klasöründe oturum açıp kaldığın yerden devam edebilirsin.\n"
+    /^## KURULUM DURUMU/ { basladi = 1; next }
+    basladi && /^```/    { if (icinde) { exit } ; icinde = 1; next }
+    icinde {
+      p = index($0, ":")
+      if (p > 0 && substr($0, 1, p - 1) == "Durum") {
+        d = substr($0, p + 1)
+        sub(/^[[:space:]]+/, "", d); sub(/[[:space:]]+$/, "", d)
+        print d; exit
+      }
     }
   ' "$GDURUM" 2>/dev/null || true
+}
+
+if [ -d "$KOK/00_genesis" ] && [ ! -e "$KOK/tools/guard/.keel-kaynak" ]; then
+  KURULUM_DURUM="$(kurulum_durumu_oku)"
+  if [ -e "$KOK/.kurulum-tamam" ]; then
+    # TERS YÖN (hasım turu 2026-07-29): işaret var AMA kayıt kurulumu bitmiş göstermiyorsa
+    # ortada bir çelişki vardır ve bugüne kadar hiçbir yüzey bunu söylemiyordu. İşaret koruma
+    # rejiminin anahtarıdır: erken doğduysa sıra denetimi de, bu blok da, çekilme kapısının
+    # kurulum kipi de susar. Tek satır, ısrar yok — ama sessizlik yok.
+    case "$KURULUM_DURUM" in
+      açık|bekliyor|başlamadı)
+        printf 'ℹ️ Kurulum bitti işareti var ama kurulum kaydı yarım görünüyor — "kurulumu kontrol et" diyebilirsin.\n' ;;
+    esac
+  else
+    case "$KURULUM_DURUM" in
+      başlamadı)
+        # Eylem cümlesi README'nin kurulum adımıyla BİREBİR aynı olmalı: sahibin kılavuzu
+        # "o klasörü Claude Code'da aç ve selam yaz" diyor. İlk yazım "00_genesis klasöründe
+        # oturum açarsan başlar" diyordu — sahibe kılavuzundan FARKLI bir iş söylüyordu ve
+        # üstüne ham klasör adı basıyordu (hasım turu 2026-07-29). Nereye gidileceği makinenin
+        # işidir; sahibin bileceği tek şey ne yazacağıdır.
+        printf 'ℹ️ Bu klasörde kurulum henüz başlamadı — "selam" yazarsan başlar.\n' ;;
+      *)
+        printf 'ℹ️ Kurulum yarım kalmış — "devam" yazarsan kaldığımız yerden sürer.\n' ;;
+    esac
+  fi
 fi
 
 exit 0

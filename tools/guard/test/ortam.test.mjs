@@ -10,7 +10,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, cpSync, chmodSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, readdirSync, mkdirSync, cpSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -355,8 +355,22 @@ test('acilis.sh: ortam betiği YOKSA sessizce geçer (fail-open)', () => {
 
 // ── Sözleşme: README ve GENESIS ile kod ayrışmasın ────────────────────────────────────────
 
+// GENESIS tarifi 2026-07-29'da indeks + adım dosyalarına bölündü (F1-1). Bu sözleşme testi
+// TARİFİN TAMAMINA bakar (indeks + bütün adımlar birlikte), tek dosyaya değil: amacı "kod ile
+// GENESIS metni ayrışmasın" olduğu için metnin hangi adım dosyasında durduğu onu ilgilendirmez.
+// Böylece ileride bir adım bölünse ya da taşınsa tanık susmaz — genişleyen tek şey okuma yolu.
+function genesisTarifi() {
+  const kok = join(GUARD_DIZIN, '..', '..');
+  const adimDizin = join(kok, '00_genesis', 'adimlar');
+  const adimlar = readdirSync(adimDizin).filter((a) => a.endsWith('.md')).sort();
+  assert.ok(adimlar.length > 0, '00_genesis/adimlar/ altında adım dosyası yok — tarif bölünmüş ama boş');
+  return [readFileSync(join(kok, 'GENESIS.md'), 'utf8')]
+    .concat(adimlar.map((a) => readFileSync(join(adimDizin, a), 'utf8')))
+    .join('\n');
+}
+
 test('GENESIS G0.0: betiği çağırıyor · üç çıkış kodunu da tanımlıyor · sahte çatal kurmuyor', () => {
-  const g = readFileSync(join(GUARD_DIZIN, '..', '..', 'GENESIS.md'), 'utf8');
+  const g = genesisTarifi();
   assert.match(g, /tools\/guard\/ortam-kontrol\.sh/, 'GENESIS betiği adıyla çağırmalı');
   assert.match(g, /KURULUMA BAŞLAMA/, 'zorunlu eksikte (kod 1) durma kuralı yazılı olmalı');
   assert.match(g, /Çıkış kodu 2/, 'denetimin kendisi çalışamazsa ne olacağı yazılı olmalı');

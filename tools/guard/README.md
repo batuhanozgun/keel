@@ -109,9 +109,16 @@ günden eskiyse (ya da brifing/tarih yoksa) `... dış göz brifingi ... "durumu
 diyebilirsin` — bu YUMUŞAK hatırlatmadır, kapanış kilidi değil (kilit bekçidedir ve git
 tarihine bakar); (3) `00_pano/SABAH.md` varsa gece dönemine köprü (E5); (4) `ortam-kontrol.sh
 --satir` — ZORUNLU bir dış araç (node/git) eksikse tek satır; seçimli eksikte SUSAR (F1-2a);
-(5) `.kurulum-tamam` YOK **ve** `00_genesis/GENESIS_DURUM.md`nin durum satırı şablonun kendi
-`kurulum başlamadı.` cümlesi DEĞİLSE `Kurulum yarım kalmış …` (F1-2f) — satır bekleyen adımın
-ADINI taşımaz; sahibin sözlüğünde olmayan etiket bu yüzeye giremez.
+(5) `.kurulum-tamam` YOK **ve** `tools/guard/.keel-kaynak` YOK ise kurulumun nerede kaldığını
+söyler — durum **MAKİNE BLOĞUNDAN** okunur (`00_genesis/GENESIS_DURUM.md` → `## KURULUM DURUMU`
+→ `Durum:`): `başlamadı` ise `Bu klasörde kurulum henüz başlamadı …` (F1-1; bu hâlde bugüne
+kadar hiçbir yüzey konuşmuyordu), aksi hâlde — açık · bekliyor · blok bozuk/yok — `Kurulum yarım
+kalmış …` (F1-2f). Satır bekleyen adımın ADINI taşımaz; sahibin sözlüğünde olmayan etiket bu
+yüzeye giremez. **Neden insan cümlesi değil blok (2026-07-29):** eski çapa `**Durum:** kurulum
+başlamadı.` satırını arıyordu ve iki ölçülmüş kusuru vardı — (a) aynı cümlenin bir KOPYASI dosyanın
+başka bir yerinde satır başında geçerse hatırlatma KALICI susuyordu (bayrak sıfırlanmıyor, ilk
+eşleşme yetiyor), (b) cümlenin biçimi azıcık kayarsa (liste maddesi, kalın yazımın kayması) taze
+şablonda YANLIŞ ALARM doğuyordu. Aynı olgu iki yerde yazılıysa drift kapısıdır — tek kaynak bloktur.
 Salt-okurdur, hiçbir dosyaya yazmaz; fail-open (dosya yoksa/bozuksa sessiz exit 0).
 Yaş BİLGİdir — uyarı/eskalasyon YOKTUR (sahip kararı, 2026-07-24). `--resume` oturumlarında
 çalışmaz (rol-temizliğiyle aynı matcher kümesi; bilinçli).
@@ -128,6 +135,35 @@ kurulum işlemidir**; dört emniyet kemeri önce koşar (KEEL izleri var mı · 
 yok/tamam · 1 gerekli ya da yapılamadı · 2 denetim koşamadı. Bağın koparıldığını çekilme anında
 `kurulum-denetimi.sh` 4c yeniden ölçer (çift hat). İLAN EDİLMİŞ SINIR: ölçülen şey uzak
 ADRESTİR, geçmiş değil — ayna/çatal depodan kurulumda KEEL geçmişi klasörde kalır ve görülmez.
+
+Kurulum sürücüsü (`kurulum-surucu.sh`, **Stop** kancası — F1-1): kurulum SIRASINI taşır. Tek işi
+"hangi adımdayız · sıradaki hangisi · atlanmış mı"; içerik yazmaz, mühür vermez, adım bitirmez.
+Adı bilerek "sevk" DEĞİL (o kelime bir görevi alt-ajana vermek demektir — `docs/SOZLUK.md` §2b);
+yeri bilerek `tools/guard/` (kurulum penceresinde de `[SERT]`, yani kuran ajan onu yeniden yazamaz).
+**Saf kabuk** — node çağırmaz: kanca her oturum kapanışında koşar ve node'un varlığını G0.0 ölçer,
+sıra sürücüsü o ölçümün sonucuna bağlı olamaz. Okuduğu tek veri: `00_genesis/GENESIS_DURUM.md`
+`## KURULUM DURUMU` bloğu + `00_genesis/adimlar/SIRA.txt`.
+
+- **Sessiz geçtiği dört hâl:** `.kurulum-tamam` var (kurulum bitti) · `.keel-kaynak` var (KEEL'in
+  kendi kopyası — bu işaret DAĞITILMAZ, bakımcının geliştirme oturumları kurulum sanılmasın) ·
+  `tools/sevk/.donem-acik` var (Stop olayı sevkin işi, iki motor aynı olayda konuşmaz) ·
+  `Durum: başlamadı`.
+- **Durum makinesi:** `açık` → engel (exit 2), adım dosyasını ADIYLA söyler · `bekliyor` → oturumun
+  kapanmasına izin verir (mühür anında sahibi bilgisayar başında tutmak, iki mühür arasına tuş
+  koymaktan da kötüdür) · `bitti` → bloğu **yerinde** yeniden yazar, sıradakini açar, talimatı basar.
+- **Sıra kilidi:** `Tamamlanan` listesi sıranın **kesintisiz ön eki** olmalı ve `Adım` ondan hemen
+  sonrası. "G0 bitmeden G1 açılamaz" cümlesinin mekanik karşılığı budur.
+- **FAIL YÖNÜ sevkin TERSİ (bilinçli):** sevkte güvenli taraf DURMAKtır (risk sonsuz Stop döngüsü);
+  kurulumda durmak "kurulum yarım kalır ve kimse haber vermez" demektir — bu ailenin en pahalı
+  kusuru. Bu yüzden okunamayan/bozuk durum ENGELLER, susmaz.
+- **Döngü freni (tek katman):** aynı (adım, durum) çifti üst üste 3 kez görülürse oturumun
+  kapanmasına izin verir ve sayacı SIFIRLAR — hiçbir oturumu hapsetmez, kalıcı da ölmez.
+  `stop_hook_active` fren olarak KULLANILMAZ (sürücünün normal işleyişi çok turludur; sevk.sh ile
+  aynı gerekçe). Sayaç `tools/guard/.kurulum-surucu-durum`, izlenmez.
+- **Çift hat:** sürücü hiç devreye girmemişse çekilme kapısı yakalar — `kurulum-denetimi.sh` 4e
+  makine bloğunu arar, 4d ise adım dosyaları ↔ sıra listesi eşliğini ve iki tavanı ölçer.
+- **DİKKAT — Stop kancasının `stdout`'u sahibin ekranına ÇIKMAZ** (harness onu hata ayıklama
+  günlüğüne yazar). Modele ulaşan tek yol `exit 2 + stderr`; sahibe ulaşan yüzey `acilis.sh` (5).
 
 İş bölümü (çift hat):
 1. Ön hat = bu kanca (araç katmanı, anında).

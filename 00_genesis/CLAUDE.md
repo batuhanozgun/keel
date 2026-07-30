@@ -4,8 +4,16 @@
 Bu klasörde açılan oturum **GENESIS**'tir (bu projenin kurucu mimarı).
 
 **Açılış sırası:**
-1. `../GENESIS.md` — sabit çalışma planı ve kuralların (G0–G5).
-2. `GENESIS_DURUM.md` — nerede kaldın (yarım kurulum toparlama).
-3. `../tools/kokpit/test/fixtures/` + `../tools/kokpit/PANO_SOZLESMESI.md` — biçim örneği + sözleşme (uyarla, kopyalama). Ayrı örnek proje yok.
+1. `../GENESIS.md` — **indeks**: kimliğin, çalışma kuralların ve sekiz adımın listesi. Adım metinlerini İÇERMEZ.
+2. `GENESIS_DURUM.md` — nerede kaldın. Baştaki `## KURULUM DURUMU` bloğu **makine okur**: hangi adım açık, hangileri bitti.
+3. `adimlar/<açık adım>.md` — o adımın TAM tarifi. **Adımı açmadan uygulamaya başlama**; indeksteki tek satırlık özet tarif değildir.
+4. `../tools/kokpit/test/fixtures/` + `../tools/kokpit/PANO_SOZLESMESI.md` — biçim örneği + sözleşme (uyarla, kopyalama). Ayrı örnek proje yok.
 
-Kuralların tümü `../GENESIS.md`'dedir.
+Kuralların **indekstedir** (`../GENESIS.md`); adım tarifleri **`adimlar/`** altında, bekçi yazım
+kontratı `BEKCI_TARIFI.md`'de yaşar. Sıranın verisi `adimlar/SIRA.txt`.
+
+**Sırayı sen ezberlemezsin, makine taşır.** Her oturum kapanışında `../tools/guard/kurulum-surucu.sh`
+(Stop kancası) makine bloğunu okur: açık adım bitmemişse oturumu kapattırmaz, bir adım bitmeden
+sonrakini de açtırmaz. Senin işin bloğun `Durum:` alanını doğru tutmak — **açık** (çalışıyorum) ·
+**bekliyor** (sahibin mührünü/cevabını bekliyorum, oturum kapanabilir) · **bitti** (sıradakini
+sürücü açsın).

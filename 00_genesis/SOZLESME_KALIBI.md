@@ -1,4 +1,4 @@
-<!-- SÖZLEŞME KALIBI (G2/G3): her kadro rolü için 03_roller/«SLUG»/ROL.md'ye KOPYALA,
+<!-- SÖZLEŞME KALIBI (G2 · G3b): her kadro rolü için 03_roller/«SLUG»/ROL.md'ye KOPYALA,
      «alanları» doldur, KULLANILMAYAN modül bloklarını SİL, bu yorum bloğunu SİL. Alanlar:
        «SLUG» «ROL-ADI» «MOD»(yazamaz|tam) «MOTİVASYON» «YAZMA-YOLLARI» «EK-OKUMALAR»
        «İŞ-AKIŞI» «SINIRLAR» «EKSEN-AYRIMI» «UYANMA-TETİĞİ»(uyuyan rolse)
