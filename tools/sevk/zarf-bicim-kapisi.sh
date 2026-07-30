@@ -87,9 +87,24 @@ fi
 # Çapa (.cevap-capa) KİLİTLİ ve ATOMİK yazılır: üç ayrı süreç ona yazar (bu kapı kod ekler,
 # nabız süresi dolanı işaretler, nabız tüketileni işaretler). Kilitsiz oku-değiştir-yaz bu
 # deponun en pahalı dersidir (kilit.sh:3-7 — aynı Ç-01 üç ayrı soruya verilmişti).
+CAPA_YAZ_JS='
+import { readFileSync, writeFileSync, renameSync, chmodSync } from "node:fs";
+const yol = process.env.CAPA_YOL, kod = process.env.Y_KOD;
+let satirlar; try { satirlar = readFileSync(yol, "utf8").split("\n"); } catch { process.exit(1); }
+const yeni = satirlar.map((l) => {
+  if (!l.trim()) return l;
+  let j; try { j = JSON.parse(l); } catch { return l; }
+  if (j.kod !== kod) return l;
+  j[process.env.Y_ALAN] = process.env.Y_DEGER;
+  return JSON.stringify(j);
+});
+writeFileSync(yol + ".yeni", yeni.join("\n"), { mode: 0o600 });
+renameSync(yol + ".yeni", yol);
+try { chmodSync(yol, 0o600); } catch {}
+'
+
 KOD_JS='
-import { readFileSync, existsSync, appendFileSync } from "node:fs";
-import { randomBytes } from "node:crypto";
+import { readFileSync, existsSync, appendFileSync, chmodSync } from "node:fs";
 const gy = process.env.C_GUNLUK, capa = process.env.C_CAPA;
 const gorev = process.env.C_GOREV, catal = process.env.C_CATAL;
 const sus = () => process.exit(0);                       // sessiz cikis = KOD YOK
@@ -98,8 +113,13 @@ try {
   for (const l of readFileSync(gy, "utf8").split("\n")) {
     if (!l) continue;
     let j; try { j = JSON.parse(l); } catch { continue; }
-    if (j.tip === "catal-suzgec" && j.gorev === gorev) { hukum = j.uzaktan || null; secHam = j.secenekler || null; }
-    if (j.tip === "zarf" && j.gorev === gorev && j.alanlar && j.alanlar.secenekler) secHam = j.alanlar.secenekler;
+    if (j.tip === "catal-suzgec" && j.gorev === gorev) hukum = j.uzaktan || null;
+    // KAYNAK YALNIZ IS ZARFIDIR (hasim bulgusu): denetci KENDI zarfina SEÇENEKLER yazarsa
+    // rolun listesini EZIYORDU ve o metin jargon suzgecinden HIC gecmiyordu (kapi denetci
+    // zarfinda bu denetimi kisa devre yapar) — sahibin telefonuna DENETCININ kalemi giderdi.
+    // §9 sahip-atfi kuralinin ihlali; --ekle kipindeki HARIC emsalinin karsiligi budur.
+    if (j.tip === "zarf" && j.gorev === gorev && j.sinif === "is" && j.alanlar
+        && j.alanlar.catal === "dolu" && j.alanlar.secenekler) secHam = j.alanlar.secenekler;
   }
 } catch { sus(); }
 if (hukum !== "uygun") sus();                            // denetci uygun demedi (fail-closed)
@@ -107,7 +127,10 @@ const ham = String(secHam || "").trim();
 if (!ham || /^açık-uçlu\b/i.test(ham)) sus();
 // Liste NORMALLESTIRILIR: postaya giden bicim ile capaya yazilan dizi AYNI yerden cikar.
 const parcalar = ham.split(/(?=\b[1-9]\))/).map((x) => x.replace(/^\s*[1-9]\)\s*/, "").trim())
-  .filter(Boolean).map((x) => x.replace(/[`*"\n·]/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
+  // KONTROL KARAKTERLERI DE SILINIR (hasim bulgusu): TSV/birim ayraci (0x1f) metinde kalirsa
+  // capadaki dizi bash tarafinda BOLUNUR ve sahip yuzeyine onun secmedigi bir cumle yazilir.
+  .filter(Boolean).map((x) => x.replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/[`*"·]/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
 if (parcalar.length < 2 || parcalar.length > 4) sus();
 // Ayni catal icin ACIK kod zaten varsa yenisi URETILMEZ: iki kod, sahibin hangi postayi
 // yanitladigina gore farkli sonuc demektir ve tekillestirme sozunu bozar.
@@ -120,14 +143,19 @@ try {
     }
   }
 } catch { sus(); }
-const ALFABE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";        // I/O/0/1 YOK (karisma olmaz)
-const b = randomBytes(8);
-let kod = "";
-for (let i = 0; i < 8; i++) kod += ALFABE[b[i] % ALFABE.length];
-const kayit = { kod, catal, gorev, donem: process.env.C_DONEM || null, kutu: process.env.C_KUTU || null,
+// KOD KABUKTAN GELIR: msgid_kur onu ve alan adini ZATEN dogruladi; burada ikinci kez
+// uretmek iki uretici demek olurdu (msgid ile kod ayrisirdi — paketin kendi dersi).
+const kod = process.env.C_KOD || "";
+if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(kod)) sus();
+// KIMLIK CAPASI: nabzin arama anahtari. Kabuk onu ortak.sh:msgid_kur ile kurup env ile verir —
+// giden Message-ID basligiyla AYNI uretici (hasim bulgusu: bes mercek, kanal olu dogmustu).
+const msgid = process.env.C_MSGID || "";
+if (!msgid) sus();
+const kayit = { kod, msgid, catal, gorev, donem: process.env.C_DONEM || null, kutu: process.env.C_KUTU || null,
                 ts: new Date().toISOString(), secenekler: parcalar, durum: "acik", bicimsiz: 0,
                 gorulen: [], alarm: "" };
-appendFileSync(capa, JSON.stringify(kayit) + "\n");
+appendFileSync(capa, JSON.stringify(kayit) + "\n", { mode: 0o600 });
+try { chmodSync(capa, 0o600); } catch {}   // capa ANAHTAR tasir: 0644 ile dogmamali
 console.log(kod);
 console.log(parcalar.map((x, i) => (i + 1) + ") " + x).join("\n"));
 '
@@ -882,26 +910,44 @@ console.log([ceviri, etki, bekletir].join("\t"));
             # KAPANIŞ EVRESİNDE ÜRETİLMEZ (hasım bulgusu): kapanış dalı cevabı beklemez, dönem
             # aynı turda kapanabilir ve kapanmış kutunun görev satırı yeniden açılamaz —
             # uygulanmış ama karşılığı olmayan bir cevap doğardı.
-            H_KOD=""; H_SECENEKLER=""
+            H_KOD=""; H_SECENEKLER=""; H_MSGID=""
             if [ "$DONEM_TUR" != "kapanis" ]; then
               kanal_oku "$KOK" >/dev/null 2>&1 || true
-              if [ -n "${KANAL_CEVAP_KANALI:-}" ]; then
-                . "$KOK/tools/sevk/kilit.sh"
-                if kilit_al "$KOK/tools/sevk/.cevap-capa.kilit"; then
-                  KOD_CIKTI="$(C_GUNLUK="$KOK/00_pano/zarf-gunlugu.jsonl" C_CAPA="$KOK/tools/sevk/.cevap-capa" \
-                    C_GOREV="$ARG" C_CATAL="$AYRINTI" C_DONEM="$DONEM_ID" C_KUTU="$DONEM_KUTU" \
-                    "$NODE_BIN" --input-type=module -e "$KOD_JS" 2>/dev/null || true)"
-                  kilit_birak
-                  H_KOD="$(printf '%s' "$KOD_CIKTI" | head -n1 | cut -f1)"
-                  H_SECENEKLER="$(printf '%s' "$KOD_CIKTI" | tail -n +2)"
-                  [ -n "$H_SECENEKLER" ] || H_KOD=""
+              # GELEN YÖNÜN ÖN KOŞULU DA ARANIR (hasım bulgusu): IMAP yapılandırılmamışken kod
+              # üretmek, sahibe "yanıtla, numarayı yaz" diyen ama cevabı hiç okuyamayan bir
+              # posta göndermek demekti — vaat edilen ama okunamayan kanal.
+              if [ -n "${KANAL_CEVAP_KANALI:-}" ] && [ -n "${KANAL_IMAP_SUNUCU:-}" ]; then
+                # Kimlik çapası kabukta kurulur ve KOD_JS ona yazar: giden Message-ID ile
+                # çapadaki alan TEK üreticiden (ortak.sh:msgid_kur) gelir.
+                H_KOD_ADAY="$(LC_ALL=C tr -dc 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' < /dev/urandom 2>/dev/null | head -c 8 || true)"
+                if [ "${#H_KOD_ADAY}" -eq 8 ] && H_MSGID="$(msgid_kur "$H_KOD_ADAY" "$KANAL_HESAP")"; then
+                  . "$KOK/tools/sevk/kilit.sh"
+                  if kilit_al "$KOK/tools/sevk/.cevap-capa.kilit"; then
+                    KOD_CIKTI="$(C_GUNLUK="$KOK/00_pano/zarf-gunlugu.jsonl" C_CAPA="$KOK/tools/sevk/.cevap-capa" \
+                      C_GOREV="$ARG" C_CATAL="$AYRINTI" C_DONEM="$DONEM_ID" C_KUTU="$DONEM_KUTU" \
+                      C_KOD="$H_KOD_ADAY" C_MSGID="$H_MSGID" \
+                      "$NODE_BIN" --input-type=module -e "$KOD_JS" 2>/dev/null || true)"
+                    kilit_birak
+                    H_KOD="$(printf '%s' "$KOD_CIKTI" | head -n1 | cut -f1)"
+                    H_SECENEKLER="$(printf '%s' "$KOD_CIKTI" | tail -n +2)"
+                    [ -n "$H_SECENEKLER" ] || H_KOD=""
+                  fi
                 fi
               fi
             fi
+            HABER_RC=0
             CLAUDE_PROJECT_DIR="$KOK" haber_at --olay catal-bekliyor --donem "$DONEM_ID" \
               --kutu "$DONEM_KUTU" --catal "$AYRINTI" --anahtar "$AYRINTI" \
               --ceviri "$H_CEVIRI" --etki "$H_ETKI" --bekletir "$H_BEKLETIR" \
-              ${H_KOD:+--kod "$H_KOD" --secenekler "$H_SECENEKLER"} || true
+              ${H_KOD:+--kod "$H_KOD" --secenekler "$H_SECENEKLER"} || HABER_RC=$?
+            # KOD ile POSTA ARASINDA MUTABAKAT (hasım bulgusu): posta gitmediyse (süzgeç durdurdu ·
+            # ağ · tavan) sahibin elinde o kodu taşıyan bir ileti YOKTUR. Çapada AÇIK kalan böyle
+            # bir kod hiçbir zaman cevaplanamaz ama 24/72 saat alarmlarını üretir ve aynı çatalın
+            # yeni kod almasını engeller. Gitmeyen kod DÜŞÜRÜLÜR.
+            if [ -n "$H_KOD" ] && [ "$HABER_RC" != "0" ]; then
+              Y_KOD="$H_KOD" Y_ALAN=durum Y_DEGER=gitmedi CAPA_YOL="$KOK/tools/sevk/.cevap-capa" \
+                "$NODE_BIN" --input-type=module -e "$CAPA_YAZ_JS" >/dev/null 2>&1 || true
+            fi
           fi
         fi
         ;;

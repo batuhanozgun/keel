@@ -105,6 +105,16 @@ if [ -f "$KOK/tools/guard/ortam-kontrol.sh" ] && [ -f "$KOK/tools/guard/ortam-ka
 else
   kirmizi "tools/guard/ortam-kontrol.sh ya da ortam-kalemleri.txt yok — ortam denetimi sessizce ölü (F1-2a)"
 fi
+# 4b2 · Cevap sözlüğü (F1-5g): catal-kuyruk.sh onu KİP AYRIMINDAN ÖNCE fail-closed arar, yani
+#       yokluğu yalnız uzaktan cevabı değil `--durum` ve `--ekle` yollarını da öldürür — sevk
+#       o hâlde dönemi "duran-kapı" ile kapatır. Kırılma gürültülüdür ama YERİ geç: gece, ilk
+#       otonom dönemde. Aktarım öz-denetiminin tam olarak yakalaması gereken sınıf (4b emsali).
+if [ -s "$KOK/tools/sevk/cevap-sozlugu.txt" ] \
+   && grep -qv '^[[:space:]]*\(#.*\)\?$' "$KOK/tools/sevk/cevap-sozlugu.txt" 2>/dev/null; then
+  gecti "cevap sözlüğü yerinde (anlamadım sınıfı tanınabiliyor)"
+else
+  kirmizi "tools/sevk/cevap-sozlugu.txt yok ya da boş — çatal kuyruğunun TÜM kipleri fail-closed durur (F1-5g)"
+fi
 # 4c · KEEL bağı koparılmış mı (F1-2b / G0.1 — kurulum girişinin ÇIKIŞ kapısı). Kurulu projenin
 #      hiçbir uzak adresi KEEL dağıtım deposunu göstermemeli: gösterirse sahip kendi deposuna
 #      gönderdiğinde KEEL'in bütün geçmişi de gider (D-03) ve `git pull` şablonu sahibin

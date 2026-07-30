@@ -58,9 +58,15 @@ for (const l of ham.split("\n")) {
   const t = Date.parse(j.ts || "");
   const yasSaat = Number.isFinite(t) ? Math.floor((Date.now() - t) / 3600000) : 9999;
   const sec = Array.isArray(j.secenekler) ? j.secenekler : [];
-  cikti.push([j.kod, j.msgid || "", j.catal || "", j.donem || "", j.kutu || "",
+  const gor = Array.isArray(j.gorulen) ? j.gorulen : [];
+  // KİMLİK ÇAPASIZ SATIR DÖKÜLMEZ (fail-closed): msgid yoksa arama boş dizeyle koşardı.
+  if (!j.msgid) continue;
+  // AYRAÇ 0x1e — sekme DEĞİL. Sekme bir IFS-BOŞLUĞUDUR: bash ardışık sekmeleri TEK ayraç
+  // sayar ve BOŞ ALAN satırdan düşer. Yeni her kayıtta `alarm` boş olduğu için sütunlar
+  // kayıyordu ve sahibin doğru cevabı "listede olmayan seçenek" sayılıyordu (yedi mercek).
+  cikti.push([j.kod, j.msgid, j.catal || "", j.donem || "", j.kutu || "",
               String(yasSaat), j.alarm || "", String(j.bicimsiz || 0),
-              sec.join("\u001f")].join("\t"));
+              sec.join("\u001f"), gor.join(" ")].join("\u001e"));
 }
 if (cikti.length) console.log(cikti.join("\n"));
 '
@@ -68,21 +74,23 @@ if (cikti.length) console.log(cikti.join("\n"));
 # (b) Çapaya yerinde yaz: TEK alanı değiştirir, satır sırasını korur, ATOMİK (gecici + rename).
 #     Yarim yazilmis bir capa, bir sonraki turda (a)nin fail-closed dalini ateslerdi.
 CEVAP_JS_YAZ='
-import { readFileSync, writeFileSync, renameSync } from "node:fs";
+import { readFileSync, writeFileSync, renameSync, chmodSync } from "node:fs";
 const yol = process.env.CAPA_YOL, kod = process.env.Y_KOD;
 const alan = process.env.Y_ALAN, deger = process.env.Y_DEGER;
-if (!["durum", "alarm", "bicimsiz"].includes(alan)) process.exit(1);
+if (!["durum", "alarm", "bicimsiz", "gorulen"].includes(alan)) process.exit(1);
 let satirlar;
 try { satirlar = readFileSync(yol, "utf8").split("\n"); } catch { process.exit(1); }
 const yeni = satirlar.map((l) => {
   if (!l.trim()) return l;
   let j; try { j = JSON.parse(l); } catch { return l; }
   if (j.kod !== kod) return l;
-  j[alan] = alan === "bicimsiz" ? Number(deger) || 0 : deger;
+  j[alan] = alan === "bicimsiz" ? Number(deger) || 0
+          : alan === "gorulen" ? String(deger).split(" ").filter(Boolean) : deger;
   return JSON.stringify(j);
 });
-writeFileSync(yol + ".yeni", yeni.join("\n"));
+writeFileSync(yol + ".yeni", yeni.join("\n"), { mode: 0o600 });
 renameSync(yol + ".yeni", yol);
+try { chmodSync(yol, 0o600); } catch {}
 '
 
 # (c) From basligindan ZARF ADRESINI cikar (gorunen ad YOK SAYILIR) ve ASCII kucult.
@@ -90,9 +98,17 @@ renameSync(yol + ".yeni", yol);
 CEVAP_JS_ADRES='
 import { readFileSync } from "node:fs";
 let ham = ""; try { ham = readFileSync(0, "utf8"); } catch {}
-const satir = ham.split("\n").find((l) => /^from:/i.test(l.trim())) || "";
-const es = satir.match(/<([^>]+)>/);
-const adres = (es ? es[1] : satir.replace(/^[^:]*:/, "")).trim();
+// KATLAMAYI AÇ (RFC 5322): uzun basliklar devam satirina sarilabilir; satir bazli arama
+// "From: Batu\n <adres>" girdisinde gorunen adi adres saniyordu ve sahibin KENDI cevabi ona
+// sahtecilik denemesi olarak bildiriliyordu (hasim bulgusu).
+ham = ham.replace(/\r/g, "").replace(/\n[ \t]+/g, " ");
+let satir = ham.split("\n").find((l) => /^from:/i.test(l.trim())) || "";
+// TIRNAKLI GORUNEN ADI SIL: RFC 5322de gorunen ad < ve > tasiyabilir; ilk <...> eslesmesini
+// almak kimlik kapisini deliyordu — From: "Batu <sahip@x>" <saldirgan@y> sahibin adresini
+// gosteriyordu. Once tirnakli bolum silinir, sonra SON <...> cifti alinir.
+satir = satir.replace(/"(?:[^"\\]|\\.)*"/g, " ");
+const hepsi = [...satir.matchAll(/<([^<>]+)>/g)];
+const adres = (hepsi.length ? hepsi[hepsi.length - 1][1] : satir.replace(/^[^:]*:/, "")).trim();
 console.log(adres.replace(/[A-Z]/g, (c) => c.toLowerCase()));
 '
 
@@ -106,14 +122,20 @@ let ham = ""; try { ham = readFileSync(0, "utf8"); } catch { process.exit(0); }
 ham = ham.replace(/\r/g, "");                              // CRLF cagirandan gelmeyebilir
 const JETON = (process.env.SEC_JETON || "").trim();
 const bit = (s) => { console.log(s); process.exit(0); };
-// 1 · Cok parcali ise text/plain parcasini sec; degilse govdenin kendisi.
+// 1 · Cok parcali ise EN ICTEKI text/plain parcasini sec. Olagan bir telefon yaniti
+//     multipart/mixed > multipart/alternative > (text/plain + text/html) yapisindadir:
+//     ilk bulunan sinir DIS sinirdir ve dis blok icinde de "text/plain" gecer, o yuzden tek
+//     kat ayirma DIS blogu secip ic sinir cizgisini "ilk dolu satir" yapiyordu (hasim bulgusu).
 let parca = ham;
-const sinirEs = ham.match(/^--[-A-Za-z0-9_.=+]+$/m);
-if (sinirEs) {
+for (let kat = 0; kat < 4; kat++) {
+  const sinirEs = parca.match(/^--[-A-Za-z0-9_.=+]+$/m);
+  if (!sinirEs) break;
   const kacir = sinirEs[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  for (const p of ham.split(new RegExp("^" + kacir + "-?-?$", "m"))) {
-    if (/^\s*content-type:\s*text\/plain/im.test(p)) { parca = p; break; }
-  }
+  const parcalar = parca.split(new RegExp("^" + kacir + "-?-?$", "m"));
+  const secili = parcalar.find((p) => /^\s*content-type:\s*text\/plain/im.test(p));
+  if (!secili) break;
+  if (secili === parca) break;
+  parca = secili;
 }
 // 2 · Parca BASLIGI varsa atla — ama YALNIZ gercekten baslik gibi gorunuyorsa. (Yasanmis kusur:
 //     kosulsuz "ilk bos satira kadar atla" kurali, duz metinli bir yanitta sahibin YAZDIGI
@@ -177,26 +199,34 @@ cevap_hatti() {
   PAROLA="$(security find-generic-password -s "${KANAL_KEYCHAIN_SERVIS:-keel-haber}" -a "$KANAL_HESAP" -w 2>/dev/null)" || PAROLA=""
   [ -n "$PAROLA" ] || return 0
 
-  while IFS="$(printf '\t')" read -r KOD MSGID CATAL C_DONEM C_KUTU YAS_SAAT ALARM BICIMSIZ SECENEKLER; do
+  while IFS="$(printf '\036')" read -r KOD MSGID CATAL C_DONEM C_KUTU YAS_SAAT ALARM BICIMSIZ SECENEKLER GORULEN; do
     [ -n "$KOD" ] || continue
+    # Sayısal alanlar DOĞRULANIR: kayan bir sütun aritmetik genişletmede kabuğu öldürüyordu
+    # (genişletme hatası non-interaktif kabukta ölümcül) ve tur izsiz sona eriyordu.
+    case "$YAS_SAAT" in ''|*[!0-9]*) YAS_SAAT=9999 ;; esac
+    case "$BICIMSIZ" in ''|*[!0-9]*) BICIMSIZ=0 ;; esac
     # (a) Ömrü dolan kod: düşer + sahibe TEK bilgi. Geç gelen cevabın sessizce yutulması,
     #     sahibin "cevapladım" sanmasıyla yapının "cevap yok" bilmesi arasında sessiz bir
     #     çatlak açardı.
     if [ "$YAS_SAAT" -ge "${KANAL_CEVAP_OMUR_SAAT:-72}" ]; then
       cevap_capa_yaz "$KOD" durum suresi-doldu
       CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins cevap-okunamadi --sayacsiz \
-        --anahtar "omur-$KOD" --kutu "$C_KUTU" --donem "$C_DONEM" \
+        --anahtar "omur-$CATAL" --kutu "$C_KUTU" --donem "$C_DONEM" \
         --detay "Sorunun cevap süresi doldu ($CATAL). Telefondan cevaplamak artık işlemez; cevabını bilgisayardan ver: 00_pano/SENDE_BEKLEYEN.md" || true
       continue
     fi
     # (b) Eşiği aşan cevapsız çatal (P4.4) — kod başına BİR kez, sayaç dosyasına DOKUNMADAN.
     if [ "$YAS_SAAT" -ge "${KANAL_CEVAP_ESIK_SAAT:-24}" ] && [ "$ALARM" != "gitti" ]; then
+      # Anahtarda KOD YOK (sır): tekilleştirme çatal kimliğiyle yeter ve `.haber-durum`a
+      # sır dizesi sızmaz. İşaretleme yalnız posta GİTTİYSE yapılır — gitmeyen alarmı "gitti"
+      # yazmak P4.4 yükseltmesini kalıcı olarak susturuyordu (hasım bulgusu).
+      A_RC=0
       CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins cevapsiz --sayacsiz \
-        --anahtar "esik-$KOD" --kutu "$C_KUTU" --donem "$C_DONEM" \
-        --detay "Bir soru $YAS_SAAT saattir cevabını bekliyor ($CATAL). Buna bağlı işler bekliyor. Postayı yanıtlayıp seçeneğin numarasını yazman yeter." || true
-      cevap_capa_yaz "$KOD" alarm gitti
+        --anahtar "esik-$CATAL" --kutu "$C_KUTU" --donem "$C_DONEM" \
+        --detay "Bir soru $YAS_SAAT saattir cevabını bekliyor ($CATAL). Buna bağlı işler bekliyor. Postayı yanıtlayıp seçeneğin numarasını yazman yeter." || A_RC=$?
+      case "$A_RC" in 0|3) cevap_capa_yaz "$KOD" alarm gitti ;; esac
     fi
-    cevap_ara "$KOD" "$MSGID" "$CATAL" "$C_DONEM" "$C_KUTU" "$BICIMSIZ" "$SECENEKLER"
+    cevap_ara "$KOD" "$MSGID" "$CATAL" "$C_DONEM" "$C_KUTU" "$BICIMSIZ" "$SECENEKLER" "$GORULEN"
   done <<CEVAP_LISTE
 $ACIKLAR
 CEVAP_LISTE
@@ -206,17 +236,30 @@ CEVAP_LISTE
 # Çapaya YERİNDE ve ATOMİK yazım (kilitli). Üç yazıcı vardır (kapı kod ekler, burası iki alan
 # günceller) ve kilitsiz oku-değiştir-yaz bu deponun en pahalı dersidir (kilit.sh:3-7).
 cevap_capa_yaz() {
-  local K="$1" ALAN="$2" DEGER="$3"
+  local K="$1" ALAN="$2" DEGER="$3" RC=0
   . "$DIZIN/kilit.sh"
-  kilit_al "$CAPA.kilit" || return 1
+  # SESSİZ BAŞARISIZLIK YOK (hasım bulgusu): kilit alınamazsa ya da yazım koşamazsa çağıran
+  # bunu BİLMELİ. Eskiden `|| true` ile yutuluyordu: cevap kuyruğa yazılıyor, çapa "açık"
+  # kalıyor ve bir sonraki tur sahibe "bu soru başka bir yoldan kapanmıştı" diyordu — oysa
+  # cevabı uygulanmıştı. Dönüş: 0 = yazıldı · 1 = yazılamadı (iz günlüğe düşer).
+  if ! kilit_al "$CAPA.kilit"; then
+    J_tip=bulgu J_cins=cevap-capasi-yazilamadi J_detay="kilit alinamadi ($ALAN)" \
+      json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
+    return 1
+  fi
   CAPA_YOL="$CAPA" Y_KOD="$K" Y_ALAN="$ALAN" Y_DEGER="$DEGER" \
-    "$NODE_BIN" --input-type=module -e "$CEVAP_JS_YAZ" >/dev/null 2>&1 || true
+    "$NODE_BIN" --input-type=module -e "$CEVAP_JS_YAZ" >/dev/null 2>&1 || RC=1
   kilit_birak
+  if [ "$RC" != "0" ]; then
+    J_tip=bulgu J_cins=cevap-capasi-yazilamadi J_detay="yazim kosamadi ($ALAN)" \
+      json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
+  fi
+  return "$RC"
 }
 
 # Tek kodun IMAP hattı: ara → başlıkları süz → gövdeyi çöz → uygula.
 cevap_ara() {
-  local KOD="$1" MSGID="$2" CATAL="$3" C_DONEM="$4" C_KUTU="$5" BICIMSIZ="$6" SECLER="$7"
+  local KOD="$1" MSGID="$2" CATAL="$3" C_DONEM="$4" C_KUTU="$5" BICIMSIZ="$6" SECLER="$7" GORULEN="${8:-}"
   local UIDLER U BASLIK GOVDE SECIM SONUC GONDEREN SEC_NO SEC_METIN
 
   # UID SEARCH (düz SEARCH DEĞİL — §0.1): düz SEARCH mesaj SIRA numarası döndürür ve onu
@@ -229,23 +272,39 @@ cevap_ara() {
 
   for U in $UIDLER; do
     case "$U" in ''|*[!0-9]*) continue ;; esac
-    BASLIK="$(imap_getir ";UID=$U;SECTION=HEADER.FIELDS%20(FROM%20DATE%20MESSAGE-ID%20AUTO-SUBMITTED%20PRECEDENCE%20X-AUTOREPLY)")"
+    # AYNI İLETİ İKİ KEZ SAYILMAZ (hasım bulgusu, üç mercek): arama okundu-bayrağına bağlı
+    # olmadığı için aynı UID her turda yeniden bulunur. Sayaç TUR başına artınca sahibin TEK
+    # okunamayan yanıtı ~45 dakikada geçerli kodu düşürüyordu. `gorulen` alanı bu niyetin
+    # yazılıp hiç okunmayan iziydi; artık fiilen kullanılıyor.
+    case " $GORULEN " in *" $U "*) continue ;; esac
+    BASLIK="$(imap_getir ";UID=$U;SECTION=HEADER.FIELDS%20(FROM%20DATE%20MESSAGE-ID%20IN-REPLY-TO%20AUTO-SUBMITTED%20PRECEDENCE%20X-AUTOREPLY)")"
     [ -n "$BASLIK" ] || continue
     # Otomatik yanıt (tatil iletisi) kodu YAKMAZ: konuyu ve kimlik başlığını aynen taşır,
     # gövdesi rakam değildir ve her turda yeniden eşleşirdi ⇒ 15 dakikada geçerli bir kodu
     # düşürürdü — tam da sahibin uzakta olduğu anda (hasım bulgusu).
-    case "$BASLIK" in
-      *[Aa]uto-[Ss]ubmitted:*|*[Xx]-[Aa]utoreply:*|*[Pp]recedence:*[Bb]ulk*|*[Pp]recedence:*auto*) continue ;;
-    esac
+    # RFC 3834: `Auto-Submitted: no` "bu ileti otomatik DEĞİLDİR" demektir. Alt-dize eşleşmesi
+    # onu da eliyordu ve dal izsiz olduğu için arıza teşhis edilemiyordu: sahip "cevapladım"
+    # sanar, yapı "cevap yok" bilir (hasım bulgusu). Değer artık ayrıştırılıyor.
+    if printf '%s' "$BASLIK" | grep -qiE '^(auto-submitted:[[:space:]]*auto-|x-autoreply:|precedence:[[:space:]]*(bulk|auto))'; then
+      J_tip=bulgu J_cins=cevap-otomatik-yanit J_donem="$C_DONEM" J_detay="uid $U otomatik yanit basligi tasiyor, atlandi" \
+        json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
+      continue
+    fi
     # From ZARF ADRESİ üzerinden BİREBİR: görünen ada yazılmış bir adres alt-dize denetimini
     # geçerdi (hasım bulgusu; aynı zaafiyet DUR hattında da vardı).
-    GONDEREN="$(printf '%s' "$BASLIK" | ADRES_BASLIK=1 "$NODE_BIN" --input-type=module -e "$CEVAP_JS_ADRES" 2>/dev/null || true)"
+    # ARAMA SUNUCUNUN SÖZÜ, DOĞRULAMA YAPININ İŞİ: çekilen iletinin In-Reply-To/References
+    # başlığı çapadaki kimliği birebir taşımıyorsa cevap sayılmaz (yanlış UID / sunucu hatası).
+    case "$BASLIK" in *"$MSGID"*) : ;; *) continue ;; esac
+    GONDEREN="$(printf '%s' "$BASLIK" | "$NODE_BIN" --input-type=module -e "$CEVAP_JS_ADRES" 2>/dev/null || true)"
     if [ "$GONDEREN" != "$(printf '%s' "$KANAL_ALICI" | tr 'A-Z' 'a-z')" ]; then
       J_tip=cevap-reddedildi J_donem="$C_DONEM" J_kutu="$C_KUTU" J_catal="$CATAL" J_uid="$U" \
         J_sebep="gonderen zarf adresi ALICI ile eslesmiyor" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
-      CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins kanal --sayacsiz --anahtar "sahte-$KOD" \
+      CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins kanal --sayacsiz --anahtar "sahte-$CATAL" \
         --kutu "$C_KUTU" --donem "$C_DONEM" \
         --detay "Senin adresinden gelmeyen bir cevap denemesi geldi ve REDDEDİLDİ. Hiçbir şey değişmedi; soru hâlâ cevabını bekliyor." || true
+      # `--sayacsiz` haber.sh'ın kendi frenini de atlar ⇒ tekilleştirme ÇAPADA olmak zorunda:
+      # yoksa aynı ileti her nabız turunda yeni bir posta doğururdu (24 saatte ~96 posta).
+      GORULEN="$GORULEN $U"; cevap_capa_yaz "$KOD" gorulen "$GORULEN"
       continue
     fi
     GOVDE="$(imap_getir ";UID=$U;SECTION=TEXT;PARTIAL=0.8192")"
@@ -262,13 +321,14 @@ cevap_ara() {
       SECIM*) : ;;
       *)
         BICIMSIZ=$(( BICIMSIZ + 1 ))
+        GORULEN="$GORULEN $U"; cevap_capa_yaz "$KOD" gorulen "$GORULEN"
         cevap_capa_yaz "$KOD" bicimsiz "$BICIMSIZ"
         J_tip=cevap-reddedildi J_donem="$C_DONEM" J_catal="$CATAL" J_uid="$U" \
           J_sebep="govde bicim disi (${SECIM:-cozulemedi})" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
         if [ "$BICIMSIZ" -ge 3 ]; then
           cevap_capa_yaz "$KOD" durum bicimsiz-dustu
           CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins cevap-okunamadi --sayacsiz \
-            --anahtar "bicim-$KOD" --kutu "$C_KUTU" --donem "$C_DONEM" \
+            --anahtar "bicim-$CATAL" --kutu "$C_KUTU" --donem "$C_DONEM" \
             --detay "Cevabını okuyamadım ($CATAL): yanıtın ilk satırında yalnız seçeneğin numarası olmalı. Cevabını bilgisayardan ver: 00_pano/SENDE_BEKLEYEN.md" || true
         fi
         continue ;;
@@ -280,6 +340,7 @@ cevap_ara() {
     # üç seçenek varsa, "en yakını" diye bir şey yoktur.
     if [ -z "$SEC_METIN" ] || [ "$SEC_NO" = "0" ]; then
       BICIMSIZ=$(( BICIMSIZ + 1 ))
+      GORULEN="$GORULEN $U"; cevap_capa_yaz "$KOD" gorulen "$GORULEN"
       cevap_capa_yaz "$KOD" bicimsiz "$BICIMSIZ"
       J_tip=cevap-reddedildi J_donem="$C_DONEM" J_catal="$CATAL" J_uid="$U" \
         J_sebep="listede olmayan secenek numarasi ($SEC_NO)" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
@@ -289,18 +350,21 @@ cevap_ara() {
     case "${SONUC%%$(printf '\t')*}" in
       CEVAPLANDI)
         cevap_capa_yaz "$KOD" durum tuketildi
-        # KOD GÜNLÜĞE YAZILMAZ (sır); UID ve Message-ID yazılır ki dış göz "sahip gerçekten
-        # bunu mu dedi" sorusunu BAĞIMSIZ doğrulayabilsin (§9 sahip-atfının gelen yönü).
+        # KOD GÜNLÜĞE YAZILMAZ (sır) — Message-ID de yazılmaz, çünkü kodun KENDİSİNİ içerir
+        # (hasım bulgusu: yorumun iki satır altında sızıyordu). Dış gözün bağımsız doğrulaması
+        # için UID + çatal kimliği yeterlidir (§9 sahip-atfının gelen yönü).
         J_tip=cevap-alindi J_donem="$C_DONEM" J_kutu="$C_KUTU" J_catal="$CATAL" J_uid="$U" \
-          J_msgid="$MSGID" J_kaynak="uzaktan-posta" JN_secim="$SEC_NO" \
+          J_kaynak="uzaktan-posta" JN_secim="$SEC_NO" \
           json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
         return 0 ;;
       ATLANDI)
-        cevap_capa_yaz "$KOD" durum tuketildi
+        # Çapa yazılamadıysa sahibe hiçbir şey söylenmez: bir sonraki tur yeniden dener.
+        # "Hiçbir şey değiştirilmedi" cümlesi, cevabın UYGULANDIĞI bir turda yanlış olurdu.
+        cevap_capa_yaz "$KOD" durum tuketildi || return 0
         J_tip=cevap-reddedildi J_donem="$C_DONEM" J_catal="$CATAL" J_uid="$U" \
           J_sebep="madde artik cevap-bekliyor degil" json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
         CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins cevap-okunamadi --sayacsiz \
-          --anahtar "kapali-$KOD" --kutu "$C_KUTU" --donem "$C_DONEM" \
+          --anahtar "kapali-$CATAL" --kutu "$C_KUTU" --donem "$C_DONEM" \
           --detay "Cevabın geldi ama o soru başka bir yoldan kapanmıştı ($CATAL); hiçbir şey değiştirilmedi." || true
         return 0 ;;
       *)
@@ -308,7 +372,7 @@ cevap_ara() {
         J_tip=bulgu J_cins=cevap-yazilamadi J_donem="$C_DONEM" J_detay="catal-kuyruk --cevapla: $SONUC" \
           json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
         CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins cevap-okunamadi --sayacsiz \
-          --anahtar "ariza-$KOD" --kutu "$C_KUTU" --donem "$C_DONEM" \
+          --anahtar "ariza-$CATAL" --kutu "$C_KUTU" --donem "$C_DONEM" \
           --detay "Cevabını aldım ama kaydedemedim ($CATAL). Bilgisayardan bak: 00_pano/SENDE_BEKLEYEN.md" || true
         return 0 ;;
     esac

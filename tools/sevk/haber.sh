@@ -17,7 +17,10 @@
 #
 # Çıkış sözleşmesi (çağıran KARAR VERİR; bu betik kimseyi öldürmez):
 #   0 = gönderildi (ya da --prova)      3 = süzgeç durdurdu, sansürlü alarm gitti
-#   1 = yapılandırma/kurulum eksik      4 = gönderim başarısız (ağ/kimlik)
+#   1 = ARGÜMAN/OLAY hatası (program kusuru)  4 = gönderim başarısız (ağ/kimlik)
+#   2 = kanal KURULU DEĞİL (kanal.conf/Keychain yok) — G5.0c bunu açıkça meşru sayar; çağıran
+#       SESSİZ kalır. 1 ile 2 tek koddayken kanalı hiç kurmamış proje her denemede sahip
+#       ekranına sahte bulgu yazıyordu (hasım bulgusu: geri uyum kırığı).
 #   5 = dönem başına gönderim tavanı doldu ya da bu olay zaten gönderilmiş
 set -uo pipefail
 export LC_ALL=C.UTF-8
@@ -102,11 +105,11 @@ if [ -n "$A_KOD" ]; then
   case "$A_KOD" in
     *[!ABCDEFGHJKLMNPQRSTUVWXYZ23456789]*|'') hata "geçersiz cevap kodu (yalnız ABCDEFGHJKLMNPQRSTUVWXYZ23456789)" ;;
   esac
-  # TEK ÜRETİCİ: giden başlık, prova çıktısı ve nabzın aradığı desen bu ÜÇÜ de buradan çıkar.
-  # İki uçta ayrı ayrı kurulan dize, sürüklenmenin en ucuz doğduğu yerdir (D-02 dersi) — ve
-  # bu paketin v1'inde tam olarak öyle olmuştu: aranan desen giden konuda hiç geçmiyordu.
-  # Alan adı çıkarımı: HESAP boşsa (prova) sabit bir yer tutucu kullanılır.
-  MSGID="<keel-$A_KOD@$(printf '%s' "${KANAL_HESAP:-keel.gecersiz}" | sed 's/.*@//')>"
+  # TEK ÜRETİCİ ortak.sh:msgid_kur — giden başlık, çapaya yazılan alan ve nabzın aradığı dize
+  # ÜÇÜ de oradan çıkar. İlk uygulamada üç uç ayrı kurulmuştu ve çapaya msgid hiç yazılmamıştı
+  # (hasım bulgusu, beş mercek): nabız canlıda çatal kimliğini Message-ID sanıp arıyordu.
+  MSGID="$(msgid_kur "$A_KOD" "${KANAL_HESAP:-deneme@keel.gecersiz}")" \
+    || hata "Message-ID kurulamadı: kanal.conf HESAP alanı bir e-posta adresi değil (${KANAL_HESAP:-boş}) — kod üretilemez (fail-closed)"
 fi
 
 # Alan tavanı: kesilen alan KESİLDİĞİNİ söyler (sessiz kırpma, sahip yüzeyinde yalandır).
@@ -223,9 +226,9 @@ fi
 
 # ── 6 · Yapılandırma + parola (SERT doğrulama; §1'deki okuma fail-open'dı) ────────────────
 [ -r "$DIZIN/ortak.sh" ] || hata "ortak kitaplık yok (tools/sevk/ortak.sh)"
-kanal_oku "$KOK" || hata "$KANAL_HATA"
+kanal_oku "$KOK" || hata "$KANAL_HATA" 2
 PAROLA="$(security find-generic-password -s "$KANAL_KEYCHAIN_SERVIS" -a "$KANAL_HESAP" -w 2>/dev/null)" || PAROLA=""
-[ -n "$PAROLA" ] || hata "Keychain kaydı yok/okunamadı (servis=$KANAL_KEYCHAIN_SERVIS hesap=$KANAL_HESAP)"
+[ -n "$PAROLA" ] || hata "Keychain kaydı yok/okunamadı (servis=$KANAL_KEYCHAIN_SERVIS hesap=$KANAL_HESAP)" 2
 
 # ── 7 · Gönderim ──────────────────────────────────────────────────────────────────────────
 GOVDE_DOSYA="$(mktemp -t keel-haber)" || hata "geçici dosya açılamadı"
@@ -259,7 +262,10 @@ if [ "$KOD" -ne 0 ]; then
 fi
 
 # ── 8 · Kayıt ─────────────────────────────────────────────────────────────────────────────
-if [ "$KOD" -eq 0 ] && [ -f "$DURUM" ]; then printf '%s\n' "$ANAHTAR" >> "$DURUM" 2>/dev/null || true; fi
+# SAYACSIZ hem OKUMA hem YAZMA yanını atlar. İlk uygulamada yalnız okuma atlanıyordu: cevap
+# hattının dönem-DIŞI alarmları canlı dönemin 10luk gönderim kotasını yiyor ve o dönemin
+# kendi sessizlik/kirmizi alarmlarını susturabiliyordu (hasım bulgusu, iki mercek).
+if [ "$KOD" -eq 0 ] && [ "$SAYACSIZ" -eq 0 ] && [ -f "$DURUM" ]; then printf '%s\n' "$ANAHTAR" >> "$DURUM" 2>/dev/null || true; fi
 if [ -n "${NODE_BIN:-}" ] || node_bul 2>/dev/null; then
   J_tip=haber J_donem="$A_DONEM" J_kutu="$A_KUTU" J_olay="$OLAY" \
     J_sonuc="$([ "$KOD" -eq 0 ] && printf 'gitti' || printf 'gitmedi')" \

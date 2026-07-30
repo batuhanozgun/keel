@@ -97,6 +97,10 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
     writeFileSync(join(kok, 'tools', 'guard', 'ortam-kontrol.sh'), '#!/bin/bash\nexit 0\n');
     writeFileSync(join(kok, 'tools', 'guard', 'ortam-kalemleri.txt'), '[node]\n');
   }
+  // Cevap sözlüğü (F1-5g) de şablonla SABİT gelir; yokluğu çatal kuyruğunun tüm kiplerini
+  // öldürdüğü için aktarım öz-denetimi onu da arar (4b2).
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
+  writeFileSync(join(kok, 'tools', 'sevk', 'cevap-sozlugu.txt'), '# sözlük\nanlamadım\n');
   disGozKur(kok, disgoz);
   tarifKur(kok, tarif);
   // Alt-ajan dosyaları şablonla SABİT gelir (üç tane); yoklukları aktarım eksiğidir ve kapı onu

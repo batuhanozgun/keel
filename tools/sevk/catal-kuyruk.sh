@@ -198,6 +198,10 @@ const d = new Date(), p2 = (n) => String(n).padStart(2, "0");
 const bugun = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
 const satir = "- [ ] " + bugun + " · " + rol + " · ÇATAL " + id + " · \"" + ceviri + "\""
   + (etki ? " · etki: " + etki : "") + " · bekletir: " + bekletir + " · " + imza;
+// SON BAYT SATIRSONU DEĞİLSE ÖNCE O EKLENİR (hasım bulgusu): satırsonu yutulmuş bir dosyaya
+// append, iki maddeyi TEK satırda birleştirir ve --durum yalnız ilkini görür — ikincisinin
+// kilidi SESSİZCE açılırdı.
+if (mevcut && !mevcut.endsWith("\n")) appendFileSync(ky, "\n");
 appendFileSync(ky, satir + "\n");
 bitir("EKLENDI", id);
 ')" || { kilit_birak; hata "kuyruk yazici kosamadi (fail-closed)"; }
@@ -238,6 +242,7 @@ const bugun = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate(
 // SABİT CÜMLE: değişken yalnız görev numarasıdır. Sahibin kuyruğuna ajan kalemi girmez.
 const satir = "- [ ] " + bugun + " · yapı · Gece bir adım izin kapısına takıldı ve ATLANDI (" + gorev +
   "); iş sürdü. Bu adımın yapılmasını istiyorsan kutunun İZİN satırına ilgili sınıfı ekle. · " + imza;
+if (mevcut && !mevcut.endsWith("\n")) appendFileSync(ky, "\n");
 appendFileSync(ky, satir + "\n");
 bitir("EKLENDI", gorev);
 ')" || { kilit_birak; hata "kuyruk yazici kosamadi (fail-closed)"; }
@@ -280,7 +285,11 @@ bitir("EKLENDI", gorev);
       exit 0
     fi
 
-    YEDEK="$(cat "$KUYRUK")"
+    # Geri alma için BAYT-EŞ yedek: komut ikamesi ($(cat)) sondaki satırsonunu YUTAR ve
+    # geri alınan dosya orijinalinden farklı olurdu (D-12in kendi dersi: JSON-roundtrip
+    # satırsonu düşürüp yanlış KIRMIZI üretmişti). Yedek dosyaya alınır, bayt-eş döner.
+    YEDEK="$KUYRUK.yedek"
+    cp "$KUYRUK" "$YEDEK" || { kilit_birak; hata "kuyruk yedegi alinamadi (fail-closed)"; }
     CIKTI="$(CEV_ID="$ID" CEV_METIN="$METIN" CEV_IMZA="$IMZA" CEV_KUYRUK="$KUYRUK" SOZLUK_YOL="$SOZLUK" "$NODE_BIN" --input-type=module -e "$JS_ORTAK"'
 import { readFileSync, writeFileSync, renameSync } from "node:fs";
 const ky = process.env.CEV_KUYRUK, id = process.env.CEV_ID;
@@ -311,6 +320,7 @@ bitir("YAZILDI", id);
 ')" || { kilit_birak; hata "cevap yazici kosamadi (fail-closed)"; }
 
     if [ "${CIKTI%%	*}" != "YAZILDI" ]; then
+      rm -f "$YEDEK"
       kilit_birak
       printf '%s\n' "$CIKTI"
       exit 0
@@ -322,11 +332,13 @@ bitir("YAZILDI", id);
     # kilitli bırakabiliyordu; "yazdım" ile "cevap oldu" AYNI ŞEY DEĞİLDİR.)
     SONRA="$(CLAUDE_PROJECT_DIR="$KOK" bash "$BEN" --durum 2>/dev/null | grep -F "$ID	" | head -n1 || true)"
     if [ "$(printf '%s' "$SONRA" | cut -f2)" != "CEVAPLANDI" ]; then
-      printf '%s' "$YEDEK" > "$KUYRUK" 2>/dev/null || true
+      cp "$YEDEK" "$KUYRUK" 2>/dev/null || true
+      rm -f "$YEDEK"
       kilit_birak
       printf 'ARIZA\t%s\n' "yazim sonrasi madde CEVAPLANDI okunmuyor ($(printf '%s' "$SONRA" | cut -f2)) — kuyruk geri alindi"
       exit 0
     fi
+    rm -f "$YEDEK"
     kilit_birak
     printf 'CEVAPLANDI\t%s\n' "$ID"
     exit 0

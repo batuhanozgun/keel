@@ -236,12 +236,37 @@ haber_at() {
   local H="$ORTAK_DIZIN/haber.sh" RC=0
   [ -r "$H" ] || return 1
   CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}" bash "$H" "$@" >/dev/null 2>&1 || RC=$?
+  # exit 1 = PROGRAM kusuru (tanınmayan olay/cins/argüman) → bulgu düşer.
+  # exit 2 = kanal kurulu değil (kanal.conf/Keychain yok) → G5.0c bunu AÇIKÇA meşru sayıyor,
+  #          sessiz kalır. İkisi tek koda bağlıyken kanalı hiç kurmamış her proje her haber
+  #          denemesinde sahip ekranına sahte bulgu yazıyordu (hasım bulgusu: geri uyum kırığı).
+  # ÇAĞRI ARGÜMANLARI GÜNLÜĞE YAZILMAZ: `--kod <SIR>` oradan düz metin olarak sızıyordu.
   if [ "$RC" = "1" ]; then
     J_tip=bulgu J_cins=haber-cagrisi-gecersiz J_donem="${DONEM_ID:-}" \
-      J_detay="haber.sh yapilandirma/argüman hatasi (exit 1) — cagri: $*" \
+      J_detay="haber.sh argüman/olay hatasi (exit 1) — olay: $(printf '%s' "$*" | sed -n 's/.*--olay \([a-z-]*\).*/\1/p')" \
       json_kur 2>/dev/null | gunluge_yaz "${CLAUDE_PROJECT_DIR:-.}" >/dev/null 2>&1 || true
   fi
   return "$RC"
+}
+
+# Cevap kanalının KİMLİK ÇAPASI — TEK ÜRETİCİ (F1-5g, hasım bulgusu: beş mercek).
+# Giden postanın Message-ID başlığı, çapaya yazılan `msgid` alanı ve nabzın IMAP aramasında
+# kullandığı dize BU fonksiyondan çıkar. İlk uygulamada üç uç ayrı ayrı kurulmuştu ve çapaya
+# msgid HİÇ yazılmamıştı ⇒ nabız canlıda çatal kimliğini Message-ID sanıp arıyordu.
+# Dönüş: 0 = dize stdoutta · 1 = üretilemedi (fail-closed; çağıran KOD ÜRETMEZ).
+# Alan adı DENETLENİR: kod yarısı kapalı alfabeyle sıkı denetlenirken alan adı sahibin elle
+# doldurduğu kanal.conftan geliyordu — bozuk bir alan adı ya Message-IDyi sunucuya yeniden
+# yazdırır (kanal sessizce ölür) ya da IMAP arama dizesini bozar.
+msgid_kur() { # $1: kod · $2: hesap adresi
+  local KOD="${1:-}" HESAP="${2:-}" ALAN
+  case "$KOD" in ''|*[!ABCDEFGHJKLMNPQRSTUVWXYZ23456789]*) return 1 ;; esac
+  ALAN="${HESAP##*@}"
+  case "$ALAN" in
+    ''|*[!A-Za-z0-9.-]*) return 1 ;;
+    *.*) : ;;
+    *) return 1 ;;
+  esac
+  printf '<keel-%s@%s>' "$KOD" "$ALAN"
 }
 
 # Günlüğe tek satır JSON append (TEK append-aracı üzerinden — F1'in süreç karşılığı).
