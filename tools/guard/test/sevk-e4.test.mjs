@@ -79,6 +79,9 @@ function kurulum({ donem = null, kadro = ['uretici', 'dogrulayici', 'catal-denet
     copyFileSync(join(KOK_REPO, 'tools', 'sevk', b), join(kok, 'tools', 'sevk', b));
     chmodSync(join(kok, 'tools', 'sevk', b), 0o755);
   }
+  // cevap-sozlugu.txt VERİ dosyasıdır ve catal-kuyruk.sh onu FAIL-CLOSED arar: kurulu bir
+  // projede her zaman vardır, o yüzden simülasyon da onu taşımak zorunda (F1-5g).
+  try { copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'cevap-sozlugu.txt'), join(kok, 'tools', 'sevk', 'cevap-sozlugu.txt')); } catch {}
   copyFileSync(join(KOK_REPO, 'tools', 'guard', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '---\nname: ' + a + '\ntools: Read\n---\n# test ajanı\n');
   mkdirSync(join(kok, '03_roller', 'uretici'), { recursive: true });

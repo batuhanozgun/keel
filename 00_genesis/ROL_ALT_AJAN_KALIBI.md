@@ -41,7 +41,8 @@ kendi başına görev açmazsın, başka koltuğa iş vermezsin — iç içe alt
 durur.
 
 Dönüşünü `02_kanon/OTONOM_DONEM.md` §4'teki adlı listeyle bitir — 6 üst alan, her etiket AYRI
-satırın başında; `ÇATAL` doluysa üç alt-alan da zorunlu. Biçim kapısı (SubagentStop) eksik ya da
+satırın başında; `ÇATAL` doluysa üç alt-alan zorunlu + `SEÇENEKLER` isteğe bağlı
+(yazarsan sahip telefondan cevaplayabilir). Biçim kapısı (SubagentStop) eksik ya da
 yanlış biçimli dönüşü geri çevirir; **zarfsız dönüş "bitti" sayılmaz.**
 
 Seni bağlayan kurallar buraya KOPYALANMADI (tek-ev), işaretçileri var — hüküm basmadan önce OKU:

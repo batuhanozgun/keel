@@ -39,20 +39,47 @@ ORTAK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ortak.sh"
 . "$ORTAK"
 node_bul || hata "node bulunamadi (fail-closed)"
 
+# ── ORTAK JS ÖNEKİ (tek ev — D-02) ────────────────────────────────────────────────────────
+# Üç şey burada TEK kez tanımlanır ve her node bloğuna önekelenir:
+#   kis()        → sahip-yüzeyi metnini kuyruk satırının KENDİ yapı işaretlerinden arındırır
+#                  (· ayracı · tırnak · cevap:/bekletir:/kaynak:/devretti: anahtarları) ve
+#                  BAYT tabanlı kırpar (Türkçe harf UTF-8'de 2 bayt; karakter sayısı yanıltır).
+#   asciiKucuk() → yalnız ASCII küçültme (tr komutu İ/ı bozar)
+#   ANLAMADIM    → "anlamadım" sınıfı, VERİ dosyasından (tools/sevk/cevap-sozlugu.txt)
+# GEREKÇE (hasım bulgusu, dört mercek — F1-5g): kis() eskiden yalnız `--ekle` bloğunun içinde
+# yaşıyordu. Uzaktan cevap yolu ikinci bir yazıcı doğurunca aynı temizlik orada KOŞMUYORDU ve
+# tırnak içeren olağan bir seçenek metni maddeyi "boş cevap" yapıp işi KALICI olarak
+# kilitliyordu — kanalın var oluş sebebinin tam tersi.
+SOZLUK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/cevap-sozlugu.txt"
+[ -r "$SOZLUK" ] || hata "cevap sozlugu yok ($SOZLUK) — 'anlamadim' sinifi taninamaz (fail-closed)"
+JS_ORTAK='
+import { readFileSync as _oku } from "node:fs";
+const bayt = (s) => Buffer.byteLength(s, "utf8");
+const kis = (s, n) => {
+  let t = String(s || "").replace(/[`*"\n]/g, " ").replace(/·/g, "-")
+    .replace(/\b(cevap|bekletir|kaynak|devretti)\s*:/gi, "$1 -")
+    .replace(/ÇATAL\s+Ç-\d+/g, "çatal").replace(/\s+/g, " ").trim();
+  if (bayt(t) <= n) return t;
+  while (bayt(t) > n - 3 && t.length) t = t.slice(0, -1);
+  return t + "…";
+};
+const asciiKucuk = (s) => String(s).replace(/[A-Z]/g, (c) => c.toLowerCase());
+const ANLAMADIM = _oku(process.env.SOZLUK_YOL, "utf8").split("\n")
+  .map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map(asciiKucuk);
+if (!ANLAMADIM.length) { console.error("cevap sozlugu bos"); process.exit(1); }
+'
+
 KIP="${1:-}"
 
 case "$KIP" in
   --durum)
-    KUYRUK_YOL="$KUYRUK" "$NODE_BIN" --input-type=module -e '
+    KUYRUK_YOL="$KUYRUK" SOZLUK_YOL="$SOZLUK" "$NODE_BIN" --input-type=module -e "$JS_ORTAK"'
 import { readFileSync, existsSync } from "node:fs";
 const yol = process.env.KUYRUK_YOL;
 if (!existsSync(yol)) process.exit(0);           // kuyruk yoksa açık çatal da yok
 const metin = readFileSync(yol, "utf8");
 // "anlamadım" sınıfı — çeviri kusuru bulgusudur: soru sahibe DEĞİL, getirene döner (§7.1.2).
 // Birebir bayt listesi; Türkçe harf dönüşümü yapılmaz, yalnız ASCII küçültme uygulanır.
-const ANLAMADIM = ["anlamadım", "anlamadim", "anlamıyorum", "anlamiyorum", "ne demek",
-                   "anlaşılmadı", "anlasilmadi", "tekrar sor", "anlamadım?"];
-const asciiKucuk = (s) => s.replace(/[A-Z]/g, (c) => c.toLowerCase());
 for (const satir of metin.split("\n")) {
   const m = satir.match(/^\s*-\s*\[( |x|X)\]\s.*?ÇATAL\s+(Ç-\d+)\b(.*)$/);
   if (!m) continue;
@@ -106,7 +133,7 @@ for (const satir of metin.split("\n")) {
     trap 'kilit_birak; hata "ic hata (fail-closed): kuyruk yazici beklenmedik durdu"' ERR
     kilit_al "$KUYRUK.kilit" || hata "kuyruk kilidi alinamadi: $KILIT_HATA"
 
-    CIKTI="$(EKLE_GOREV="$GOREV" EKLE_HARIC="${3:-}" EKLE_GUNLUK="$GUNLUK" EKLE_KUYRUK="$KUYRUK" "$NODE_BIN" --input-type=module -e '
+    CIKTI="$(EKLE_GOREV="$GOREV" EKLE_HARIC="${3:-}" EKLE_GUNLUK="$GUNLUK" EKLE_KUYRUK="$KUYRUK" SOZLUK_YOL="$SOZLUK" "$NODE_BIN" --input-type=module -e "$JS_ORTAK"'
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
 const GOREV = process.env.EKLE_GOREV;
 const gy = process.env.EKLE_GUNLUK, ky = process.env.EKLE_KUYRUK;
@@ -139,15 +166,6 @@ const a = kayit.alanlar;
 // bekletir listesini bozmak, tekillestirmeyi delmek). Yapi isaretleri metinden SOYULUR.
 // Kirpma BAYT tabanlidir: Turkce harf UTF-8 kodlamasinda 2 bayt; karakter sayisi tavani yaniltir
 // (SENDE_BEKLEYEN tavani 2KB ve madde SİLİNMEZ — birkac catal dosyayi sariya itebiliyordu).
-const bayt = (s) => Buffer.byteLength(s, "utf8");
-const kis = (s, n) => {
-  let t = String(s || "").replace(/[`*"\n]/g, " ").replace(/·/g, "-")
-    .replace(/\b(cevap|bekletir|kaynak|devretti)\s*:/gi, "$1 -")
-    .replace(/ÇATAL\s+Ç-\d+/g, "çatal").replace(/\s+/g, " ").trim();
-  if (bayt(t) <= n) return t;
-  while (bayt(t) > n - 3 && t.length) t = t.slice(0, -1);
-  return t + "…";
-};
 const ceviri = kis(a.ceviri, 260);
 const etki = kis(a.etki, 300);
 if (!ceviri) bitir("ARIZA", "zarfta ÇEVİRİ bos — sahip yuzeyi metni uretilemez");
@@ -198,7 +216,7 @@ bitir("EKLENDI", id);
     trap 'kilit_birak; hata "ic hata (fail-closed): kuyruk yazici beklenmedik durdu"' ERR
     kilit_al "$KUYRUK.kilit" || hata "kuyruk kilidi alinamadi: $KILIT_HATA"
 
-    CIKTI="$(NOT_GOREV="$GOREV" NOT_DONEM="$DONEM" NOT_KUYRUK="$KUYRUK" "$NODE_BIN" --input-type=module -e '
+    CIKTI="$(NOT_GOREV="$GOREV" NOT_DONEM="$DONEM" NOT_KUYRUK="$KUYRUK" SOZLUK_YOL="$SOZLUK" "$NODE_BIN" --input-type=module -e "$JS_ORTAK"'
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
 const ky = process.env.NOT_KUYRUK;
 const gorev = process.env.NOT_GOREV, donem = process.env.NOT_DONEM;
@@ -228,7 +246,93 @@ bitir("EKLENDI", gorev);
     exit 0
     ;;
 
+  --cevapla)
+    # F1-5g · UZAKTAN GELEN SEÇİMİN UYGULANDIĞI TEK YER. Kuyruğa yazan betik yine budur:
+    # ikinci bir yazıcı doğsaydı kis() süzgeci o yolda koşmaz ve olağan bir seçenek metni
+    # maddeyi kalıcı olarak kilitlerdi (hasım bulgusu, dört mercek; biri canlı ölçtü).
+    #
+    # Argümanlar: <Ç-NN> <seçenek metni> <kaynak imzası>
+    # Çıktı: CEVAPLANDI\t<Ç-NN> | ATLANDI\t<sebep> | ARIZA\t<sebep>
+    #   ATLANDI = madde artık CEVAP-BEKLIYOR değil (cevaplanmış · devretmiş · çözülemiyor).
+    #             Çağıran kodu TÜKETİR — soru başka bir yoldan kapanmıştır, tekrar denemek
+    #             sahibin kendi cevabını yapının metniyle EZERDİ (D-21 ihlali).
+    #   ARIZA   = yazım yapılamadı ya da yazımdan sonra madde hâlâ CEVAPLANDI okunmuyor.
+    #             Çağıran kodu TÜKETMEZ ve alarm düşürür.
+    ID="${2:-}"; METIN="${3:-}"; IMZA="${4:-}"
+    case "$ID" in Ç-[0-9]*) : ;; *) hata "--cevapla icin gecerli catal kimligi gerekli (ornek: Ç-03), gelen: '${ID}'" ;; esac
+    [ -n "$METIN" ] || hata "--cevapla icin secenek metni gerekli (bos metin cevap degildir)"
+    # İmza DAR: yalnız harf/rakam/`:._-@` ve boşluk. Kuyruk satırının yapı ayracı (·) ve
+    # tırnak buraya giremez — imza sahip yüzeyine yazılan tek serbest alandır.
+    case "$IMZA" in ''|*[!A-Za-z0-9:.@_\ -]*) hata "--cevapla icin gecerli kaynak imzasi gerekli (ornek: 'uzaktan-posta uid:1841')" ;; esac
+    [ -f "$KUYRUK" ] || hata "kuyruk yok: $KUYRUK (cevaplanacak madde bulunamaz)"
+
+    BEN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+    . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/kilit.sh"
+    trap 'kilit_birak; hata "ic hata (fail-closed): cevap yazici beklenmedik durdu"' ERR
+    kilit_al "$KUYRUK.kilit" || hata "kuyruk kilidi alinamadi: $KILIT_HATA"
+
+    # (1) ÖN-OKUMA — maddenin O ANKİ durumu. Tek ayrıştırıcı: kendi --durum kipimiz.
+    ONCE="$(CLAUDE_PROJECT_DIR="$KOK" bash "$BEN" --durum 2>/dev/null | grep -F "$ID	" | head -n1 || true)"
+    ONCE_DURUM="$(printf '%s' "$ONCE" | cut -f2)"
+    if [ "$ONCE_DURUM" != "CEVAP-BEKLIYOR" ]; then
+      kilit_birak
+      printf 'ATLANDI\t%s\n' "madde CEVAP-BEKLIYOR degil (${ONCE_DURUM:-madde yok})"
+      exit 0
+    fi
+
+    YEDEK="$(cat "$KUYRUK")"
+    CIKTI="$(CEV_ID="$ID" CEV_METIN="$METIN" CEV_IMZA="$IMZA" CEV_KUYRUK="$KUYRUK" SOZLUK_YOL="$SOZLUK" "$NODE_BIN" --input-type=module -e "$JS_ORTAK"'
+import { readFileSync, writeFileSync, renameSync } from "node:fs";
+const ky = process.env.CEV_KUYRUK, id = process.env.CEV_ID;
+const bitir = (d, v) => { console.log(d + "\t" + v); process.exit(0); };
+// Seçenek metni AYNI süzgeçten geçer (kis): yapı işaretleri soyulur, bayt tabanlı kırpılır.
+// "anlamadım" sınıfı bir seçenek metni buraya HİÇ gelmemeli (zarf kapısı reddeder) — ama
+// ikinci hat burada: geldiyse yazma YAPILMAZ, yoksa madde CEVIRI-KUSURU okunup kilit açılmaz.
+const metin = kis(process.env.CEV_METIN, 160);
+if (!metin) bitir("ARIZA", "secenek metni suzgecten sonra bos kaldi");
+if (ANLAMADIM.some((k) => asciiKucuk(metin).includes(k))) bitir("ARIZA", "secenek metni anlamadim-sinifi tasiyor");
+const imza = kis(process.env.CEV_IMZA, 80);
+const satirlar = readFileSync(ky, "utf8").split("\n");
+const d = new Date(), p2 = (n) => String(n).padStart(2, "0");
+const bugun = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
+let yazildi = 0;
+for (let i = 0; i < satirlar.length; i++) {
+  const m = satirlar[i].match(/^(\s*-\s*\[) (\]\s.*?ÇATAL\s+)(Ç-\d+)\b(.*)$/);
+  if (!m || m[3] !== id) continue;
+  satirlar[i] = m[1] + "x" + m[2] + m[3] + m[4] + " · cevap: \"" + metin + "\" · " + bugun + " · " + imza;
+  yazildi++;
+}
+if (yazildi !== 1) bitir("ARIZA", "acik madde tam olarak bir kez bulunamadi (" + yazildi + ")");
+// Atomik yazım: yarım yazılmış bir sahip yüzeyi, ayrıştırıcıyı COZULEMEDI dalına düşürür.
+const gecici = ky + ".yeni";
+writeFileSync(gecici, satirlar.join("\n"));
+renameSync(gecici, ky);
+bitir("YAZILDI", id);
+')" || { kilit_birak; hata "cevap yazici kosamadi (fail-closed)"; }
+
+    if [ "${CIKTI%%	*}" != "YAZILDI" ]; then
+      kilit_birak
+      printf '%s\n' "$CIKTI"
+      exit 0
+    fi
+
+    # (2) YAZIM SONRASI DOĞRULAMA — beyan değil ÖLÇÜM. Yazdığımız satırı kendi ayrıştırıcımız
+    # CEVAPLANDI okumuyorsa yazım BAŞARISIZDIR: dosya geri alınır, kod tüketilmez, çağıran
+    # alarm düşürür. (Hasım bulgusu: seçenek metni ayrıştırıcıyı bozup maddeyi sessizce
+    # kilitli bırakabiliyordu; "yazdım" ile "cevap oldu" AYNI ŞEY DEĞİLDİR.)
+    SONRA="$(CLAUDE_PROJECT_DIR="$KOK" bash "$BEN" --durum 2>/dev/null | grep -F "$ID	" | head -n1 || true)"
+    if [ "$(printf '%s' "$SONRA" | cut -f2)" != "CEVAPLANDI" ]; then
+      printf '%s' "$YEDEK" > "$KUYRUK" 2>/dev/null || true
+      kilit_birak
+      printf 'ARIZA\t%s\n' "yazim sonrasi madde CEVAPLANDI okunmuyor ($(printf '%s' "$SONRA" | cut -f2)) — kuyruk geri alindi"
+      exit 0
+    fi
+    kilit_birak
+    printf 'CEVAPLANDI\t%s\n' "$ID"
+    exit 0
+    ;;
+
   *)
-    hata "bilinmeyen kip: '${KIP}' (--durum | --ekle <G-NN> | --not izin <G-NN> <dönem>)"
+    hata "bilinmeyen kip: '${KIP}' (--durum | --ekle <G-NN> | --not izin <G-NN> <dönem> | --cevapla <Ç-NN> <metin> <imza>)"
     ;;
 esac

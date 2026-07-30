@@ -140,6 +140,10 @@ gercek_kutu_eksikleri() { # $1: sevk dizini
 KANAL_SMTP_SUNUCU=""; KANAL_SMTP_PORT=""; KANAL_HESAP=""; KANAL_ALICI=""
 KANAL_KEYCHAIN_SERVIS=""; KANAL_IMAP_SUNUCU=""; KANAL_IMAP_PORT=""
 KANAL_DUR_KONU=""; KANAL_DUR_JETON=""; KANAL_SESSIZLIK_ESIK_DK=""; KANAL_HATA=""
+# F1-5g · cevap kanalı. VARSAYILAN KAPALI: doldurulmamış bir alan bir KARAR kanalını açamaz
+# (DUR fail-safe'tir, cevap fail-dangerous'tur — tasarı §1). Böylece bugün kurulu her projede
+# hiçbir davranış değişmez; kanal ancak sahip kurulumda "evet" derse doğar.
+KANAL_CEVAP_KANALI=""; KANAL_CEVAP_JETON=""; KANAL_CEVAP_ESIK_SAAT=""; KANAL_CEVAP_OMUR_SAAT=""
 kanal_oku() { # $1: kök
   local KOK="${1:-.}" YOL SATIR A D
   YOL="$KOK/tools/sevk/kanal.conf"
@@ -164,10 +168,19 @@ kanal_oku() { # $1: kök
       DUR_KONU) KANAL_DUR_KONU="$D" ;;
       DUR_JETON) KANAL_DUR_JETON="$D" ;;
       SESSIZLIK_ESIK_DK) KANAL_SESSIZLIK_ESIK_DK="$D" ;;
+      CEVAP_KANALI) KANAL_CEVAP_KANALI="$D" ;;
+      CEVAP_JETON) KANAL_CEVAP_JETON="$D" ;;
+      CEVAP_ESIK_SAAT) KANAL_CEVAP_ESIK_SAAT="$D" ;;
+      CEVAP_OMUR_SAAT) KANAL_CEVAP_OMUR_SAAT="$D" ;;
       *) : ;;   # tanınmayan anahtar sessizce atlanır (ileri uyum)
     esac
   done < "$YOL"
   [ -n "$KANAL_DUR_KONU" ] || KANAL_DUR_KONU="KEEL DUR"
+  # Cevap kanalı YALNIZ açıkça "acik" yazılmışsa açıktır: boş, bozuk, "evet", "1" — hepsi KAPALI.
+  # Tanınmayan değeri "açık" saymak, yazım hatasıyla karar kanalı açardı (fail-closed).
+  case "$KANAL_CEVAP_KANALI" in acik) : ;; *) KANAL_CEVAP_KANALI="" ;; esac
+  case "$KANAL_CEVAP_ESIK_SAAT" in ''|*[!0-9]*) KANAL_CEVAP_ESIK_SAAT=24 ;; esac
+  case "$KANAL_CEVAP_OMUR_SAAT" in ''|*[!0-9]*) KANAL_CEVAP_OMUR_SAAT=72 ;; esac
   [ -n "$KANAL_SMTP_PORT" ] || KANAL_SMTP_PORT="587"
   [ -n "$KANAL_IMAP_PORT" ] || KANAL_IMAP_PORT="993"
   [ -n "$KANAL_KEYCHAIN_SERVIS" ] || KANAL_KEYCHAIN_SERVIS="keel-haber"
@@ -213,10 +226,22 @@ donem_turu_yaz() { # $1: kök · $2: yeni tür
 # Haber gönderimi — TEK çağrı noktası (E5). Çağıranı ASLA öldürmez: dönem içi gönderim
 # fail-OPEN'dır (tasarı §3.3 — geceyi bir yönlendirici arızasına rehin vermeyiz), ama izsiz
 # değildir: haber.sh kendi sonucunu günlüğe yazar. Dönüş kodu bilgi amaçlıdır.
+#
+# HER ŞEYİ YUTMAZ (hasım bulgusu, dört mercek — F1-5g): `exit 1` yapılandırma/ARGÜMAN hatasıdır
+# ve haber.sh o dalda günlüğe HİÇBİR ŞEY yazmaz (kayıt §8'de, gönderimden sonradır). Yani
+# tanınmayan bir olay/cins adı — tam olarak yeni bir hattın en olası kusuru — ne postada, ne
+# günlükte, ne ekranda iz bırakmıyordu. Bu sınıf artık bulgu düşürür. 4 (ağ) ve 5 (tavan)
+# fail-open kalır: onların gerekçesi (gece bir yönlendirici arızasına rehin verilmez) geçerli.
 haber_at() {
-  local H="$ORTAK_DIZIN/haber.sh"
+  local H="$ORTAK_DIZIN/haber.sh" RC=0
   [ -r "$H" ] || return 1
-  CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}" bash "$H" "$@" >/dev/null 2>&1
+  CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}" bash "$H" "$@" >/dev/null 2>&1 || RC=$?
+  if [ "$RC" = "1" ]; then
+    J_tip=bulgu J_cins=haber-cagrisi-gecersiz J_donem="${DONEM_ID:-}" \
+      J_detay="haber.sh yapilandirma/argüman hatasi (exit 1) — cagri: $*" \
+      json_kur 2>/dev/null | gunluge_yaz "${CLAUDE_PROJECT_DIR:-.}" >/dev/null 2>&1 || true
+  fi
+  return "$RC"
 }
 
 # Günlüğe tek satır JSON append (TEK append-aracı üzerinden — F1'in süreç karşılığı).

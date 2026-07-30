@@ -50,7 +50,13 @@ const TIPLER = new Set(["donem-acilis","donem-kapanis","nabiz","zarf","bicim","s
                         // F1-5a/c: evre-gecis = donemin uretim<->kapanis evre degisimi (gidis-donus
                         // freni bu kayittan sayilir) · brifing = dis gozun kapanis brifinginin
                         // diske yazildigi an (sevk "bu donemde brifing var mi" sorusunu buradan okur).
-                        "evre-gecis","brifing"]);
+                        "evre-gecis","brifing",
+                        // F1-5g (cevap kanali): cevap-alindi = uzaktan gelen secimin UYGULANDIGI an
+                        // (uid + msgid tasir; sahip-atfinin gelen yondeki kaniti, §9 karsiligi) ·
+                        // cevap-reddedildi = kimlik/bicim/durum kapisindan donen cevap denemesi.
+                        // Beyaz liste FAIL-CLOSED oldugu icin bu iki tip EKLENMEDEN cevap hattinin
+                        // TEK denetim izi sessizce kaybolurdu (hasim bulgusu, dort mercek).
+                        "cevap-alindi","cevap-reddedildi"]);
 let ham = "";
 try { ham = readFileSync(0, "utf8"); } catch { console.log("HATA\tstdin okunamadi"); process.exit(0); }
 if (ham.trim().split("\n").length !== 1) { console.log("HATA\tgirdi tek satir degil"); process.exit(0); }

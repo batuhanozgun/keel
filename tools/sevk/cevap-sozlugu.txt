@@ -1,0 +1,22 @@
+# cevap-sozlugu — "anlamadım" sınıfı (E3 · OTONOM_DONEM §6.2). VERİ dosyasıdır, kod değildir.
+#
+# Bu listedeki bir dize sahibin cevabında geçiyorsa, cevap CEVAP değil ÇEVİRİ KUSURUdur:
+# soru sahibe değil, soruyu GETİRENE döner. Ders (K-61): sahip anlamadığı soruya "olur" der.
+#
+# NEDEN AYRI DOSYA (F1-5g): liste iki yerde birden okunur —
+#   (1) catal-kuyruk.sh --durum : sahibin cevabını sınıflandırır
+#   (2) zarf-bicim-kapisi.sh    : rolün yazdığı SEÇENEKLER satırında bu dizelerden biri
+#                                 geçiyorsa çatalı REDDEDER; yoksa o seçenek uygulandığı an
+#                                 madde "çeviri kusuru" okunur ve kilit hiç açılmaz.
+# İki yerde ayrı ayrı yazılmış bir liste, sürüklenmenin en ucuz doğduğu yerdir (D-02 dersi).
+#
+# Biçim: satır başına bir dize · "#" ile başlayan satır yorumdur · eşleştirme ALT-DİZEdir.
+# Büyük/küçük harf: yalnız ASCII küçültme uygulanır (Türkçe İ/ı bozulmasın diye).
+anlamadım
+anlamadim
+anlamıyorum
+anlamiyorum
+ne demek
+anlaşılmadı
+anlasilmadi
+tekrar sor

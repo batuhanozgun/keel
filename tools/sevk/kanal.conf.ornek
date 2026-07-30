@@ -47,3 +47,22 @@ DUR_JETON=
 # ── Nabız ──────────────────────────────────────────────────────────────────────────────
 # Koşu AÇIK görünürken bu kadar dakika nabız gelmezse "yapı sustu" alarmı gider.
 SESSIZLIK_ESIK_DK=30
+
+# ── Uzaktan CEVAP (F1-5g; IMAP üzerinden — kimlik çapası postanın Message-ID başlığıdır) ──
+# VARSAYILAN KAPALI. Boş bırakılırsa hiçbir davranış değişmez: soru yine gider, cevabı yalnız
+# bilgisayardan verirsin. "acik" yazmak şu anlama gelir: gece bir karar gerektiğinde postayı
+# yanıtlayıp seçeneğin numarasını yazman yeter — VE o kararı senin posta kutuna erişebilen
+# herkes verebilir. Kanal, posta kutun kadar güçlüdür; başka türlü söylemek yanlış olur.
+# Yalnız "acik" değeri açar (yazım hatası kanalı AÇMAZ — fail-closed).
+CEVAP_KANALI=
+
+# İsteğe bağlı ikinci etken. Dolu ise cevabın ilk satırı "<rakam> <jeton>" olmalıdır.
+# GÖVDEDE taşınır, konuda DEĞİL: konuda taşınsaydı giden postada açık dururdu ve hiçbir şey
+# eklemezdi (v1 tasarısının hatası).
+CEVAP_JETON=
+
+# Cevapsız bir soru bu saatten sonra alarm sınıfına yükselir (kod başına bir kez).
+CEVAP_ESIK_SAAT=24
+
+# Cevap kodunun ömrü. Süresi dolan koda gelen cevap işlenmez; sahibe "geç geldi" bilgisi gider.
+CEVAP_OMUR_SAAT=72

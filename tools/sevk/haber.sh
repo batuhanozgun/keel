@@ -45,7 +45,8 @@ OLAY=""; A_DONEM=""; A_KUTU=""; A_TUR=""; A_SINIF=""; A_UYKU=""
 A_BLOK1=""; A_BLOK2=""; A_BLOK3=""
 A_CATAL=""; A_CEVIRI=""; A_ETKI=""; A_BEKLETIR=""
 A_CINS=""; A_DETAY=""; A_ANAHTAR=""
-PROVA=0
+A_KOD=""; A_SECENEKLER=""
+PROVA=0; SAYACSIZ=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -65,6 +66,13 @@ while [ $# -gt 0 ]; do
     --cins) A_CINS="${2:-}"; shift 2 ;;
     --detay) A_DETAY="${2:-}"; shift 2 ;;
     --anahtar) A_ANAHTAR="${2:-}"; shift 2 ;;
+    --kod) A_KOD="${2:-}"; shift 2 ;;
+    --secenekler) A_SECENEKLER="${2:-}"; shift 2 ;;
+    # Cevap hattı dönem-DIŞI koşar (nabız, dönem kapısının önünde). Sayaç dosyası
+    # (.haber-durum) ilk satırındaki DÖNEM kimliğine bağlıdır; dönem-dışı bir alarm onu
+    # yeniden yazıp CANLI dönemin tekilleştirme listesini silerdi (hasım bulgusu). Bu bayrak
+    # o dosyaya hiç dokunmaz; cevap hattının tekilleştirmesi .cevap-capa satırındadır.
+    --sayacsiz) SAYACSIZ=1; shift ;;
     --prova) PROVA=1; shift ;;
     *) hata "tanınmayan argüman: $1 (serbest gövde argümanı YOKTUR — tasarım §7.3)" ;;
   esac
@@ -79,9 +87,26 @@ esac
 [ -n "$A_DONEM" ] || A_DONEM="(dönem kimliği yok)"
 if [ "$OLAY" = "alarm" ]; then
   case "$A_CINS" in
-    sessizlik|sisme|kirmizi|kanal|tavan) : ;;
-    *) hata "alarm olayı --cins ister: sessizlik | sisme | kirmizi | kanal | tavan" ;;
+    # F1-5g: cevapsiz = eşiği aşan cevapsız çatal (P4.4) · cevap-okunamadi = kimlik geçti ama
+    # gövde çözülemedi ya da kod düştü. Beyaz liste KAPALI olduğu için bu iki cins EKLENMEDEN
+    # yükseltme hattı `exit 1` verip izsiz kalıyordu (hasım bulgusu, dört mercek).
+    sessizlik|sisme|kirmizi|kanal|tavan|cevapsiz|cevap-okunamadi) : ;;
+    *) hata "alarm olayı --cins ister: sessizlik | sisme | kirmizi | kanal | tavan | cevapsiz | cevap-okunamadi" ;;
   esac
+fi
+# Kod biçimi SERT: konuya/başlığa girmeden önce ayrıştırılır. Alfabe karışması imkânsız
+# (I/O/0/1 yok) ve yalnız bu küme — başka bir bayt Message-ID'yi ya da IMAP arama dizesini
+# bozabilirdi (arama saf ASCII olmak zorunda; tasarı §3).
+MSGID=""
+if [ -n "$A_KOD" ]; then
+  case "$A_KOD" in
+    *[!ABCDEFGHJKLMNPQRSTUVWXYZ23456789]*|'') hata "geçersiz cevap kodu (yalnız ABCDEFGHJKLMNPQRSTUVWXYZ23456789)" ;;
+  esac
+  # TEK ÜRETİCİ: giden başlık, prova çıktısı ve nabzın aradığı desen bu ÜÇÜ de buradan çıkar.
+  # İki uçta ayrı ayrı kurulan dize, sürüklenmenin en ucuz doğduğu yerdir (D-02 dersi) — ve
+  # bu paketin v1'inde tam olarak öyle olmuştu: aranan desen giden konuda hiç geçmiyordu.
+  # Alan adı çıkarımı: HESAP boşsa (prova) sabit bir yer tutucu kullanılır.
+  MSGID="<keel-$A_KOD@$(printf '%s' "${KANAL_HESAP:-keel.gecersiz}" | sed 's/.*@//')>"
 fi
 
 # Alan tavanı: kesilen alan KESİLDİĞİNİ söyler (sessiz kırpma, sahip yüzeyinde yalandır).
@@ -95,7 +120,7 @@ kirp() {
 }
 # Güvenli dolaylı atama (bash 3.2): `eval "$AD=\$V"` değeri TEK SÖZCÜK olarak atar; içeriği
 # yeniden ayrıştırmaz. `eval "$AD=$V"` yazmak alan içeriğini koda çevirirdi.
-for D in A_BLOK1 A_BLOK2 A_BLOK3 A_CEVIRI A_ETKI A_BEKLETIR A_DETAY A_UYKU; do
+for D in A_BLOK1 A_BLOK2 A_BLOK3 A_CEVIRI A_ETKI A_BEKLETIR A_DETAY A_UYKU A_SECENEKLER; do
   eval "KIRP_V=\${$D}"
   KIRP_V="$(kirp "$KIRP_V")"
   eval "$D=\$KIRP_V"
@@ -115,9 +140,21 @@ case "$OLAY" in
       "$A_DONEM" "$SIMDI" "${A_BLOK1:-(kayıt yok)}" "${A_BLOK2:-(kayıt yok)}" "${A_BLOK3:-(kayıt yok)}")"
     ;;
   catal-bekliyor)
+    # KONU DEĞİŞMEZ ve KOD TAŞIMAZ (F1-5g, hasım bulgusu): kod konuda yaşasaydı kilitli
+    # telefonun bildirim şeridinde okunur ve `Fwd:` ile aynen taşınırdı. Kimlik çapası
+    # Message-ID başlığıdır (aşağıda) — kullanıcı yüzeyinde hiç görünmez, hiçbir istemci
+    # onu yeniden yazmaz ve saf ASCII olduğu için IMAP araması ona dayanabilir.
     KONU="KEEL · $A_KUTU · bir karar seni bekliyor (${A_CATAL:-Ç-??})"
-    GOVDE="$(printf 'Dönem: %s\nZaman: %s\nÇatal: %s\n\nSORU\n%s\n\nNE DEĞİŞİR\n%s\n\nBU CEVAP GELENE KADAR BEKLEYEN İŞLER\n%s\n\nCevabı bilgisayardan veriyorsun: 00_pano/SENDE_BEKLEYEN.md\n(Uzaktan cevap yolu bilerek yok — sahip sesi yalnız kayıtlı kanaldan taşınır.)\n' \
-      "$A_DONEM" "$SIMDI" "${A_CATAL:-?}" "${A_CEVIRI:-(çeviri yok)}" "${A_ETKI:-(etki yok)}" "${A_BEKLETIR:-(liste yok)}")"
+    if [ -n "$A_KOD" ] && [ -n "$A_SECENEKLER" ]; then
+      CEVAP_YOLU="$(printf 'NASIL CEVAP VERİRSİN\nBu postayı YANITLA ve ilk satıra yalnız seçeneğin numarasını yaz (örnek: 2).\nBaşka bir şey yazmana gerek yok; altındaki alıntı kalabilir.%s\n\nCevabını bilgisayardan da verebilirsin: 00_pano/SENDE_BEKLEYEN.md\n' \
+        "$([ -n "${KANAL_CEVAP_JETON:-}" ] && printf '\nRakamdan sonra bir boşluk bırakıp anlaştığımız kelimeyi de yaz.' || printf '')")"
+      GOVDE="$(printf 'Dönem: %s\nZaman: %s\nÇatal: %s\n\nSORU\n%s\n\nSEÇENEKLER\n%s\n\nNE DEĞİŞİR\n%s\n\nBU CEVAP GELENE KADAR BEKLEYEN İŞLER\n%s\n\n%s' \
+        "$A_DONEM" "$SIMDI" "${A_CATAL:-?}" "${A_CEVIRI:-(çeviri yok)}" "$A_SECENEKLER" \
+        "${A_ETKI:-(etki yok)}" "${A_BEKLETIR:-(liste yok)}" "$CEVAP_YOLU")"
+    else
+      GOVDE="$(printf 'Dönem: %s\nZaman: %s\nÇatal: %s\n\nSORU\n%s\n\nNE DEĞİŞİR\n%s\n\nBU CEVAP GELENE KADAR BEKLEYEN İŞLER\n%s\n\nCevabı bilgisayardan veriyorsun: 00_pano/SENDE_BEKLEYEN.md\n(Bu soru uzaktan cevaplanamaz: seçenekleri sayılabilir değil ya da geri alınamaz bir seçim içeriyor.)\n' \
+        "$A_DONEM" "$SIMDI" "${A_CATAL:-?}" "${A_CEVIRI:-(çeviri yok)}" "${A_ETKI:-(etki yok)}" "${A_BEKLETIR:-(liste yok)}")"
+    fi
     ;;
   alarm)
     KONU="KEEL · $A_KUTU · ALARM ($A_CINS)"
@@ -159,7 +196,7 @@ fi
 # Gürültüye boğulan kanal haber işlevini kaybeder — kanalın kendi freni budur.
 DURUM="$DIZIN/.haber-durum"
 ANAHTAR="$OLAY${A_ANAHTAR:+:$A_ANAHTAR}${A_CINS:+:$A_CINS}"
-if [ "$PROVA" -eq 0 ]; then
+if [ "$PROVA" -eq 0 ] && [ "$SAYACSIZ" -eq 0 ]; then
   if [ -f "$DURUM" ] && [ "$(head -n1 "$DURUM" 2>/dev/null)" = "$A_DONEM" ]; then
     if tail -n +2 "$DURUM" 2>/dev/null | grep -qxF "$ANAHTAR"; then
       hata "bu olay bu dönemde zaten gönderildi: $ANAHTAR" 5
@@ -175,7 +212,11 @@ fi
 # ── 5 · Prova kipi: gönderme, göster (testlerin TAMAMI bu kipte koşar) ────────────────────
 if [ "$PROVA" -eq 1 ]; then
   printf 'PROVA\t%s\t%s\n' "$OLAY" "$([ "$SANSUR" -eq 1 ] && printf 'SANSURLU' || printf 'TEMIZ')"
-  printf 'Subject: %s\n\n%s\n' "$KONU" "$GOVDE"
+  printf 'Subject: %s\n' "$KONU"
+  # Message-ID prova çıktısında da basılır: giden çapa ile nabzın aradığı desenin AYNI
+  # kaynaktan üretildiğini test mekanik olarak ölçebilsin (bitti ölçütü 5 — iki uç ayrışamaz).
+  [ -n "$MSGID" ] && printf 'Message-ID: %s\n' "$MSGID"
+  printf '\n%s\n' "$GOVDE"
   [ "$SANSUR" -eq 1 ] && exit 3
   exit 0
 fi
@@ -195,6 +236,14 @@ trap temizle EXIT
   printf 'From: %s\n' "$KANAL_HESAP"
   printf 'To: %s\n' "$KANAL_ALICI"
   printf 'Subject: %s\n' "$KONU"
+  # KİMLİK ÇAPASI (F1-5g): kod yalnız BURADA yaşar. Sahip yanıtladığında istemci bunu
+  # `In-Reply-To`ya kopyalar ve nabız cevabı o başlıktan bulur. Üç güvence bir arada:
+  # (1) saf ASCII — IMAP tırnaklı dizesi 7-bit'tir, konu Türkçe harf taşıdığı için arama
+  #     anahtarı olamazdı (ölçüldü: curl tele ham UTF-8 baytı yolluyor);
+  # (2) kullanıcı yüzeyinde görünmez — bildirim şeridi ve `Fwd:` konusu sırrı taşımaz;
+  # (3) özgün postada `In-Reply-To` YOKTUR — yapının kendi postası (HESAP=ALICI kurulumunda)
+  #     kendi kodunu eşleştiremez. "Bu bir yanıttır" şartı böylece mekanikleşir.
+  [ -n "$MSGID" ] && printf 'Message-ID: %s\n' "$MSGID"
   printf 'MIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\n'
   printf '%s\n' "$GOVDE"
 } > "$GOVDE_DOSYA"

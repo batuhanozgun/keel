@@ -46,7 +46,9 @@ case "$INPUT" in
       # tasarımın kendi gereği — kafesteki taraf kendi anahtarını yazabiliyordu.
       # `donem_turu_yaz` da buradadır: evre alanını yazan tek fonksiyondur; adı geçmeden
       # çağrılamaz (metin-eş sınırı damga-dikişiyle aynı — bilinen ve ilan edilmiş sınır).
-      *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.donem-'*|*'.dur'*|*donem_turu_yaz*) : ;;
+      # `.cevap-` (F1-5g) AYRI yazılır: `.donem-` öneki onu KAPSAMAZ. Bu satır unutulsaydı
+      # aşağıdaki cevap-çapası dikişi hiç koşmazdı — yorumun kendi uyardığı sessiz delik.
+      *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.donem-'*|*'.cevap-'*|*'.dur'*|*donem_turu_yaz*) : ;;
       # E5 kanal betikleri: ön-eleme listesi dikiş kapsamının ÜST-kümesi olmak zorundadır —
       # buraya eklenmezse aşağıdaki kanal dikişi HİÇ koşmaz (yaşanmış: dikiş yazıldı, gate
       # elemişti; sessiz delik). "Az eşleşme koruma deliğidir" kuralının canlı örneği.
@@ -260,6 +262,11 @@ if ((j.tool_name || "") === "Bash") {
   // tasir — yani KAFESIN ANAHTARIDIR. Gostergeyle ayni sinif: dokunan Bash komutu sorulur ve
   // donem icinde `donem` sinifi sozlukte OLMADIGI icin ENGEL alir.
   if (komut.includes(".donem-capa")) izinKarari("donem", "SOR-DONEM", "tools/sevk/.donem-capa");
+  // Cevap-capa dikisi (F1-5g): `.cevap-capa` uzaktan cevabin KODUNU tutar — yani kafesin
+  // anahtaridir. Sira 7in dersi aynen gecerli: anahtar, ajanin yazabildigi bir dosyada
+  // duramaz. Arac katmaninda zaten [SERT] (tools/sevk/ altinda); bu dikis kabuk yolunu kapatir.
+  // Dönem capasindan AYRI ele alinir cunku omru farklidir: donem bittikten sonra da yasar.
+  if (komut.includes(".cevap-capa")) izinKarari("donem", "SOR-DONEM", "tools/sevk/.cevap-capa");
   // Evre-dikisi (hasim bulgusu 2026-07-30): gostergenin EVRE alanini yazan tek fonksiyon
   // `ortak.sh:donem_turu_yaz`tir ve o kitaplik source edilip cagrilabiliyordu — komut metninde
   // `.donem-acik` GECMEDIGI icin ustteki dikis onu hic gormuyordu. Oysa ortak.sh:188 ve kural

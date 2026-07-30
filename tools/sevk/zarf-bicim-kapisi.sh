@@ -61,6 +61,8 @@ fi
 DONEM_ID="$(head -n1 "$DONEM_YOL" 2>/dev/null | cut -f1 || true)"
 DONEM_KUTU="$(head -n1 "$DONEM_YOL" 2>/dev/null | cut -f2 || true)"
 case "$DONEM_KUTU" in *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*) DONEM_KUTU="";; esac  # eski 2-alan biçim: 2. alan damga
+DONEM_TUR="$(head -n1 "$DONEM_YOL" 2>/dev/null | cut -f3 || true)"
+case "$DONEM_TUR" in kurulum|yapim|kapanis) : ;; *) DONEM_TUR="yapim" ;; esac
 [ -n "$DONEM_ID" ] || engel_e "dönem göstergesi boş: tools/sevk/.donem-acik ilk satırında dönem kimliği yok — kimliksiz günlük kaydı düşer, dönem dilimlenemez (fail-closed)"
 
 # node keşfi ORTAK KİTAPLIKTAN (E4: tools/sevk/ortak.sh; D-02 dersi — tek ev). Kitaplık yoksa
@@ -80,8 +82,59 @@ if [ -z "$NODE_BIN" ]; then
   esac
 fi
 
+# ── F1-5g · cevap kodu üreteci (tek ev) ───────────────────────────────────────────────────
+# Çıktı: 1. satır <KOD>, sonrası numaralı seçenek listesi. Boş çıktı = kod yok (fail-closed).
+# Çapa (.cevap-capa) KİLİTLİ ve ATOMİK yazılır: üç ayrı süreç ona yazar (bu kapı kod ekler,
+# nabız süresi dolanı işaretler, nabız tüketileni işaretler). Kilitsiz oku-değiştir-yaz bu
+# deponun en pahalı dersidir (kilit.sh:3-7 — aynı Ç-01 üç ayrı soruya verilmişti).
+KOD_JS='
+import { readFileSync, existsSync, appendFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
+const gy = process.env.C_GUNLUK, capa = process.env.C_CAPA;
+const gorev = process.env.C_GOREV, catal = process.env.C_CATAL;
+const sus = () => process.exit(0);                       // sessiz cikis = KOD YOK
+let hukum = null, secHam = null;
+try {
+  for (const l of readFileSync(gy, "utf8").split("\n")) {
+    if (!l) continue;
+    let j; try { j = JSON.parse(l); } catch { continue; }
+    if (j.tip === "catal-suzgec" && j.gorev === gorev) { hukum = j.uzaktan || null; secHam = j.secenekler || null; }
+    if (j.tip === "zarf" && j.gorev === gorev && j.alanlar && j.alanlar.secenekler) secHam = j.alanlar.secenekler;
+  }
+} catch { sus(); }
+if (hukum !== "uygun") sus();                            // denetci uygun demedi (fail-closed)
+const ham = String(secHam || "").trim();
+if (!ham || /^açık-uçlu\b/i.test(ham)) sus();
+// Liste NORMALLESTIRILIR: postaya giden bicim ile capaya yazilan dizi AYNI yerden cikar.
+const parcalar = ham.split(/(?=\b[1-9]\))/).map((x) => x.replace(/^\s*[1-9]\)\s*/, "").trim())
+  .filter(Boolean).map((x) => x.replace(/[`*"\n·]/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
+if (parcalar.length < 2 || parcalar.length > 4) sus();
+// Ayni catal icin ACIK kod zaten varsa yenisi URETILMEZ: iki kod, sahibin hangi postayi
+// yanitladigina gore farkli sonuc demektir ve tekillestirme sozunu bozar.
+try {
+  if (existsSync(capa)) {
+    for (const l of readFileSync(capa, "utf8").split("\n")) {
+      if (!l.trim()) continue;
+      let j; try { j = JSON.parse(l); } catch { continue; }
+      if (j.catal === catal && j.durum === "acik") sus();
+    }
+  }
+} catch { sus(); }
+const ALFABE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";        // I/O/0/1 YOK (karisma olmaz)
+const b = randomBytes(8);
+let kod = "";
+for (let i = 0; i < 8; i++) kod += ALFABE[b[i] % ALFABE.length];
+const kayit = { kod, catal, gorev, donem: process.env.C_DONEM || null, kutu: process.env.C_KUTU || null,
+                ts: new Date().toISOString(), secenekler: parcalar, durum: "acik", bicimsiz: 0,
+                gorulen: [], alarm: "" };
+appendFileSync(capa, JSON.stringify(kayit) + "\n");
+console.log(kod);
+console.log(parcalar.map((x, i) => (i + 1) + ") " + x).join("\n"));
+'
+
 CIKTI="$(printf '%s' "$GIRDI" | KAPI_KOK="$KOK" KAPI_DONEM="$DONEM_ID" KAPI_KUTU="$DONEM_KUTU" \
   KAPI_KARAR_ALANI="$KARAR_ALANI_DURUM" KAPI_KUYRUK="$KUYRUK_DURUM" KAPI_KUYRUK_HATA="$KUYRUK_HATA" \
+  KAPI_SOZLUK="$KOK/tools/sevk/cevap-sozlugu.txt" \
   "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync, readdirSync, writeFileSync, lstatSync } from "node:fs";
 import { resolve, join } from "node:path";
@@ -137,6 +190,8 @@ const red = (sebep, ipucu) => {
 
 // Alan ayristirma: satir basinda (liste imi/kalin toleransli) ETIKET: deger
 const ETIKETLER = ["BİTEN", "ÇATAL", "DEĞERLENDİRMEDİKLERİM", "SIRADAKİ", "TÜRETME-İZİ", "GERİ-ÇEKİLEN", "İZİN-ENGELİ", "ÇEVİRİ", "ETKİ", "BEKLETİR",
+                   "SEÇENEKLER",                  // F1-5g: uzaktan cevabın indeks listesi (İSTEĞE BAĞLI)
+                   "UZAKTAN",                     // F1-5g: çatal denetçisinin 6. kalem hükmü
                    "ÇATAL-KAYNAK", "HÜKÜM", "KALEMLER",    // E3: denetçi dönüş sözleşmesi
                    "KARNE-GOREV", "MADDELER", "BULGU-GOREV", // E4 + F1-5b: karne dönüş sözleşmesi
                    "BRIFING-1", "BRIFING-2", "BRIFING-3", "BRIFING-4", "BRIFING-5"];  // F1-5c: dış göz
@@ -295,7 +350,7 @@ const geriYok = /^yok\b/i.test(alan["GERİ-ÇEKİLEN"] || "");
 // bastirilmis-catal kolu HIC denetlenmedi (kapi yesil verdi). E1 son-mesaj dislamasinin
 // gerekcesi zarfin kendi "ÇATAL:" etiketiydi — o gerekce artik ETIKET SUZGECIYLE karsilaniyor,
 // mesaji komple dislamaya gerek yok. Etiket satirlari (6+3 alan) havuzdan cikarilir.
-const ETIKET_DESENI = /^[\s>*+-]*(?:\d+[.)])?\s*\**(?:ÇATAL|ÇATAL-KAYNAK|ÇEVİRİ|ETKİ|BEKLETİR|BİTEN|DEĞERLENDİRMEDİKLERİM|SIRADAKİ|TÜRETME-İZİ|GERİ-ÇEKİLEN|İZİN-ENGELİ|HÜKÜM|KALEMLER)\**\s*:/;
+const ETIKET_DESENI = /^[\s>*+-]*(?:\d+[.)])?\s*\**(?:ÇATAL|ÇATAL-KAYNAK|ÇEVİRİ|ETKİ|BEKLETİR|SEÇENEKLER|UZAKTAN|BİTEN|DEĞERLENDİRMEDİKLERİM|SIRADAKİ|TÜRETME-İZİ|GERİ-ÇEKİLEN|İZİN-ENGELİ|HÜKÜM|KALEMLER)\**\s*:/;
 if (catalYok && geriYok && !HUKUM_SINIFI.has(tipHam) && ajanMetinleri.length) {
   const govde = ajanMetinleri.join("\n")
     .split("\n").filter((s) => !ETIKET_DESENI.test(s)).join("\n");
@@ -362,6 +417,15 @@ if (gorev && !hukumSinifi && kuyrukHam) {
 
 // ÇEVİRİ **VE ETKİ** taranir (hasim bulgusu): kuyruga yazilan sahip-yuzeyi satiri ikisini de
 // tasir; yalniz ÇEVİRİyi süzmek, jargonun ETKİ üzerinden sahibin önüne çikmasina izin veriyordu.
+// "anlamadım" sözlüğü VERİ dosyasından okunur — catal-kuyruk.sh --durum ile AYNI liste.
+// İki yerde ayrı ayrı yazılmış bir liste sürüklenir (D-02); dosya okunamazsa FAIL-CLOSED
+// davranılmaz ama liste BOŞ kalır ve o hâlde bu kalem hiç koşmaz — ikinci hat `--cevapla` kipindedir.
+const asciiKucuk = (s) => String(s).replace(/[A-Z]/g, (c) => c.toLowerCase());
+let ANLAMADIM = [];
+try {
+  ANLAMADIM = readFileSync(process.env.KAPI_SOZLUK || "", "utf8").split("\n")
+    .map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map(asciiKucuk);
+} catch { ANLAMADIM = []; }
 const jargonTara = (metin) => {
   const j = [];
   if (/(?:^|[^\p{L}\p{N}])(?:KT|K|D|G|F|Ç)-\d+/u.test(metin)) j.push("karar/görev numarası");
@@ -378,6 +442,38 @@ if (!catalYok && !denetciMi) {
     }
   }
 }
+// SEÇENEKLER (F1-5g) — İSTEĞE BAĞLI ve bilerek öyle. Zorunlu yapılsaydı iki bedeli olurdu
+// (hasım bulgusu): (a) geri uyum kırılırdı — cevap kanalı KAPALI kurulumlarda da her çatal
+// zarfı reddedilirdi; (b) daha kötüsü, yeni bir zorunlu alanın redi İKİNCİ turda
+// (stop_hook_active) `zarf` kaydını hiç düşürmeden geçer ve soru sahibe HİÇ ULAŞMADAN
+// buharlaşırdı. Alan YOKSA çatal "klavye-yalnız"dır: kod üretilmez, posta bunu söyler.
+// Alan VARSA biçimi serttir — yarım bir liste, telefonda basılamayacak bir karar demektir.
+const sec = (catalYok || denetciMi) ? "" : (alan["SEÇENEKLER"] || "").trim();
+if (sec && !/^açık-uçlu\b/i.test(sec)) {
+  const parcalar = sec.split(/(?=\b[1-9]\))/).map((x) => x.replace(/^\s*[1-9]\)\s*/, "").trim()).filter(Boolean);
+  if (parcalar.length < 2 || parcalar.length > 4) {
+    red("SEÇENEKLER 2-4 numaralı seçenek istiyor (gelen: " + parcalar.length + ")",
+        "«SEÇENEKLER: 1) … 2) …» biçiminde yaz; sayılabilir seçeneğe inmiyorsa «SEÇENEKLER: açık-uçlu — <gerekçe>» yaz (o çatal uzaktan cevaplanamaz, klavyede kalır)");
+  }
+  for (const pRaw of parcalar) {
+    if (Buffer.byteLength(pRaw, "utf8") > 120) {
+      red("SEÇENEKLER maddesi 120 baytı aşıyor: " + pRaw.slice(0, 60),
+          "her seçenek sahip dilinde TEK kısa cümle olmalı — telefonda okunacak");
+    }
+    const j = jargonTara(pRaw);
+    if (j.length) {
+      red("SEÇENEKLER maddesi sahibin bilmediği kelime taşıyor (" + j.join(", ") + "): " + pRaw.slice(0, 60),
+          "numara/dosya adı/yol GEÇMEZ — bu satır sahibin telefonuna AYNEN gider");
+    }
+    // "anlamadım" sınıfı bir seçenek, uygulandığı an maddeyi ÇEVİRİ KUSURU okutur ve kilit
+    // hiç açılmaz — sahip cevap vermiştir, kod tükenmiştir, iş kalıcı kilitlidir. Kapıda kes.
+    if (ANLAMADIM.some((k) => asciiKucuk(pRaw).includes(k))) {
+      red("SEÇENEKLER maddesi «anlamadım» sınıfı bir dize taşıyor: " + pRaw.slice(0, 60),
+          "bu dize sahibin cevabında «soruyu anlamadım» demektir; seçenek metni olarak kullanılamaz (tools/sevk/cevap-sozlugu.txt)");
+    }
+  }
+}
+
 
 // (2) TÜRETME-İZİ capasi — iz "yok" degilse COZULEBILIR bir capa tasimali. Gerekce (D-25
 //     danisman serhi): turetme yetkisinin ters yuzu "VIZYONDA vardi deyip sormadan basmak"tir;
@@ -452,9 +548,15 @@ if (denetciMi) {
     }
   } catch {}
   const kis = (s) => (typeof s === "string" ? s.slice(0, 400) : null);
-  kayit({ tip: "catal-suzgec", ajan: tipHam, gorev: kaynakGorev, hukum, kalemler,
+  // UZAKTAN (F1-5g · denetçinin 6. kalemi): bu karar telefondan basılabilir mi?
+  // FAIL-CLOSED: satır yoksa, okunamıyorsa ya da "uygun" yazmıyorsa hüküm UYGUN-DEĞİL olur —
+  // kod üretilmez, soru klavyede kalır. Yeni bir alanın YOKLUĞU bir karar kanalını AÇAMAZ.
+  const uzaktanHam = (alan["UZAKTAN"] || "").trim();
+  const uzaktan = /^uygun\b/i.test(uzaktanHam) && !/^uygun-değil/i.test(uzaktanHam) ? "uygun" : "uygun-degil";
+  kayit({ tip: "catal-suzgec", ajan: tipHam, gorev: kaynakGorev, hukum, kalemler, uzaktan,
           ceviri: kis(kaynakAlan && kaynakAlan.ceviri), etki: kis(kaynakAlan && kaynakAlan.etki),
-          bekletir: kis(kaynakAlan && kaynakAlan.bekletir) });
+          bekletir: kis(kaynakAlan && kaynakAlan.bekletir),
+          secenekler: kis(kaynakAlan && kaynakAlan.secenekler) });
   // GEÇTİ ise sahip-yuzeyi maddesi kuyruga MEKANIK duser; metni denetci DEGIL kayit yazar
   // (§9 sahip-atfi kurali: sahip yuzeyine giden cumle zarfin gunluk kaydindan gelir).
   // SHA TURUNDA DA YAZILIR (hasim bulgusu; T3a bunun on kosulunu sahada gosterdi): denetci bir
@@ -680,6 +782,9 @@ kayit({
     degerlendirmediklerim: alan["DEĞERLENDİRMEDİKLERİM"], siradaki: alan["SIRADAKİ"],
     turetme_izi: alan["TÜRETME-İZİ"], geri_cekilen: alan["GERİ-ÇEKİLEN"],
     izin_engeli: alan["İZİN-ENGELİ"] || null,
+    // F1-5g: uzaktan cevap listesi. Kuyruğa giden metin gibi bu da ZARF KAYDINDAN okunur —
+    // sahip yüzeyine giden hiçbir cümle iki ayrı yerde kurulmaz (§9 + D-02).
+    secenekler: alan["SEÇENEKLER"] || null,
   },
   dikis, ham: (metin || "").slice(0, 4000),
 });
@@ -769,9 +874,34 @@ console.log([ceviri, etki, bekletir].join("\t"));
             H_CEVIRI="$(printf '%s' "$KUYRUK_ALAN" | cut -f1)"
             H_ETKI="$(printf '%s' "$KUYRUK_ALAN" | cut -f2)"
             H_BEKLETIR="$(printf '%s' "$KUYRUK_ALAN" | cut -f3)"
+            # ── F1-5g · UZAKTAN CEVAP KODU ─────────────────────────────────────────────
+            # Kod ÜÇ şart birden tutunca üretilir; biri bile eksikse soru klavyede kalır ve
+            # posta bunu açıkça söyler. Fail-closed yön: eksik/okunamayan her şey "kod yok".
+            #   (1) kanal.conf CEVAP_KANALI=acik      (2) denetçinin UZAKTAN hükmü uygun
+            #   (3) rolün SEÇENEKLER satırı sayılabilir 2-4 seçeneğe iniyor
+            # KAPANIŞ EVRESİNDE ÜRETİLMEZ (hasım bulgusu): kapanış dalı cevabı beklemez, dönem
+            # aynı turda kapanabilir ve kapanmış kutunun görev satırı yeniden açılamaz —
+            # uygulanmış ama karşılığı olmayan bir cevap doğardı.
+            H_KOD=""; H_SECENEKLER=""
+            if [ "$DONEM_TUR" != "kapanis" ]; then
+              kanal_oku "$KOK" >/dev/null 2>&1 || true
+              if [ -n "${KANAL_CEVAP_KANALI:-}" ]; then
+                . "$KOK/tools/sevk/kilit.sh"
+                if kilit_al "$KOK/tools/sevk/.cevap-capa.kilit"; then
+                  KOD_CIKTI="$(C_GUNLUK="$KOK/00_pano/zarf-gunlugu.jsonl" C_CAPA="$KOK/tools/sevk/.cevap-capa" \
+                    C_GOREV="$ARG" C_CATAL="$AYRINTI" C_DONEM="$DONEM_ID" C_KUTU="$DONEM_KUTU" \
+                    "$NODE_BIN" --input-type=module -e "$KOD_JS" 2>/dev/null || true)"
+                  kilit_birak
+                  H_KOD="$(printf '%s' "$KOD_CIKTI" | head -n1 | cut -f1)"
+                  H_SECENEKLER="$(printf '%s' "$KOD_CIKTI" | tail -n +2)"
+                  [ -n "$H_SECENEKLER" ] || H_KOD=""
+                fi
+              fi
+            fi
             CLAUDE_PROJECT_DIR="$KOK" haber_at --olay catal-bekliyor --donem "$DONEM_ID" \
               --kutu "$DONEM_KUTU" --catal "$AYRINTI" --anahtar "$AYRINTI" \
-              --ceviri "$H_CEVIRI" --etki "$H_ETKI" --bekletir "$H_BEKLETIR" || true
+              --ceviri "$H_CEVIRI" --etki "$H_ETKI" --bekletir "$H_BEKLETIR" \
+              ${H_KOD:+--kod "$H_KOD" --secenekler "$H_SECENEKLER"} || true
           fi
         fi
         ;;

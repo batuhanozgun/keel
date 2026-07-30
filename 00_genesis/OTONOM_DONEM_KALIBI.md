@@ -8,32 +8,22 @@
      otonom kural evi BU dosyadır. Keşfi ÜÇ yoldan: sevkin devir metnindeki `kural:` işaretçisi ·
      rolün alt-ajan koltuğundaki açılış okuma listesi (G3.3e) · rol sözleşmesinin "Açılış
      ek-okumaları" satırı. İlk ikisi mekaniktir, üçüncüsü serbest metin.
-     Tavan: 16.640 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
+     Tavan: 17.408 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
      ölçer; kurulu bekçiye girmez — F3 tablosu EL_KITABI'nda ve ona dokunulmuyor).
-     DÖRDÜNCÜ ARTIŞ (2026-07-30, Faz 2 sıra 7 · dönem dikişleri): 14.848 → 16.640 (+1.792 B).
-     Sebep yine ek KURAL, üslup değil — ve bu paketin getirdiği kural sayısı öncekilerden büyük:
-     (i) dönemin ÜÇ EVRESİ ve evreler arası geçiş kuralı (§1) · (ii) duruş sözleşmesine beşinci
-     zorunlu satır `İZİN:` + kapalı izin sözlüğü ve "kural evi asla önceden verilemez" sınırı
-     (§2) · (iii) BÜTÇE'nin ne saydığının düzeltilmesi (§2) · (iv) kapanış evresinin iki zorunlu
-     gözü ve KIRMIZI karnenin `BULGU-GOREV` şartı (§11). Metin ÖNCE sıkıştırıldı: kip bayrağının
-     anlatımı (§1), prova-damgası listesi (§10) ve izin dikişlerinin tekrarı (§4/§7) çıkarıldı;
-     brifing biçimi ile karne biçimi kural evine KOPYALANMADI — ikisi de kendi koltuk
-     sözleşmesinde yaşıyor (tek-ev). Artış ondan sonra kalan. Yeni marj 564 B.
-     Tavan 14.336'dan çıkarıldı (2026-07-29, dil paketi): fren ateşledi ve sebebi ek KURAL
-     değil, kelime uzunluğuydu — eski tek kelimenin altı anlamı altı gerçek ada ayrıldı ("otonom dönem",
-     "alt-ajan çağrısı", "bekçi denetimi", …) ve aynı içerik 65 B büyüdü. Karar: metni
-     sıkıştırıp kuralı törpülemek yerine tavan +128 B; yeni marj 598 B. Sıkıştırma seçilmedi
-     ÜÇÜNCÜ ARTIŞ (2026-07-30, Faz 2 sıra 5): 14.464 → 14.848 (+384 B). Sebep yine ek KURAL:
-     duruş sözleşmesine beşinci `LİSTE:` satırı girdi (planlama kutusu işareti; şişme çapası ve
-     görev tavanı ona bakıyor). Metin önce sıkıştırıldı, artış ondan sonra kaldı. Bu dosya sahip
-     yüzeyi değildir — tavan kararı danışmanındır, beyanı paketin raporundadır.
-     çünkü E3'te sıkıştırılabilecek olan zaten çıkarıldı (§6 listesi koltuk dosyasına gitti).
-     Tavan E3'te 12.288'den çıkarıldı (2026-07-27): E1'in sayısı içerik yazılmadan seçilmişti
-     ve dört evreye 658 B pay bırakıyordu; E3 sıkıştırma sınırına geldi (§6'nın beş-kalem
-     listesi koltuk dosyasına bırakıldı — F3 "kural-atıf kopyası" sınıfı). Sayı yine bir
-     TAHMİNDİR; marj freni onu bir dahaki sefere sessizce kaydırılamaz kılar: 500 B'nin altına
-     inecek ek, tavan kararını YENİDEN aldırır. Bu dosya sahip yüzeyi DEĞİLDİR (karar alanı
-     çizgisi madde 8: yapının kendi işleyişi sahibe soru değildir) — karar danışmanındır,
+     BEŞİNCİ ARTIŞ (2026-07-30, Faz 2 sıra 8 · cevap kanalı): 16.640 → 17.408 (+768 B).
+     Sebep yine ek KURAL: (i) zarfa isteğe bağlı SEÇENEKLER alt-alanı ve biçimi (§4) ·
+     (ii) §6ya 7. madde — uzaktan cevabın üç şartı, "cevap bir indekstir" ilkesi, kapanış
+     evresi istisnası ve "kapanmış dönemi açmaz" sınırı. Metin ÖNCE sıkıştırıldı: paketin
+     kendi eklemesi 1.350 Bden 791 Be indirildi (%41) ve §6nın mekanik listesi kısaltıldı;
+     artış ondan sonra kalan. Yeni marj 530 B. Tavan kararı danışmanındır (bu dosya sahip
+     yüzeyi değildir), beyanı paketin raporundadır.
+     ÖNCEKİ ARTIŞLAR (tek satır; gerekçeleri git geçmişinde ve paket raporlarında):
+     12.288 → 14.336 (E3, 2026-07-27, dört evre) · → 14.464 (2026-07-29, dil paketi: sebep
+     kural değil kelime uzunluğuydu) · → 14.848 (sıra 5, `LİSTE:` satırı) · → 16.640 (sıra 7,
+     üç evre + `İZİN:` + bütçe düzeltmesi + kapanış gözleri).
+     Sayı her seferinde bir TAHMİNDİR; marj freni onu sessizce kaydırılamaz kılar: 500 Bnin
+     altına inecek ek, tavan kararını YENİDEN aldırır. Bu dosya sahip yüzeyi DEĞİLDİR (karar
+     alanı çizgisi madde 8: yapının kendi işleyişi sahibe soru değildir) — karar danışmanındır,
      beyanı paketin raporundadır. İlk gerçek retroda ölçümle kalibre edilir. -->
 # OTONOM DÖNEM — otonom kipin kuralları
 
@@ -123,7 +113,7 @@ yapılamaz). F8'in "doğrulama commit'li YEŞİL REF'e" kuralı kutu-KAPANIŞ do
 ## 4 · Dönüş zarfı (alt-ajan çağrısı → sevk iç kanalı; kapanış bloğunun YERİNE GEÇMEZ)
 
 Her alt-ajan çağrısı dönüşünü şu adlı listeyle bitirir — **6 üst alan; ÇATAL doluysa 3
-alt-alan da zorunlu** (SubagentStop biçim kapısının denetlediği kanonik sayım):
+alt-alan zorunlu + SEÇENEKLER isteğe bağlı** (SubagentStop biçim kapısının kanonik sayımı):
 
 **Her etiket AYRI satırın BAŞINDA yazılır** (biçim kapısı satır-içi etiketi okumaz — mekanik sınır):
 
@@ -133,12 +123,15 @@ BİTEN:      G-NN — <tek cümle> · kanıt: <dosya:satır | commit>  (riskli g
 ÇEVİRİ:     <sahip dilinde tek cümle>
 ETKİ:       <cevaba göre ertesi sabah ne değişir · yanlışsa bedeli · geri dönüşü>
 BEKLETİR:   <bu cevaba bağlı görevler — K-B>
+SEÇENEKLER: 1) <sahip dilinde tek cümle> 2) <…>   | açık-uçlu — <gerekçe>   (İSTEĞE BAĞLI)
 DEĞERLENDİRMEDİKLERİM: <tam tartılmayan boyutlar> | yok   (BOŞ BIRAKILAMAZ — "yok" açık yazılır)
 SIRADAKİ:   <rol/G-NN önerisi> | kapalı
 TÜRETME-İZİ: yok | "sormadım çünkü VIZYON/karar <satır>"
 GERİ-ÇEKİLEN: yok | <dönem içinde açılıp geri çekilen çatal/karar — tek satır iz>
 ```
 
+- **SEÇENEKLER:** yazılırsa 2-4 seçenek, her biri ≤120 B, sahip dilinde (jargon kapısı
+  ÇEVİRİ/ETKİ ile aynı). **Yokluğu red sebebi değildir** — o çatal klavye-yalnız kalır.
 - **Koşullu 7. satır — İZİN-ENGELİ:** izin engeli yaşandıysa (§2 İZİN) zarfa
   `İZİN-ENGELİ: <ne engellendi>` yazılır; kapı bunu transkriptten ÇİFT kaynakla doğrular —
   yaşanmışken yazılmamış zarf geri döner. Engellenen adım ATLANIR; iş durmaz.
@@ -189,8 +182,14 @@ Dosya yoksa ya da profil boşsa **çatal sahibe gidemez** — soru kanalı kapal
 6. **Sahibin bilmediği kelime kırmızıdır:** çeviride karar/görev numarası, dosya adı ya da yol
    geçen çatal kapıdan döner. *Ders: sahip anlamadığı soruya "olur" der.*
 
-Mekanikler: `tools/sevk/karar-alani.sh` (kanal açık mı) · `catal-kuyruk.sh` (durum + ekleme) ·
-biçim kapısı (jargon · TÜRETME-İZİ çapası · BEKLETİR kilidi · denetçi sözleşmesi).
+7. **Uzaktan cevap (kanal açıksa):** posta tek-kullanımlık kimlik çapası taşır; sahip
+   yanıtlayıp **yalnız seçenek numarasını** yazar. Kuyruğa yazılan cümle sahibin değil
+   **yapının kendi seçenek metnidir** — gelen tek şey bir indekstir (serbest-metin yasağının
+   simetriği). Kod üç şartla doğar: kanal açık · `UZAKTAN` hükmü uygun · SEÇENEKLER sayılabilir;
+   **kapanış evresinde doğmaz.** Uzaktan cevap kapanmış dönemi **açmaz.**
+
+Mekanikler: `karar-alani.sh` · `catal-kuyruk.sh` (durum + ekleme + `--cevapla`: kuyruğa yazan
+TEK betik) · `nabiz.sh` (uzaktan cevap; dönem kapısının dışında) · biçim kapısı.
 
 ## 7 · Sır-cinsi ilkesi + Bash-yazım kuralı (önleme — mekaniği KURULU, E2)
 

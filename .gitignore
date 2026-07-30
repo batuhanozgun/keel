@@ -28,6 +28,11 @@ tools/sevk/.donem-acik
 tools/sevk/.donem-capa
 # DUR işareti (E4) — dönem-durumu; sevkin okuduğu tek satır, izlenmez (dönem-göstergesi emsali)
 tools/sevk/.dur
+# uzaktan cevap çapası (F1-5g) — açık soruların KODUNU ve sahibe giden SEÇENEK METİNLERİNİ
+# taşır: hem sır hem proje verisidir, depoya girmez. Dönem çapasından farkı ÖMRÜ: dönemle
+# ölmez (cevap dönem kapandıktan sonra da gelebilir), kodun kendi ömrüyle ölür.
+tools/sevk/.cevap-capa
+tools/sevk/.cevap-capa.kilit
 # watchdog kaydı (E5'te doğar) — makineye özel kurulum izi, depoya girmez
 tools/sevk/watchdog-kurulu
 # haber kanalının GERÇEK yapılandırması (E5) — sahibin e-posta adresini taşır, yani kişisel
