@@ -17,7 +17,8 @@
 #
 # Çıkış kodları (--rapor):
 #   0  zorunluların hepsi var (seçimli eksik olabilir — o kırmızı DEĞİLDİR)
-#   1  zorunlu araç eksik ya da var-ama-çalışmıyor → kuruluma başlanmaz
+#   1  zorunlu araç eksik · var-ama-çalışmıyor · var-ama-AYARSIZ → kuruluma başlanmaz
+#      (üçüncü hâl: araç kurulu ve çalışıyor ama kullanılamaz durumda — git'in kimliği gibi)
 #   2  DENETİMİN KENDİSİ çalışamadı (argüman hatası · kalem listesi yok/boş/çözülemedi).
 #      Bu "hepsi yerinde" DEĞİLDİR ve sessiz geçilmez; --satir kipinde tek satırla haber verilir.
 #
@@ -103,19 +104,51 @@ yokla() {
   "$yol" $arg >/dev/null 2>&1
 }
 
+# ── Kullanılabilirlik yoklaması: ÇALIŞMAK da yetmez, AYARLI olmak gerekir ─────────────────
+# Kanıt: git kurulu ve çalışıyor olabilir ama `user.name`/`user.email` ayarlı değilse İLK
+# KAYIT DENEMESİNDE durur ve kurulum orada patlar. Yalnız varlığa ve çalışırlığa bakan denetim
+# "✔ git" der, sonra kurulum ilk commit'te ölür — bu ÜÇÜNCÜ HÂL ölçülmeden görünmezdi.
+# Sözleşme: her `ayar` satırı için "$yol $ayar" BOŞ OLMAYAN çıktı vermeli; çıktı boşsa ya da
+# komut hata verirse kalem AYARSIZ sayılır.
+# SINIR 1: `dene` ile aynı — yalnız --rapor kipinde koşar (macOS'ta aracı çağırmak kurulum
+# penceresi açtırabilir; açılış kancasında pencere kabul edilemez).
+# SINIR 2 (İLAN): yoklama aracın KENDİ ortamını kullanır. `git config` kullanıcı ayarını
+# `$HOME` altından okur; HOME tanımsız bir kabukta ayarlı bir git bile AYARSIZ görünür. Bu
+# yanlış alarm değil DOĞRU alarmdır — o kabukta commit de aynı sebeple düşer — ama sınırın
+# bilinmesi gerekir: KEEL'in koştuğu her yerde (kanca, kurulum oturumu) HOME vardır.
+ayarli() {
+  local yol="$1" satir cikti
+  [ -n "$AYAR" ] || return 0                # ayarı olmayan kalem yoklanmaz
+  [ "$KIP" = "rapor" ] || return 0
+  while IFS= read -r satir; do
+    [ -n "$satir" ] || continue
+    cikti="$("$yol" $satir 2>/dev/null)" || return 1
+    [ -n "$cikti" ] || return 1
+  done <<< "$AYAR"
+  return 0
+}
+
 # ── Kayıt biçimi bash 3.2 uyumlu okunur: ilişkisel dizi YOK, kayıt tamamlanınca akıtılır ──
-AD=""; SINIF=""; OZELLIK=""; ARAMA=""; ADAY=""; DENE=""
+AD=""; SINIF=""; OZELLIK=""; ARAMA=""; ADAY=""; DENE=""; AYAR=""; AYARSIZ=""
 NEDIR=""; NEDEN=""; YOKSA=""; NEREDEN=""
 ZORUNLU_EKSIK=""; SECIMLI_EKSIK=""
 Z_VAR=""; S_VAR=""; Z_METIN=""; S_METIN=""; BOZUK=""; KAYIT_SAYISI=0; TANINMAYAN=0
 
-sifirla() { AD=""; SINIF=""; OZELLIK=""; ARAMA=""; ADAY=""; DENE=""; NEDIR=""; NEDEN=""; YOKSA=""; NEREDEN=""; }
+sifirla() { AD=""; SINIF=""; OZELLIK=""; ARAMA=""; ADAY=""; DENE=""; AYAR=""; AYARSIZ=""; NEDIR=""; NEDEN=""; YOKSA=""; NEREDEN=""; }
 
 dort_cevap() {
   printf '      Bu nedir            : %s\n' "$NEDIR"
   printf '      KEEL neden istiyor  : %s\n' "$NEDEN"
   printf '      Kurmazsan ne olmaz  : %s\n' "$YOKSA"
   printf '      Nereden gelir       : %s\n' "$NEREDEN"
+}
+
+# AYARSIZ hâlinde "nereden gelir" cevabı YANLIŞ YÖNLENDİRMEDİR: araç zaten kurulu, sahibin
+# yapması gereken şey indirmek değil bir kez ayar yazmaktır. O yüzden bu hâlde üç cevap basılır.
+ayar_cevap() {
+  printf '      Bu nedir            : %s\n' "$NEDIR"
+  printf '      KEEL neden istiyor  : %s\n' "$NEDEN"
+  printf '      Eksik olan ayar     : %s\n' "$AYARSIZ"
 }
 
 akit() {
@@ -133,30 +166,42 @@ akit() {
     *) BOZUK="$BOZUK ${AD}(sınıf:'${SINIF}')"; SINIF="zorunlu" ;;
   esac
   if [ "$SINIF" = "secimli" ] && [ -z "$OZELLIK" ]; then BOZUK="$BOZUK ${AD}(özelliksiz)"; fi
+  # `ayar` yazılıp `ayarsiz` yazılmayan kayıt sahibe "eksik" der ama ne yapacağını söylemez —
+  # dört cevap kuralının aynısı. Eksik kayıt sayılır ve raporda kusur olarak görünür.
+  if [ -n "$AYAR" ] && [ -z "$AYARSIZ" ]; then BOZUK="$BOZUK ${AD}(ayarsız-cevapsız)"; fi
 
-  local yol durum
+  local yol durum ayar_kusuru=0
   if yol="$(bul "${ARAMA:-$AD}" "$ADAY")"; then
     if yokla "$yol" "$DENE"; then
-      if [ "$SINIF" = "zorunlu" ]; then
-        Z_VAR="$Z_VAR$(printf '  ✔ %-12s %s\n' "$AD" "$yol")"$'\n'
-      else
-        S_VAR="$S_VAR$(printf '  ✔ %-12s %s  → %s\n' "$AD" "$yol" "${OZELLIK:-—}")"$'\n'
+      if ayarli "$yol"; then
+        if [ "$SINIF" = "zorunlu" ]; then
+          Z_VAR="$Z_VAR$(printf '  ✔ %-12s %s\n' "$AD" "$yol")"$'\n'
+        else
+          S_VAR="$S_VAR$(printf '  ✔ %-12s %s  → %s\n' "$AD" "$yol" "${OZELLIK:-—}")"$'\n'
+        fi
+        return 0
       fi
-      return 0
+      # Kurulu ve çalışıyor ama kullanılamaz: AYARSIZ. "Kur" demek burada yanlış olur.
+      durum="$(printf 'AYARSIZ (%s)' "$yol")"
+      ayar_kusuru=1
+    else
+      # Dosya yerinde ama çalışmıyor: EKSİK sayılır. Sebep ayrı yazılır — "kur" demek yanlış
+      # yönlendirme olurdu; sorun kurulu olmaması değil, kurulumun tamamlanmamış olmasıdır.
+      durum="$(printf 'VAR AMA ÇALIŞMIYOR (%s)' "$yol")"
     fi
-    # Dosya yerinde ama çalışmıyor: EKSİK sayılır. Sebep ayrı yazılır — "kur" demek yanlış
-    # yönlendirme olurdu; sorun kurulu olmaması değil, kurulumun tamamlanmamış olmasıdır.
-    durum="$(printf 'VAR AMA ÇALIŞMIYOR (%s)' "$yol")"
   else
     durum="BULUNAMADI"
   fi
 
+  local cevap
+  if [ "$ayar_kusuru" -eq 1 ]; then cevap="$(ayar_cevap)"; else cevap="$(dort_cevap)"; fi
+
   if [ "$SINIF" = "zorunlu" ]; then
     ZORUNLU_EKSIK="$ZORUNLU_EKSIK $AD"
-    Z_METIN="$Z_METIN$(printf '  ✘ %-12s %s\n' "$AD" "$durum")"$'\n'"$(dort_cevap)"$'\n\n'
+    Z_METIN="$Z_METIN$(printf '  ✘ %-12s %s\n' "$AD" "$durum")"$'\n'"$cevap"$'\n\n'
   else
     SECIMLI_EKSIK="$SECIMLI_EKSIK $AD"
-    S_METIN="$S_METIN$(printf '  ✘ %-12s %s  → "%s" çalışmaz\n' "$AD" "$durum" "${OZELLIK:-—}")"$'\n'"$(dort_cevap)"$'\n\n'
+    S_METIN="$S_METIN$(printf '  ✘ %-12s %s  → "%s" çalışmaz\n' "$AD" "$durum" "${OZELLIK:-—}")"$'\n'"$cevap"$'\n\n'
   fi
 }
 
@@ -176,6 +221,11 @@ while IFS= read -r satir || [ -n "$satir" ]; do
         arama)   ARAMA="$deger" ;;
         aday)    ADAY="$deger" ;;
         dene)    DENE="$deger" ;;
+        # `ayar` BİRDEN ÇOK KEZ yazılabilir: git'in iki ayarı (user.name + user.email) ayrı
+        # satırlardır ve BİRİ eksikse ilk kayıt yine durur. Üzerine yazsaydık ikincisi
+        # birincisini siler ve denetim yarım ölçerdi — sessiz yeşilin bu ailedeki hâli.
+        ayar)    AYAR="${AYAR}${AYAR:+$'\n'}$deger" ;;
+        ayarsiz) AYARSIZ="$deger" ;;
         nedir)   NEDIR="$deger" ;;
         neden)   NEDEN="$deger" ;;
         yoksa)   YOKSA="$deger" ;;

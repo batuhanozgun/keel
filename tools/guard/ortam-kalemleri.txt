@@ -10,6 +10,12 @@
 #   aday     PATH dar olduğunda (GUI oturumu) denenecek tam yollar, boşlukla ayrık; joker serbest
 #   dene     (seçimli) çalışırlık yoklamasının argümanı — "$yol $dene" sıfır dönmeli.
 #            YALNIZ --rapor kipinde koşar (gerekçe betikte yazılı: macOS kurulum penceresi).
+#   ayar     (seçimli, BİRDEN ÇOK KEZ yazılabilir) kullanılabilirlik yoklaması: "$yol $ayar"
+#            BOŞ OLMAYAN çıktı vermeli. Araç VAR ve ÇALIŞIYOR ama AYARSIZ olabilir — üçüncü
+#            hâl budur. `dene` gibi yalnız --rapor kipinde koşar (aynı pencere gerekçesi).
+#   ayarsiz  `ayar` yazılmışsa ZORUNLU: ayar eksikken sahibe okunan tek cümle. Düzeltme
+#            komutunu İÇERİR. Ayarsız araç için "nereden gelir" cevabı yanlış yönlendirmedir
+#            (araç zaten kurulu), o yüzden bu hâlde nedir + neden + bu cümle basılır.
 #   nedir    | Sahibe okunan DÖRT cevap. Kurulum konuşması bunları olduğu gibi okur;
 #   neden    | GENESIS bunları yeniden yazmaz (kalıp metin sabittir — buharlaşma kapısı).
 #   yoksa    |
@@ -21,6 +27,8 @@
 #
 # KURAL: bu listeye yeni araç eklenirse dört cevabı da yazılır. Üçü yazılıp biri boş bırakılan
 # kayıt, sahibin "bunu neden kurayım" sorusunu cevapsız bırakır — eksik kayıt sayılır.
+# Aynı kural `ayar` için de geçerli: `ayar` yazılıp `ayarsiz` yazılmayan kayıt, sahibe ne
+# yapacağını söylemeden "eksik" der — eksik kayıt sayılır ve raporda kusur olarak görünür.
 #
 # ADAY LİSTESİ BİLEREK DAR: aynı liste file-guard.sh · kapanis.sh · icerik-suzgeci.sh ·
 # tools/sevk/ortak.sh içinde de var (dört kopya, bu dosyadan önce de öyleydi). Burası onlardan
@@ -42,6 +50,9 @@ sinif: zorunlu
 arama: git
 aday: /usr/bin/git /usr/local/bin/git /opt/homebrew/bin/git
 dene: --version
+ayar: config --get user.name
+ayar: config --get user.email
+ayarsiz: Kurulu ama kim olduğunu bilmiyor. Kayıt tutabilmesi için adını ve e-posta adresini bir kez söylemen gerekir; söylenmezse ilk kayıt denemesinde durur. Terminal'e sırayla şunları yaz: git config --global user.name "Adın Soyadın" — sonra: git config --global user.email "eposta@adresin"
 nedir: Dosyaların her değişikliğini tarih tarih kaydeden, istediğinde eski hâline döndüren bir araç.
 neden: KEEL'in "yanlış giderse geri alınır" sözü buna dayanır. Bir işin ne zaman başladığını ve o işin kabul şartlarının sonradan değiştirilip değiştirilmediğini bununla kanıtlarız — kimsenin beyanına değil, kayda bakarız.
 yoksa: Geri dönüş yolu kalmaz; "bu şart sonradan değiştirilmemiş" denetimi ölçüm yapamaz ve yapay zekânın gece yaptığı iş gözden geçirilemez hâle gelir.

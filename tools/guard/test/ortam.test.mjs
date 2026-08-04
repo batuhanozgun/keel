@@ -24,10 +24,14 @@ const ACILIS = join(GUARD_DIZIN, 'acilis.sh');
 // Dar PATH: /bin var (bash orada), /usr/bin YOK → node da git de PATH'te görünmez.
 const DAR_PATH = '/bin';
 
+// HOME VERİLİR: fixture'ın taklit ettiği şey DAR PATH'tir, "HOME'suz makine" değil — KEEL hiçbir
+// zaman HOME'suz koşmaz (kanca da, kurulum oturumu da HOME ile gelir). HOME düşünce `git config`
+// kullanıcı ayarını okuyamaz ve git ayarlı bir makinede bile AYARSIZ görünür; yani HOME'suz
+// fixture, var olmayan bir dünyayı ölçerdi. (Ders: fixture kapının değil GERÇEĞİN taklidi olmalı.)
 function kos(argv, { path = process.env.PATH } = {}) {
   return spawnSync('/bin/bash', [BETIK, ...argv], {
     encoding: 'utf8',
-    env: { PATH: path, LC_ALL: 'C.UTF-8' },
+    env: { PATH: path, LC_ALL: 'C.UTF-8', HOME: process.env.HOME },
   });
 }
 
@@ -146,7 +150,7 @@ test('betik node OLMADAN koşar (yokluğunu bildiren şey ona bağlı olamaz)', 
 test('dar PATH\'te kendi veri dosyasını bulur (dirname gibi dış komuta bağlı değil)', () => {
   // Betik başka bir dizinden çağrılır: kendi yolunu yerleşiklerle çözmek zorunda.
   const r = spawnSync('/bin/bash', [BETIK, '--rapor'], {
-    cwd: tmpdir(), encoding: 'utf8', env: { PATH: DAR_PATH, LC_ALL: 'C.UTF-8' },
+    cwd: tmpdir(), encoding: 'utf8', env: { PATH: DAR_PATH, LC_ALL: 'C.UTF-8', HOME: process.env.HOME },
   });
   assert.equal(r.stderr.trim(), '', 'stderr temiz olmalı: ' + r.stderr);
   assert.match(r.stdout, /ZORUNLU/);
@@ -233,6 +237,92 @@ test('çalışan araç yoklamadan geçer (yoklama yanlış alarm üretmiyor)', (
   const r = kos(['--rapor', '--kalemler', yol], { path: DAR_PATH });
   assert.equal(r.status, 0);
   assert.match(r.stdout, /SONUÇ: hepsi yerinde/);
+});
+
+// ── ÜÇÜNCÜ HÂL: araç VAR, ÇALIŞIYOR, ama AYARSIZ ─────────────────────────────────────────
+// Kanıt: git kurulu ve `--version` veriyor olabilir, ama user.name/user.email ayarlı değilse
+// kurulum İLK COMMIT'te durur. Varlığa+çalışırlığa bakan denetim "✔ git" der ve GENESIS ölür.
+// Sahte araç: `--version` sıfır döner (çalışıyor), `config` çıktısı boş ya da dolu (ayar).
+function ayarliArac(dizin, { name = '', email = '' } = {}) {
+  const sahte = join(dizin, 'git');
+  writeFileSync(sahte,
+    '#!/bin/sh\n' +
+    'case "$1" in\n' +
+    '  --version) echo "git version 0.0-sahte"; exit 0 ;;\n' +
+    '  config) case "$3" in\n' +
+    `    user.name)  printf '%s' "${name}" ;;\n` +
+    `    user.email) printf '%s' "${email}" ;;\n` +
+    '  esac; exit 0 ;;\n' +
+    'esac\nexit 0\n');
+  chmodSync(sahte, 0o755);
+  return sahte;
+}
+function ayarliKalem(dizin, sahte, { ayarsiz = 'DÜZELTME CÜMLESİ: git config --global user.name "Ad"' } = {}) {
+  const yol = join(dizin, 'kalemler.txt');
+  writeFileSync(yol,
+    `[git]\nsinif: zorunlu\narama: git\naday: ${sahte}\ndene: --version\n` +
+    'ayar: config --get user.name\nayar: config --get user.email\n' +
+    (ayarsiz === null ? '' : `ayarsiz: ${ayarsiz}\n`) +
+    'nedir: a\nneden: b\nyoksa: c\nnereden: NEREDEN-CEVABI\n');
+  return yol;
+}
+
+test('AYARSIZ araç eksik sayılır — kurulu ama kullanılamaz (git kimliği sınıfı)', () => {
+  const dizin = mkdtempSync(join(tmpdir(), 'keel-ortam-ayarsiz-'));
+  const r = kos(['--rapor', '--kalemler', ayarliKalem(dizin, ayarliArac(dizin))], { path: DAR_PATH });
+  assert.equal(r.status, 1, 'ayarsız zorunlu araç YEŞİL sayılamaz — kurulum ilk kayıtta durur');
+  assert.match(r.stdout, /AYARSIZ/);
+  assert.match(r.stdout, /DÜZELTME CÜMLESİ/, 'sahibe ne yapacağı söylenir');
+  assert.ok(!/NEREDEN-CEVABI/.test(r.stdout),
+    '"nereden gelir" AYARSIZ hâlinde YANLIŞ yönlendirmedir — araç zaten kurulu: ' + r.stdout);
+});
+
+test('ayarları tam olan araç geçer (ayar yoklaması yanlış alarm üretmiyor)', () => {
+  const dizin = mkdtempSync(join(tmpdir(), 'keel-ortam-ayarli-'));
+  const sahte = ayarliArac(dizin, { name: 'Ad Soyad', email: 'a@b.c' });
+  const r = kos(['--rapor', '--kalemler', ayarliKalem(dizin, sahte)], { path: DAR_PATH });
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /SONUÇ: hepsi yerinde/);
+});
+
+// En sinsi kusur: iki `ayar` satırından ikincisi birincisini EZERSE denetim yarım ölçer ve
+// "adı var ama e-postası yok" hâli sessizce yeşile döner. Biriktirme bu testle bağlanır.
+test('iki ayardan BİRİ eksikse yine AYARSIZ (ayar satırları birikiyor, üzerine yazmıyor)', () => {
+  for (const [ad, eposta] of [['Ad Soyad', ''], ['', 'a@b.c']]) {
+    const dizin = mkdtempSync(join(tmpdir(), 'keel-ortam-yarim-'));
+    const sahte = ayarliArac(dizin, { name: ad, email: eposta });
+    const r = kos(['--rapor', '--kalemler', ayarliKalem(dizin, sahte)], { path: DAR_PATH });
+    assert.equal(r.status, 1, `yarım ayar (ad='${ad}' eposta='${eposta}') YEŞİL sayılamaz`);
+    assert.match(r.stdout, /AYARSIZ/);
+  }
+});
+
+test('ayar yazılıp ayarsiz cevabı yazılmayan kayıt SESSİZ geçmez', () => {
+  const dizin = mkdtempSync(join(tmpdir(), 'keel-ortam-cevapsiz-'));
+  const sahte = ayarliArac(dizin, { name: 'Ad', email: 'a@b.c' });
+  const r = kos(['--rapor', '--kalemler', ayarliKalem(dizin, sahte, { ayarsiz: null })], { path: DAR_PATH });
+  assert.match(r.stdout, /KALEM LİSTESİ KUSURU/);
+  assert.match(r.stdout, /ayarsız-cevapsız/);
+});
+
+// `dene` ile aynı sınır: açılış kancasında aracı çağırmak macOS'ta kurulum penceresi açtırabilir.
+test('--satir kipi ayar yoklaması KOŞMAZ (açılışta pencere riski yok)', () => {
+  const dizin = mkdtempSync(join(tmpdir(), 'keel-ortam-satirayar-'));
+  const r = kos(['--satir', '--kalemler', ayarliKalem(dizin, ayarliArac(dizin))], { path: DAR_PATH });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '', 'ayarsızlık açılış satırında konuşmaz: ' + r.stdout);
+});
+
+// Mutasyon freni: canlı kalem listesinde git kaydı gerçekten iki ayar satırı + cevabını taşımalı.
+test('canlı kalem listesinde git kimliği ölçülüyor (iki ayar + düzeltme cümlesi)', () => {
+  const veri = readFileSync(KALEMLER, 'utf8');
+  const kayit = veri.split(/^\[/m).find((k) => k.startsWith('git]'));
+  const ayarlar = kayit.match(/^ayar: (.+)$/gm) || [];
+  assert.equal(ayarlar.length, 2, 'git kimliği iki alandır: user.name VE user.email');
+  assert.match(kayit, /^ayar: config --get user\.name$/m);
+  assert.match(kayit, /^ayar: config --get user\.email$/m);
+  assert.match(kayit, /^ayarsiz: .*git config --global user\.name/m, 'düzeltme komutu cevapta olmalı');
+  assert.match(kayit, /^ayarsiz: .*git config --global user\.email/m);
 });
 
 test('kalem listesi okunamazsa: rapor DURUR, satır kipi haber verip GEÇER', () => {
