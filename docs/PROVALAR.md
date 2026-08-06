@@ -5,14 +5,16 @@ hangi raporla sınandı. **Kurulan bir projenin hazır olup olmadığını KANIT
 ayrıdır ve her kurulumda yeniden koşar (`tools/guard/kurulum-denetimi.sh` · `/donem` töreninin
 kapılanma çapaları · `tools/sevk/kurulum-kapisi.sh`).
 
+**Sınır:** burası **ne KOŞULDU**'yu tutar. **Ne KOŞULACAK** — sürüm hattı, kapsam ve çıkış
+şartları — bu dosyanın işi değildir; geliştirme kaydında yaşar ve dağıtılan pakette yoktur.
+
 **Neden dosya değil beyan:** bu satırlar 2026-07-30'a kadar `tools/sevk/damgalar/T0…T4` adlı
 "prova fişi" dosyalarıydı ve dönem açılışında KAPI olarak aranıyorlardı. Şablonla **dolu**
 geldikleri için o kapı her kurulumda baştan mühürlü geçiyordu: sorduğu soru ("bu proje hazır mı")
 ile ölçtüğü şey ("KEEL'in kendi provası yapılmış mı") aynı değildi (B-06). Kapı kaldırıldı;
 yerine bu kurulumda **ölçülebilen** çapalar kondu (F1-5h). Prova kaydı burada, doğru adında yaşar.
 
-Raporların evi geliştirme arşividir (dağıtılan pakette yoktur):
-`OS Architect/Araştırmalar/04_dış-göz-incelemeleri/2026-07-23_loop-engineering-araştırması/`.
+Raporların evi geliştirme arşividir; dağıtılan pakette yoktur.
 
 | Prova | Tarih | Ne sınandı | Rapor |
 |---|---|---|---|
