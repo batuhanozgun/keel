@@ -198,7 +198,11 @@ beşincidir; `TAM` yazan göz KÜÇÜK kadranda hiç koşmaz.
 | ölçüm yapılamadı (git yok / log hatası) | DURDURAN | BİLGİ | TAM |
 | golden testinde üretim modülü import'u | DURDURAN | BİLGİ | TAM |
 
-**Sayı beyanı:** 31 göz. Tasarı "24 denetim" diyordu; fark uydurma değil, kapsamdır —
+**Sayı beyanı:** tablo 37 satırdır — 36 göz + 1 yazım işi (PANO sayacı, bulgu üretmez).
+<!-- Düzeltme (K1 adım 3, 2026-08-06): önceki beyan "31 göz" yazıyordu; tablonun mekanik
+     sayımı 37 satırdır (4+21+6+2+4). İlan ettiğin katmanı sayarken abartmama/yanılmama kuralı
+     bu dosyaya da işler (BEKCI_TARIFI'nın kendi dersi); tablo değişmedi, sayı tabloya çekildi. -->
+Tasarı "24 denetim" diyordu; fark uydurma değil, kapsamdır —
 tasarının envanteri E1/E5 gözlerinden (zarf günlüğü · duruş sözleşmesi · kanal · watchdog · dış
 göz) ve içerik-sınıfının iki mekanikleşen kaleminden önce sayılmıştı. Envanterin kaynak
 dosyaları diskte yok; bu tablo **koddan yeniden çıkarıldı**, tasarıdan kopyalanmadı.

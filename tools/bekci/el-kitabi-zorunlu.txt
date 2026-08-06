@@ -1,0 +1,24 @@
+# el-kitabi-zorunlu — EL_KITABI bütünlük denetiminin TEK EVİ (sözleşme §5①).
+# Okuyanlar: tools/bekci/cekirdek.mjs (çalışma zamanı) + tools/guard/kurulum-denetimi.sh (adım 5'te
+# buraya bağlanır) + kalıp-eşlik testi (00_genesis/EL_KITABI_KALIBI.md bu listeyi karşılıyor mu).
+# Biçim: satır başına tek kalem, önek zorunlu —
+#   baslik: → SATIR BAŞINDA çapalı aranır (^...)
+#   ibare:  → gevşek sabit-dize (başlık değil; grep -qF emsali)
+#   kural:  → gevşek sabit-dize
+# Türkçe harf güvenliği: eşleştirme dönüşümsüz birebirdir; büyük/küçük kısayolu YASAK.
+baslik:## D-kuralları
+baslik:## F-kuralları
+baslik:## Üslup hükmü
+baslik:## Kutu döngüsü
+baslik:## Mühür ritüeli
+baslik:## Domain-rol disiplin iskeleti
+baslik:## Kanon-fakir dünya
+baslik:## Kişisel-veri süzgeci
+baslik:## Kadro + kapsam
+ibare:Değer aksiyomu
+kural:Mühür paketi
+kural:İş-icat yasağı
+kural:Kural-evrim kilidi
+kural:SENDE BEKLEYEN
+kural:yorumla onay üretme
+kural:dış göz brifingi
