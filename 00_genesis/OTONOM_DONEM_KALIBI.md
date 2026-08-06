@@ -105,8 +105,10 @@ G-12: onkosul=G-07 G-08 · risk=riskli — <tek satır gerekçe>
 G-13: onkosul=yok · risk=düşük — <tek satır gerekçe>
 ```
 
-Blok MAKİNE-OKURDUR: KUTU tavan ölçümünden düşülür, içerik-sınıfı denetimi uygulanmaz, şema
-denetimi uygulanır (ölçülmüş karar — 25 görevlik blok 2,9KB; oturum-günlüğü emsali).
+Blok MAKİNE-OKURDUR ve muafiyetin uygulayıcısı bekçi çekirdeğidir (`tools/bekci`, sözleşme):
+tavan gözü bloğu başlığıyla birlikte KUTU ölçümünden DÜŞER, içerik-sınıfı (kural-atıf) gözü
+bloğu MUAF tutar, şema gözü biçimini tartar — üçü de testli (ölçülmüş karar — 25 görevlik
+blok 2,9KB; oturum-günlüğü emsali).
 Risk satırlarını kurulum oturumu taslaklar, **kurulum denetçisi bağımsız gözden geçirip kendi
 hükmünü yazar** (kuran kendi işine risk notu veremez); uyuşmazlık kurulum bulgusudur.
 `risk=riskli` → görev `isolation: worktree` ile koşar ve doğrulayıcı yeşili gelmeden çıktısı

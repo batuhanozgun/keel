@@ -110,12 +110,15 @@ const kapi = (kok, girdi) => kos(kok, 'zarf-bicim-kapisi.sh', [], JSON.stringify
 const gunluk = (kok) =>
   existsSync(GUNLUK(kok)) ? readFileSync(GUNLUK(kok), 'utf8').split('\n').filter(Boolean).map((s) => JSON.parse(s)) : [];
 const ekle = (kok, o) => appendFileSync(GUNLUK(kok), JSON.stringify({ surum: 1, ts: '2026-07-28T10:00:00Z', donem: 'DONEM-E4', ...o }) + '\n');
+// Makine satırı sözleşmesi (tools/bekci/README.md §1-§2): sevk kararı `BEKCI v1 …` satırından
+// ve çıkış kodundan okur — kelime taraması yok. KIRMIZI'yı koruma-hattından basar (kilit=0;
+// KUTU tavan KİLİDİ kanonen dönemi DURDURMAZ, ayrı testte sınanır).
 const bekciKur = (kok, isik) => {
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
-  // Kategori duyarlı: KIRMIZI'yı koruma-hattından basar (KUTU tavan KIRMIZI'sı kanonen
-  // dönemi DURDURMAZ — ayrı testte sınanır).
-  const kategori = isik === 'KIRMIZI' ? 'koruma-hattı' : 'tavan';
-  writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), `#!/bin/bash\nprintf '[${kategori}] ${isik}\\n'\n`);
+  const govde = isik === 'KIRMIZI'
+    ? "#!/bin/bash\nprintf 'DURDURAN [koruma-hattı] kablo-denetimi: test bozması\\n'\nprintf 'BEKCI v1 durduran=1 kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'\nexit 1\n"
+    : "#!/bin/bash\nprintf 'BEKCI v1 durduran=0 kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'\nexit 0\n";
+  writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), govde);
   chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
 };
 
@@ -632,33 +635,96 @@ test('kablo: settings.json Stop ve Task|Agent kancalarını FİİLEN bağlıyor 
   assert.match((genel.hooks || []).map((h) => h.command).join(' '), /tools\/guard\/file-guard\.sh/, 'file-guard hattı bozulmamalı');
 });
 
-test('bekçi: KUTU tavan KIRMIZI"sı dönemi DURDURMAZ (kanonun iki yerde yazdığı istisna)', () => {
+// Aşağıdaki bekçi vakaları K1 makine-satırı kapısının kasıtlı bozmalarıdır: her dal (kilit ·
+// satır-yok · çelişki · arıza · uyarı · bozuk satır · kelime-taraması-emekli) ayrı sınanır.
+const bekciYaz = (kok, govde) => {
+  mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
+  writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), govde);
+  chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
+};
+const bekciliDonem = () => {
   const tek = { gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
   const kok = kurulum({ donem: true, kutu: kutuMetni(tek) });
-  mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
-  writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), "#!/bin/bash\nprintf '[tavan] KIRMIZI — KUTU 21KB\\n'\n");
-  chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
   ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
   ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  return kok;
+};
+
+test('bekçi: kilit>0 dönemi DURDURMAZ (kanonun iki yerde yazdığı istisna — kapanış kilidi)', () => {
+  const kok = bekciliDonem();
+  bekciYaz(kok, "#!/bin/bash\nprintf 'KİLİT [tavan] tavan-asimi: KUTU 21KB > 1,5x esik\\n'\nprintf 'BEKCI v1 durduran=0 kilit=1 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'\nexit 0\n");
   const r = sevk(kok);
-  // Dönem sürer (F1-5a ile artık kapanış evresine geçerek sürer): tavan kırmızısı duran kapı değil.
+  // Dönem sürer (F1-5a ile artık kapanış evresine geçerek sürer): kilit duran kapı değil.
   assert.equal(r.status, 2, r.stdout);
-  assert.ok(!/bekçi KIRMIZI/.test(r.stdout + r.stderr), 'tavan kırmızısı duran kapı DEĞİLDİR (kapanış kilididir): ' + r.stdout);
+  assert.ok(!/bekçi KIRMIZI/.test(r.stdout + r.stderr), 'kilit duran kapı DEĞİLDİR (kapanış kilididir): ' + r.stdout);
   const b = gunluk(kok).find((j) => j.tip === 'bekci');
-  assert.equal(b.isik, 'TAVAN-KIRMIZI', 'ışık ayrı sınıflanmalı ki iz kaybolmasın');
+  assert.equal(b.isik, 'KILIT', 'ışık ayrı sınıflanmalı ki iz kaybolmasın');
 });
 
-test('bekçi: çıkış kodu fail-CLOSED — çıktısında KIRMIZI olmayan çöken bekçi YEŞİL sayılmaz', () => {
-  const tek = { gorevler: [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }], onkosul: { 'G-01': 'yok' } };
-  const kok = kurulum({ donem: true, kutu: kutuMetni(tek) });
-  mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
-  writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), "#!/bin/bash\nprintf 'yarim cikti\\n'\nexit 3\n");
-  chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
-  ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
-  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+test('bekçi: çıkış kodu fail-CLOSED — makine satırı basmadan çöken bekçi YEŞİL sayılmaz', () => {
+  const kok = bekciliDonem();
+  bekciYaz(kok, "#!/bin/bash\nprintf 'yarim cikti\\n'\nexit 3\n");
   const r = sevk(kok);
   assert.match(r.stdout, /bekçi KIRMIZI/);
+  assert.match(r.stdout, /makine satırı yok/);
   assert.match(r.stdout, /çıkış kodu 3/);
+});
+
+test('bekçi: temiz çıkış AMA makine satırı yok → fail-closed duran kapı (eski kod YEŞİL sayardı)', () => {
+  const kok = bekciliDonem();
+  bekciYaz(kok, "#!/bin/bash\nprintf 'her sey yolunda gibi\\n'\nexit 0\n");
+  const r = sevk(kok);
+  assert.match(r.stdout, /bekçi KIRMIZI/);
+  assert.match(r.stdout, /makine satırı yok/);
+});
+
+test('bekçi: kelime taraması EMEKLİ — açıklamada geçen KIRMIZI kelimesi dönemi durduramaz', () => {
+  const kok = bekciliDonem();
+  bekciYaz(kok, "#!/bin/bash\nprintf 'BİLGİ [şema] not: gecen hafta KIRMIZI ve SARI cok tartisildi\\n'\nprintf 'BEKCI v1 durduran=0 kilit=0 uyari=0 bilgi=1 ariza=0 kadran=tam pencere=isletim\\n'\nexit 0\n");
+  const r = sevk(kok);
+  assert.equal(r.status, 2, 'temiz bekçiyle dönem kapanış evresine geçmeli: ' + r.stdout);
+  assert.ok(!/bekçi KIRMIZI/.test(r.stdout + r.stderr), 'metindeki kelime karara girmemeli: ' + r.stdout);
+  const b = gunluk(kok).find((j) => j.tip === 'bekci');
+  assert.equal(b.isik, 'YEŞİL', 'SARI kelimesi de ışığı boyamamalı');
+});
+
+test('bekçi: çıkış kodu ile makine satırı çelişirse fail-closed duran kapı', () => {
+  const kok = bekciliDonem();
+  bekciYaz(kok, "#!/bin/bash\nprintf 'BEKCI v1 durduran=0 kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'\nexit 1\n");
+  const r = sevk(kok);
+  assert.match(r.stdout, /bekçi KIRMIZI/);
+  assert.match(r.stdout, /çelişiyor/);
+});
+
+test('bekçi: arıza (çıkış 2) duran kapıdır — makine satırı temiz görünse bile', () => {
+  const kok = bekciliDonem();
+  bekciYaz(kok, "#!/bin/bash\nprintf 'ARIZA [tavan] glob patladi\\n'\nprintf 'BEKCI v1 durduran=0 kilit=0 uyari=0 bilgi=0 ariza=1 kadran=tam pencere=isletim\\n'\nexit 2\n");
+  const r = sevk(kok);
+  assert.match(r.stdout, /bekçi KIRMIZI/);
+  assert.match(r.stdout, /çıkış kodu 2/);
+});
+
+test('bekçi: bozuk makine satırı (sayı olmayan alan) fail-closed duran kapıdır', () => {
+  const kok = bekciliDonem();
+  bekciYaz(kok, "#!/bin/bash\nprintf 'BEKCI v1 durduran=x kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'\nexit 0\n");
+  const r = sevk(kok);
+  assert.match(r.stdout, /bekçi KIRMIZI/);
+  assert.match(r.stdout, /çözümlenemedi/);
+});
+
+test('bekçi: uyari>0 dönemi durdurmaz, ışık SARI olarak günlüğe damgalanır', () => {
+  const kok = bekciliDonem();
+  bekciYaz(kok, "#!/bin/bash\nprintf 'UYARI [şema] kok-izinli-kume: fazladan dosya\\n'\nprintf 'BEKCI v1 durduran=0 kilit=1 uyari=2 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'\nexit 0\n");
+  // kilit=1 uyari=2: kilit uyarıdan ÖNCE gelir (öncelik sırası testin ikinci yarısı)
+  const r = sevk(kok);
+  assert.equal(r.status, 2, r.stdout);
+  assert.equal(gunluk(kok).find((j) => j.tip === 'bekci').isik, 'KILIT', 'kilit varken SARI basılmaz');
+
+  const kok2 = bekciliDonem();
+  bekciYaz(kok2, "#!/bin/bash\nprintf 'UYARI [şema] kok-izinli-kume: fazladan dosya\\n'\nprintf 'BEKCI v1 durduran=0 kilit=0 uyari=2 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'\nexit 0\n");
+  const r2 = sevk(kok2);
+  assert.equal(r2.status, 2, r2.stdout);
+  assert.equal(gunluk(kok2).find((j) => j.tip === 'bekci').isik, 'SARI', 'uyarı ışığı iz bırakmalı');
 });
 
 test('gerçek-kutu şartı: watchdog CANLI değilse `gercek` dönem AÇILMAZ (tatbikat muaf)', () => {

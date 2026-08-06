@@ -1,6 +1,6 @@
 # el-kitabi-zorunlu — EL_KITABI bütünlük denetiminin TEK EVİ (sözleşme §5①).
-# Okuyanlar: tools/bekci/cekirdek.mjs (çalışma zamanı) + tools/guard/kurulum-denetimi.sh (adım 5'te
-# buraya bağlanır) + kalıp-eşlik testi (00_genesis/EL_KITABI_KALIBI.md bu listeyi karşılıyor mu).
+# Okuyanlar: tools/bekci/cekirdek.mjs (çalışma zamanı) + tools/guard/kurulum-denetimi.sh (K1 adım 5
+# dikişiyle bağlı) + kalıp-eşlik testi (00_genesis/EL_KITABI_KALIBI.md bu listeyi karşılıyor mu).
 # Biçim: satır başına tek kalem, önek zorunlu —
 #   baslik: → SATIR BAŞINDA çapalı aranır (^...)
 #   ibare:  → gevşek sabit-dize (başlık değil; grep -qF emsali)

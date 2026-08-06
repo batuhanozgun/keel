@@ -646,7 +646,7 @@ test('hasım-6: "anlamadım" maddesi DEVREDİLİNCE kilit açılır (kalıcı ki
     'yeni maddenin görevi kilitli olmalı');
 });
 
-test('hasım-7: kuyruk maddesi tek satır ve makul boyda (SENDE_BEKLEYEN tavanı 2KB)', () => {
+test('hasım-7: kuyruk maddesi tek satır ve makul boyda (SENDE_BEKLEYEN tavanı 10KB)', () => {
   const kok = kurulum();
   writeFileSync(GUNLUK(kok), '');
   catalKaydi(kok, {
@@ -656,7 +656,7 @@ test('hasım-7: kuyruk maddesi tek satır ve makul boyda (SENDE_BEKLEYEN tavanı
   const satirlar = readFileSync(KUYRUK(kok), 'utf8').split('\n').filter((s) => s.includes('ÇATAL Ç-'));
   assert.equal(satirlar.length, 1);
   const B = Buffer.byteLength(satirlar[0], 'utf8');
-  assert.ok(B <= 1024, `madde satırı 1KB'ı aşıyor: ${B}B — 2KB tavanına iki madde bile sığmaz`);
+  assert.ok(B <= 1024, `madde satırı 1KB'ı aşıyor: ${B}B — 10KB tavana ancak tek-satır disipliniyle sığılır (madde silinmez, tekdüze büyür)`);
 });
 
 test('kalibrasyon-2: çatal denetçisi çatal-iz şüphesinden MUAF (işi zaten çatal değerlendirmek)', () => {

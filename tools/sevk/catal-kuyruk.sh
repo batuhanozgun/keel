@@ -164,8 +164,10 @@ const a = kayit.alanlar;
 // "·" ayraci ve "cevap:/bekletir:/kaynak:/devretti:" anahtarlari. Ajanin yazdigi bir cumle bu
 // isaretleri icerirse --durum ayristiricisi kandirilir ([x] olmadan "CEVAPLANDI" gorunmek,
 // bekletir listesini bozmak, tekillestirmeyi delmek). Yapi isaretleri metinden SOYULUR.
-// Kirpma BAYT tabanlidir: Turkce harf UTF-8 kodlamasinda 2 bayt; karakter sayisi tavani yaniltir
-// (SENDE_BEKLEYEN tavani 2KB ve madde SİLİNMEZ — birkac catal dosyayi sariya itebiliyordu).
+// Kirpma BAYT tabanlidir: Turkce harf UTF-8 kodlamasinda 2 bayt; karakter sayisi tavani yaniltir.
+// SENDE_BEKLEYEN tavani 10KB (K1 sozlesmesi §6① — 2KB iken birkac catal dosyayi sariya
+// itebiliyordu, celiski 10KB lehine kapandi). Madde SİLİNMEZ; kirpma yine gerekli — tavan
+// buyudu diye satir sismesi mesru olmaz (madde basina TEK satir, F3).
 const ceviri = kis(a.ceviri, 260);
 const etki = kis(a.etki, 300);
 if (!ceviri) bitir("ARIZA", "zarfta ÇEVİRİ bos — sahip yuzeyi metni uretilemez");

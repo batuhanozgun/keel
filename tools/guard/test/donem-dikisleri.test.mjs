@@ -87,8 +87,10 @@ function kurulum({ donem = 'yapim', kutu = kutuMetni(), kadro = ['uretici'],
   writeFileSync(join(kok, '02_kanon', 'KARAR_ALANI.md'), kararAlaniMetni());
   writeFileSync(join(kok, '02_kanon', 'OTONOM_DONEM.md'), '# OTONOM DÖNEM\n');
   // Bekçi: dönem-içi tazeleme (yeni karne düşen turda) onu çağırır — yoksa duran kapı olur.
+  // Sevk kararı makine satırından okur (tools/bekci/README.md §1); satırsız bekçi fail-closed durdurur.
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
-  writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), "#!/bin/bash\nprintf '[sema] YEŞİL\\n'\n");
+  writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'),
+    "#!/bin/bash\nprintf 'BEKCI v1 durduran=0 kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'\nexit 0\n");
   chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
   writeFileSync(join(kok, '.kurulum-tamam'), '2026-07-30\n');
   if (donem) {

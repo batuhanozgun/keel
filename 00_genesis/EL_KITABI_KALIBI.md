@@ -99,13 +99,13 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   yeniden yazılır; tarihçe git'te. (İstisna: `oturum-gunlugu.jsonl` — append-only makine günlüğü.)
 - **F3 · Şema + tavanlar.** Dosyalar bilinen yerlerde: `00_pano/` · `01_kutular/` (+`_arsiv/`) ·
   `02_kanon/` · `03_roller/<slug>/` · ürün kodu «ÜRÜN-YOLU» · `tools/`. Şema-dışı = SARI.
-  **Tavanlar (sarı eşik):** PANO 2KB · DURUM 2KB · görev dosyası 6KB · KUTU 10KB ·
+  **Tavanlar (sarı eşik):** PANO 2KB · SAGLIK 2KB · DURUM 2KB · KUTU 10KB ·
   ERTELENENLER 4KB · SENDE_BEKLEYEN 10KB (madde başına TEK satır) · BRIFING 2KB · NOTLAR 2KB ·
   EL_KITABI 16KB (doğum kapısında KIRMIZI — bilinçli fail-closed). Sarı = uyarı (iş
   durmaz); kırmızı (1,5×) = yalnız kutu KAPANIŞINI kilitler. Sayılar İLK RETRODA ölçümle
-  yeniden kalibre edilir (retro zorunlu maddesi). **İçerik-sınıfı:** süreç-günlüğü · 1 satırı
-  aşan açık-kalem anlatısı · kural-atıf açılımı/kopyası (sözleşme dosyaları dahil) → SARI (tavandan
-  bağımsız). **Tanecik:** 3+ sorulu görüş işi soru-başına bölünür. **İş-boyutu:** bir görev =
+  yeniden kalibre edilir (retro zorunlu maddesi). **İçerik-sınıfı:** kural-atıf kopyası
+  (EL_KITABI'dan ≥200B birebir) · çok satırlı kuyruk maddesi (SENDE_BEKLEYEN · ERTELENENLER)
+  → SARI (tavandan bağımsız). **Tanecik:** 3+ sorulu görüş işi soru-başına bölünür. **İş-boyutu:** bir görev =
   tek oturuş + tek cümlelik kabul testi + tek çıktı + net devir (hata adım sayısıyla katlanır
   — kendi ölçümümüz). *Ders: tavansız dosya bir
   günde 5,6× büyüdü; tavanlılar sınırın 10 baytına yaslandı — tavan içerik-sınıfsız yetmez.

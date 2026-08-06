@@ -43,20 +43,16 @@ test('EL_KITABI_KALIBI gövdesi listenin her kalemini karşılıyor', () => {
   }
 });
 
-test('kurulum-denetimi.sh kopyası listeyle eş (üç-kopya ayrışması adım 5\'e kadar burada tartılır)', () => {
+test('kurulum-denetimi.sh kopya taşımaz, kümeyi TEK EVDEN okur (adım 5 dikişi)', () => {
+  // Adım 5'e kadar bu test betikteki gömülü kopyanın listeyle eşliğini tartıyordu; dikiş
+  // atıldı — artık ölçülen şey kopyanın GERİ DÖNMEMESİ ve okumanın dosyaya bağlı kalması.
   const betik = readFileSync(join(KOK_REPO, 'tools', 'guard', 'kurulum-denetimi.sh'), 'utf8');
-  const kalemler = listeyiOku();
-  // betikteki iki for-döngüsünün dizeleri: "..." içindeki kalemler
-  const baslikBlok = betik.match(/for baslik in ([\s\S]*?); do/);
-  const kuralBlok = betik.match(/for kural in ([\s\S]*?); do/);
-  assert.ok(baslikBlok && kuralBlok, 'kurulum-denetimi.sh döngüleri bulunamadı');
-  const sok = (blok) => [...blok.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-  const betikBasliklar = sok(baslikBlok[1]);
-  const betikKurallar = sok(kuralBlok[1]);
-  const listeBasliklar = kalemler.filter((k) => k.tur !== 'kural').map((k) => k.kalem);
-  const listeKurallar = kalemler.filter((k) => k.tur === 'kural').map((k) => k.kalem);
-  assert.deepEqual(new Set(betikBasliklar), new Set(listeBasliklar), 'başlık+ibare kümesi ayrıştı');
-  assert.deepEqual(new Set(betikKurallar), new Set(listeKurallar), 'kural kümesi ayrıştı');
+  assert.match(betik, /tools\/bekci\/el-kitabi-zorunlu\.txt/, 'betik tek evi okumalı');
+  assert.ok(!/for baslik in "## /.test(betik), 'gömülü başlık kopyası geri dönmüş — tek ev delik');
+  assert.ok(!/for kural in "/.test(betik), 'gömülü kural kopyası geri dönmüş — tek ev delik');
+  // Fail-closed dalları da yazılı olmalı: evsiz küme ve biçimsiz kalem "geçti" basamaz.
+  assert.match(betik, /el-kitabi-zorunlu\.txt yok/, 'liste-yok dalı fail-closed olmalı');
+  assert.match(betik, /biçimsiz kalem/, 'biçimsiz-kalem dalı fail-closed olmalı');
 });
 
 test('test fixture\'ının EL_KITABI\'sı da listeyi karşılıyor (fixture bayatlarsa burada kızarır)', () => {

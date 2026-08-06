@@ -21,21 +21,30 @@ EK="$KOK/02_kanon/EL_KITABI.md"
 if [ ! -f "$EK" ]; then
   kirmizi "02_kanon/EL_KITABI.md yok"
 else
-  #   Başlıklar SATIR BAŞINDA aranır (çapalı) — yorum/paragraf içinde geçen söz başlık sayılmaz
-  #   (soğuk-denetim bulgusu C4, 2026-07-16). "Değer aksiyomu" başlık değil ibare: gevşek aranır.
-  #   NOT (hasım turu): desen BRE'dir; buradaki başlıklar h2 + girintisiz + metakaraktersiz
-  #   ('+' BRE'de literal). Yeni başlık eklerken .*[ gibi metakarakter KOYMA (yanlış-eşleşme).
-  for baslik in "## D-kuralları" "## F-kuralları" "## Üslup hükmü" "## Kutu döngüsü" \
-                "## Mühür ritüeli" "## Domain-rol disiplin iskeleti" "## Kanon-fakir dünya" \
-                "## Kişisel-veri süzgeci" "## Kadro + kapsam" "Değer aksiyomu"; do
-    case "$baslik" in
-      '## '*) if grep -q "^$baslik" "$EK"; then :; else kirmizi "EL_KITABI zorunlu başlık eksik: $baslik"; fi ;;
-      *)      if grep -qF "$baslik" "$EK"; then :; else kirmizi "EL_KITABI zorunlu başlık eksik: $baslik"; fi ;;
-    esac
-  done
-  for kural in "Mühür paketi" "İş-icat yasağı" "Kural-evrim kilidi" "SENDE BEKLEYEN" "yorumla onay üretme" "dış göz brifingi"; do
-    if grep -qF "$kural" "$EK"; then :; else kirmizi "EL_KITABI zorunlu kural eksik: $kural"; fi
-  done
+  #   Zorunlu kümenin TEK EVİ tools/bekci/el-kitabi-zorunlu.txt (bekçi sözleşmesi §5①) — üç
+  #   kopya dönemi bitti (K1 adım 5): çekirdek, bu betik ve kalıp-eşlik testi AYNI dosyayı okur.
+  #   Fail-closed: liste yok ya da kalem biçimsiz → KIRMIZI (küme evsizken "geçti" basılamaz).
+  #   baslik: SATIR BAŞINDA çapalı aranır — yorum/paragraf içinde geçen söz başlık sayılmaz
+  #   (soğuk-denetim bulgusu C4, 2026-07-16). Desen BRE'dir; kaleme .*[ gibi metakarakter
+  #   KOYMA (yanlış-eşleşme; listenin kendi başlık notu da yasaklar).
+  #   ibare:/kural: gevşek sabit-dize (grep -qF); "Değer aksiyomu" başlık değil ibaredir.
+  LISTE="$KOK/tools/bekci/el-kitabi-zorunlu.txt"
+  if [ ! -f "$LISTE" ]; then
+    kirmizi "tools/bekci/el-kitabi-zorunlu.txt yok — EL_KITABI bütünlük kümesi evsiz (fail-closed)"
+  else
+    while IFS= read -r KALEM || [ -n "$KALEM" ]; do
+      case "$KALEM" in
+        ''|'#'*) : ;;
+        baslik:*) B="${KALEM#baslik:}"
+                  grep -q "^$B" "$EK" || kirmizi "EL_KITABI zorunlu başlık eksik: $B" ;;
+        ibare:*)  B="${KALEM#ibare:}"
+                  grep -qF "$B" "$EK" || kirmizi "EL_KITABI zorunlu ibare eksik: $B" ;;
+        kural:*)  B="${KALEM#kural:}"
+                  grep -qF "$B" "$EK" || kirmizi "EL_KITABI zorunlu kural eksik: $B" ;;
+        *)        kirmizi "el-kitabi-zorunlu.txt biçimsiz kalem: $KALEM (fail-closed)" ;;
+      esac
+    done < "$LISTE"
+  fi
   BOYUT=$(wc -c < "$EK" | tr -d ' ')
   if [ "$BOYUT" -gt 16384 ]; then
     kirmizi "EL_KITABI kendi tavanını aşıyor: ${BOYUT}B > 16384B (F3)"

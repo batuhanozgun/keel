@@ -77,7 +77,7 @@ function tarifKur(kok, { adimlar = true, kontrat = true, indeks = true, gdurum =
   }
 }
 
-function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, kanon = true, kabukSahip = 'koordinator', capa = '0123456789abcdef0123456789abcdef01234567\n',
+function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', liste = true, skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, kanon = true, kabukSahip = 'koordinator', capa = '0123456789abcdef0123456789abcdef01234567\n',
                   korunanYollar = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null, tarif = {}, altAjan = true, kadroAjan = true, otonom = true } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
   // Kurulu bir KEEL projesi her zaman bir git deposudur (G0.1 klasör hazırlığı bunu garanti
@@ -116,6 +116,13 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
     mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
     writeFileSync(join(kok, 'tools', 'bekci', 'bekci.sh'), bekci);
     chmodSync(join(kok, 'tools', 'bekci', 'bekci.sh'), 0o755);
+  }
+  // EL_KITABI bütünlük kümesinin tek evi şablonla gelir (K1 adım 5): kurulu projede her zaman
+  // vardır — denetim onu KOK'tan okur, yokluğu fail-closed KIRMIZI'dır (ayrı testte sınanır).
+  if (liste != null) {
+    mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
+    writeFileSync(join(kok, 'tools', 'bekci', 'el-kitabi-zorunlu.txt'),
+      liste === true ? readFileSync(join(KOK_REPO, 'tools', 'bekci', 'el-kitabi-zorunlu.txt'), 'utf8') : liste);
   }
   writeFileSync(
     join(kok, '.claude', 'skills', 'rol-' + slug.replace(/[^a-z0-9-]/g, ''), 'SKILL.md'),
@@ -233,6 +240,26 @@ test('zorunlu kural eksik (yorumla onay üretme yok — MA-01) → KIRMIZI', () 
   const r = kos(kurulum({ ek: EK_TAM.replace('Muğlak mesaj onay sayılmaz; yorumla onay üretme yasak.\n', '') }));
   assert.equal(r.status, 2);
   assert.match(r.stdout, /zorunlu kural eksik: yorumla onay üretme/);
+});
+
+// K1 adım 5 kasıtlı bozmaları: zorunlu küme artık tek evden (tools/bekci/el-kitabi-zorunlu.txt)
+// okunur — evsiz ya da biçimsiz küme "geçti" basamaz (fail-closed).
+test('el-kitabi-zorunlu.txt YOK → KIRMIZI (bütünlük kümesi evsiz, fail-closed)', () => {
+  const r = kos(kurulum({ liste: null }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /el-kitabi-zorunlu\.txt yok/);
+});
+
+test('el-kitabi-zorunlu.txt biçimsiz kalem (öneksiz satır) → KIRMIZI (fail-closed)', () => {
+  const r = kos(kurulum({ liste: 'baslik:## D-kuralları\nonek-yok-bozuk-kalem\n' }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /biçimsiz kalem: onek-yok-bozuk-kalem/);
+});
+
+test('zorunlu ibare eksik (Değer aksiyomu silinmiş) → KIRMIZI (ibare kendi adıyla raporlanır)', () => {
+  const r = kos(kurulum({ ek: EK_TAM.replace('**Değer aksiyomu:** İşi bitiren en küçük çıktı en iyisidir.\n', '') }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /zorunlu ibare eksik: Değer aksiyomu/);
 });
 
 test('doldurulmamış «alan» → KIRMIZI', () => {

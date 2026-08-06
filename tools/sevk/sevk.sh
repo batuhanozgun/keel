@@ -853,13 +853,16 @@ fi
 # ── 7 · Bekçi dönem-içi tazeliği (§7.4): görev kapanışı turunda ışık tazelenir ──────────────
 # Otonom dönemde oturum uzundur; bekçi yalnız SessionEnd'de koşarsa Stop-turu BAYAT ışık okur.
 # KIRMIZI duran kapıdır ve node'un kararını EZER (sıra: önce ışık, sonra sevk).
-# ÜÇ HASIM DÜZELTMESİ (2026-07-28):
-#  (a) FAIL-CLOSED: bekçinin ÇIKIŞ KODU karara girer — çöken/erken ölen bekçi YEŞİL sayılmaz.
-#      (Eskiden yalnız çıktı metninde "KIRMIZI" aranıyordu: çöken bekçi = sessiz yeşil.)
-#  (b) KATEGORİ DUYARLI: KUTU tavan KIRMIZI'sı dönemi DURDURMAZ — kanonun iki yerde yazdığı
-#      istisna (OTONOM_DONEM §1 · GENESIS bekçi tarifi): o bir KAPANIŞ KİLİDİDİR, duran kapı değil.
-#      `[tavan]` etiketli satırdaki KIRMIZI ayrı sayılır; başka her kategori durdurur.
-#  (c) Bekçi çıktısı stdout/stderr AYRI okunur; ışık satır bazında sınıflanır.
+# MAKİNE SATIRI (K1, sözleşme: tools/bekci/README.md §1-§2) — metin taraması EMEKLİ:
+#  - Karar `BEKCI v1 durduran= kilit= uyari= …` satırından ve çıkış kodundan (0/1/2) okunur.
+#    "KIRMIZI" kelime taraması yok: bir açıklama cümlesindeki kelime dönemi durduramaz, bulgu
+#    metni yalnız GÖRÜNTÜ için `^DURDURAN ` önekli insan satırlarından alınır.
+#  - FAIL-CLOSED üç kapı: satır YOK · çıkış kodu 0/1 dışı (2 = bekçinin kendi arızası) ·
+#    satır ile çıkış kodu ÇELİŞİYOR. "Ölçemedim" ile "temiz" aynı şey değildir (sözleşme §1).
+#  - `kilit>0` duran kapı DEĞİL — kanonun iki yerde yazdığı istisna (OTONOM_DONEM §1 · GENESIS
+#    bekçi tarifi): kapanış kilididir, dönem sürer, sahibe alarm gider. Eski `[tavan]` önek
+#    eşleşmesi bu sayıyla emekli; ışık adı KILIT (kilit tavandan geniştir: bayat dış göz
+#    brifingi de kilit basar — sözleşme §4).
 if [ "${BEKCI_GEREK:-0}" = "1" ]; then
   BEKCI="$KOK/tools/bekci/bekci.sh"
   if [ ! -r "$BEKCI" ]; then
@@ -867,23 +870,32 @@ if [ "${BEKCI_GEREK:-0}" = "1" ]; then
   fi
   BEKCI_CIKIS=0
   BEKCI_CIKTI="$(cd "$KOK" && CLAUDE_PROJECT_DIR="$KOK" bash "$BEKCI" 2>&1)" || BEKCI_CIKIS=$?
-  DURDURAN=""; TAVAN_KIRMIZI=""
-  while IFS= read -r BS; do
-    case "$BS" in
-      *KIRMIZI*)
-        case "$BS" in
-          \[tavan\]*) TAVAN_KIRMIZI="var" ;;
-          *)          DURDURAN="${DURDURAN}${BS} " ;;
-        esac ;;
-    esac
-  done <<EOF_BEKCI
-$BEKCI_CIKTI
-EOF_BEKCI
-  if [ -n "$DURDURAN" ]; then BEKCI_ISIK="KIRMIZI"
-  elif [ "$BEKCI_CIKIS" != "0" ]; then BEKCI_ISIK="KIRMIZI"; DURDURAN="bekçi çıkış kodu $BEKCI_CIKIS (çıktısında KIRMIZI yok — betik çökmüş olabilir)"
-  elif [ -n "$TAVAN_KIRMIZI" ]; then BEKCI_ISIK="TAVAN-KIRMIZI"
+  MAKINE="$(printf '%s\n' "$BEKCI_CIKTI" | grep '^BEKCI v1 ' | tail -n 1 || true)"
+  B_DURDURAN=""; B_KILIT=""; B_UYARI=""
+  if [ -n "$MAKINE" ]; then
+    B_DURDURAN="$(printf '%s' "$MAKINE" | sed -n 's/.* durduran=\([0-9][0-9]*\) .*/\1/p')"
+    B_KILIT="$(printf '%s' "$MAKINE" | sed -n 's/.* kilit=\([0-9][0-9]*\) .*/\1/p')"
+    B_UYARI="$(printf '%s' "$MAKINE" | sed -n 's/.* uyari=\([0-9][0-9]*\) .*/\1/p')"
+  fi
+  BEKCI_SEBEP=""
+  if [ -z "$MAKINE" ]; then
+    BEKCI_ISIK="KIRMIZI"; BEKCI_SEBEP="makine satırı yok (BEKCI v1 …); bekçi çıkış kodu $BEKCI_CIKIS — ölçemedim ile temiz aynı şey değildir (fail-closed)"
+  elif [ -z "$B_DURDURAN" ] || [ -z "$B_KILIT" ] || [ -z "$B_UYARI" ]; then
+    BEKCI_ISIK="KIRMIZI"; BEKCI_SEBEP="makine satırı çözümlenemedi: ${MAKINE} (fail-closed)"
+  elif [ "$BEKCI_CIKIS" != "0" ] && [ "$BEKCI_CIKIS" != "1" ]; then
+    BEKCI_ISIK="KIRMIZI"; BEKCI_SEBEP="bekçi çıkış kodu $BEKCI_CIKIS — 2 bekçinin kendi arızasıdır (sözleşme §2), fail-closed"
+  elif { [ "$BEKCI_CIKIS" = "1" ] && [ "$B_DURDURAN" = "0" ]; } || { [ "$BEKCI_CIKIS" = "0" ] && [ "$B_DURDURAN" != "0" ]; }; then
+    BEKCI_ISIK="KIRMIZI"; BEKCI_SEBEP="çıkış kodu ($BEKCI_CIKIS) ile makine satırı (durduran=$B_DURDURAN) çelişiyor — fail-closed"
+  elif [ "$B_DURDURAN" != "0" ]; then
+    BEKCI_ISIK="KIRMIZI"
+    BULGULAR="$(printf '%s\n' "$BEKCI_CIKTI" | grep '^DURDURAN ' | head -n 3 | tr '\n' ' ' || true)"
+    BEKCI_SEBEP="durduran=$B_DURDURAN: ${BULGULAR:-bulgu satırı okunamadı}"
+  elif [ "$B_KILIT" != "0" ]; then
+    BEKCI_ISIK="KILIT"
+  elif [ "$B_UYARI" != "0" ]; then
+    BEKCI_ISIK="SARI"
   else
-    case "$BEKCI_CIKTI" in *SARI*) BEKCI_ISIK="SARI" ;; *) BEKCI_ISIK="YEŞİL" ;; esac
+    BEKCI_ISIK="YEŞİL"
   fi
   if ! J_tip=bekci J_donem="$DONEM_ID" J_isik="$BEKCI_ISIK" JN_cikis="$BEKCI_CIKIS" \
       J_kaynak="sevk görev-turu" json_kur 2>/dev/null | yaz_dene; then
@@ -892,15 +904,15 @@ EOF_BEKCI
   if [ "$BEKCI_ISIK" = "KIRMIZI" ]; then
     # Ayrı `alarm` postası ATILMAZ: kapat() zaten donem-bitti haberini gönderiyor ve 3. blok
     # sebebi taşıyor. İki posta aynı olayı anlatırsa kanal gürültüye döner (dört olay sözleşmesi).
-    kapat "duran-kapi" "bekçi KIRMIZI (dönem-içi tazeleme): ${DURDURAN} — otonom dönemde bekçi kırmızısı duran kapıdır (OTONOM_DONEM §1)."
+    kapat "duran-kapi" "bekçi KIRMIZI (dönem-içi tazeleme): ${BEKCI_SEBEP} — otonom dönemde bekçi kırmızısı duran kapıdır (OTONOM_DONEM §1)."
   fi
-  # TAVAN-KIRMIZI dönemi DURDURMAZ (kanonun iki yerde yazdığı istisna: kapanış kilidi, duran
-  # kapı değil) — ama sahibe HİÇ söylenmezse kutu sessizce tavanı aşmış olur. Alarm tam da
+  # KILIT dönemi DURDURMAZ (kanonun iki yerde yazdığı istisna: kapanış kilidi, duran kapı
+  # değil) — ama sahibe HİÇ söylenmezse kutu sessizce kilitli hâle gelmiş olur. Alarm tam da
   # "görür ama bağlamaz"ın kapandığı yer: haber gider, dönem sürer.
-  if [ "$BEKCI_ISIK" = "TAVAN-KIRMIZI" ]; then
-    CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins kirmizi --anahtar tavan \
+  if [ "$BEKCI_ISIK" = "KILIT" ]; then
+    CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins kirmizi --anahtar kilit \
       --donem "$DONEM_ID" --kutu "$DONEM_KUTU" \
-      --detay "Bekçi KUTU tavanı için KIRMIZI basıyor. Bu bir DURAN KAPI değildir (kapanış kilidi): dönem sürüyor, ama kutu kapanış mührüne bu hâliyle gidemez." || true
+      --detay "Bekçi kapanış kilidi basıyor (kilit=$B_KILIT: tavan 1,5x aşımı ya da bayat dış göz brifingi). Bu bir DURAN KAPI değildir: dönem sürüyor, ama kutu kapanış mührüne bu hâliyle gidemez." || true
   fi
 fi
 
