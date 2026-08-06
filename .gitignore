@@ -11,6 +11,15 @@
 # yoktur; bakımcı kendi makinesinde elle koyar. (Silinen eski kopya-işaretinin tersi: o ÜRÜNLE
 # geliyordu ve iki hâli ayırt edemediği için sahibe cevaplayamayacağı bir soru sordurtuyordu.)
 tools/guard/.keel-kaynak
+# === KUTU-DURUMU-BASLANGIC ====================================================
+# Buradan sonraki YOL satırları KURULU BİR KUTUNUN ürettiği yerel durumdur ve iki şey birden
+# doğrudur: (a) hiçbir depoya girmezler, (b) ŞABLONUN çalışma ağacında BULUNMAZLAR.
+# (b) 2026-08-07'ye kadar hiçbir yerde ölçülmüyordu: şablon ağacında sahibin e-posta adresini
+# taşıyan `tools/sevk/kanal.conf` on gün durdu (U22, 2026-07-28 → 2026-08-07).
+# `tools/guard/sablon-hijyeni.sh` artık BU BLOĞU okur — liste ikinci bir dosyaya KOPYALANMAZ,
+# evi burasıdır; bu bloğa yeni bir yol eklemek onu kapının kapsamına da almak demektir.
+# Blok DIŞINDA kalanlar bilerek dışarıdadır: .DS_Store · .obsidian/ · .claude/ ayarları ·
+# tools/guard/.keel-kaynak (bakımcı işareti — şablonda BULUNMASI gerekir, yokluğu kusurdur).
 # rol töreni damgası — oturum-durumu, izlenmez (bekçi koruma-hattı yanlış-KIRMIZI basmasın;
 # damga-güvencesi bekçi değil: file-guard damga-dikişi + SessionStart temizliği)
 tools/guard/.aktif-rol
@@ -54,6 +63,7 @@ tools/sevk/.caffeinate-pid
 # kapanış karnesinin bulgu işaretçisi (F1-5b) — KIRMIZI karnede sevk yeniden üretir; içeriği
 # karne kaydından mekanik kurulur, kalıcı belge değildir (kurulum-kapisi.txt emsali)
 00_pano/kapanis-bulgulari.txt
+# === KUTU-DURUMU-SON ==========================================================
 # harness worktree'leri (E2) — atılabilir/geçici git worktree'leri; izlenmez ki bekçi porcelain
 # hattı meşru bir riskli-görev worktree'sini [SERT] .claude/ kirliliği sanıp KIRMIZI basmasın
 # (hasım bulgusu). Worktree yazımları zaten file-guard sanal-kök haritasıyla korunur (tool katmanı);

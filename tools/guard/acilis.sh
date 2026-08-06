@@ -169,4 +169,19 @@ if [ -d "$KOK/00_genesis" ] && [ ! -e "$KOK/tools/guard/.keel-kaynak" ]; then
   fi
 fi
 
+# ŞABLON HİJYENİ (K7 / U22, 2026-08-07) — yukarıdaki bloğun TERS DALI.
+# Yukarısı `.keel-kaynak` VARSA susar (bakımcıya kurulum lafı etmez); burası tam tersine yalnız
+# o işaret VARKEN konuşur, çünkü ölçtüğü şey bakımcının kendi ağacının temizliğidir.
+# NEDEN BURADA: kusur on gün yaşadı ve onu gören tek göz ürünün DIŞINDAYDI. `node --test`
+# kapıyı sınar ama yalnız koşulduğu gün konuşur; bu satır HER OTURUMDA konuşur. Kurulu kutuda
+# ve dağıtılmış kopyada betik "ÖLÇÜLMEDİ" deyip 0 döner, yani orada tek satır bile basılmaz.
+# Konuşma yalnız KİRLİYKEN olur — temizken sessizdir (ısrar yok, açılış yüzeyi şişmez).
+if [ -e "$KOK/tools/guard/.keel-kaynak" ] && [ -x "$KOK/tools/guard/sablon-hijyeni.sh" ]; then
+  if ! HIJYEN="$(bash "$KOK/tools/guard/sablon-hijyeni.sh" "$KOK" 2>&1)"; then
+    printf '⚠️ Şablon ağacı kirli — kurulu kutunun yerel durumu burada duruyor (biri kişisel veri taşıyabilir):\n'
+    printf '%s\n' "$HIJYEN" | sed -n 's/^KIRMIZI · kurulu-kutu durum dosyasi sablon agacinda: /   · /p'
+    printf '   Çare: dosyayı deponun DIŞINA taşı, sonra sil. Ayrıntı: bash tools/guard/sablon-hijyeni.sh\n'
+  fi
+fi
+
 exit 0

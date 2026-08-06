@@ -112,7 +112,7 @@ rehin almaz; kancanın ölümünü bekçinin kablo-denetimi KIRMIZI basar. Vault
 (00_pano yoksa) kanca susar. Rol damgasını yalnız OKUR; temizlik SessionStart'ta.
 node yoksa süzme atlanır (blok=bilinmiyor), meta satırı yine düşer.
 
-Açılış kancası (`acilis.sh`, SessionStart startup+clear): BEŞ koşullu bilgi satırı; hiçbiri
+Açılış kancası (`acilis.sh`, SessionStart startup+clear): ALTI koşullu bilgi satırı; hiçbiri
 her oturumda çıkmaz, koşul yoksa susar — (1) kuyrukta AÇIK madde varsa `Sende bekleyen N madde
 (en eskisi X gündür)`; (2) `03_roller/disgoz/` varsa ve brifingin içindeki `Tarih:` satırı 7
 günden eskiyse (ya da brifing/tarih yoksa) `... dış göz brifingi ... "durumu anlat"
@@ -129,9 +129,26 @@ başlamadı.` satırını arıyordu ve iki ölçülmüş kusuru vardı — (a) a
 başka bir yerinde satır başında geçerse hatırlatma KALICI susuyordu (bayrak sıfırlanmıyor, ilk
 eşleşme yetiyor), (b) cümlenin biçimi azıcık kayarsa (liste maddesi, kalın yazımın kayması) taze
 şablonda YANLIŞ ALARM doğuyordu. Aynı olgu iki yerde yazılıysa drift kapısıdır — tek kaynak bloktur.
+(6) **(5)'in TERS DALI** — `tools/guard/.keel-kaynak` VARSA (yani burası bakımcının kendi
+kopyası) `sablon-hijyeni.sh` koşar ve ağaç kirliyse kirli dosyaları adıyla sayar. Kurulu kutuda
+ve dağıtılmış kopyada betik "ÖLÇÜLMEDİ" deyip 0 döndüğü için bu satır orada hiç basılmaz.
 Salt-okurdur, hiçbir dosyaya yazmaz; fail-open (dosya yoksa/bozuksa sessiz exit 0).
 Yaş BİLGİdir — uyarı/eskalasyon YOKTUR (sahip kararı, 2026-07-24). `--resume` oturumlarında
 çalışmaz (rol-temizliğiyle aynı matcher kümesi; bilinçli).
+
+**Şablon hijyeni** (`sablon-hijyeni.sh`, K7 / U22 — 2026-08-07): şablonun ÇALIŞMA ağacında
+kurulu-kutu durum dosyası var mı. Doğuş: `tools/sevk/kanal.conf` (sahibin e-posta adresini
+taşır) şablon ağacında on gün durdu; `.gitignore`'da olduğu için `git status` tertemizdi ve
+`git log --all` boştu — **git bu sınıfı göremez**, kusuru gören tek göz ürünün DIŞINDAYDI.
+Liste ikinci bir dosyaya kopyalanmaz: betik `.gitignore`'un `# === KUTU-DURUMU-BASLANGIC ===`
+… `# === KUTU-DURUMU-SON ===` bloğunu okur; o bloğa yeni bir yol eklemek onu kapsama almaktır.
+Yalnız `.keel-kaynak` taşıyan ağaçta ölçer (kurulu kutuda bu dosyalar MEŞRUDUR ve orada kırmızı
+basmak yanlış-pozitif olurdu). Fail-closed: blok yoksa/boşsa KIRMIZI — "ölçemedim" ile "temiz"
+aynı şey değildir. Çıkış: 0 YEŞİL ya da ÖLÇÜLMEDİ · 2 KIRMIZI. İki koşucusu var: açılış kancası
+(her oturum) ve `test/sablon-hijyeni.test.mjs` (11 test — dokuzu fixture'la her dalı kırmızıya
+döndürür, ikisi GERÇEK depo kökünü ölçer). Clone/ZIP kapsam açığı DEĞİLDİR: bu dosyalar hiç
+commit edilmediği için bir klona giremezler; girebilecekleri tek yol yerel `cp -R`dir ve o kopya
+`.keel-kaynak`ı da taşır.
 
 Kurulum girişi (`klasor-hazirligi.sh`, GENESIS G0.1 — F1-2b): indirilen KEEL klasörünü sahibin
 PROJE klasörü yapar. `--rapor` (varsayılan) SALT-OKUR sınıflar: **BAGLI** (`.git` var + uzak

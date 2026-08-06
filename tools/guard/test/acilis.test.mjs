@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, chmodSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -321,4 +321,50 @@ test('SALT-OKUR: kanca durum dosyasını bayt-bayt değiştirmez', () => {
   durumKur(kok, icerik);
   kos(kok);
   assert.equal(readFileSync(join(kok, '00_genesis', 'GENESIS_DURUM.md'), 'utf8'), icerik);
+});
+
+// ── ŞABLON HİJYENİ (K7 / U22, 2026-08-07) ────────────────────────────────────
+// Açılışın TERS DALI: yukarıdaki kurulum satırları `.keel-kaynak` VARSA susar; bu dal yalnız
+// o işaret varken konuşur. Doğuş: şablon ağacında sahibin e-posta adresini taşıyan
+// `tools/sevk/kanal.conf` on gün durdu ve ürünün hiçbir yüzeyi bunu söylemedi.
+function bakimciKopyasi(kirli = []) {
+  const kok = kurulum();
+  mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
+  writeFileSync(join(kok, 'tools', 'guard', '.keel-kaynak'), 'bakimci\n');
+  copyFileSync(join(BURASI, '..', 'sablon-hijyeni.sh'), join(kok, 'tools', 'guard', 'sablon-hijyeni.sh'));
+  chmodSync(join(kok, 'tools', 'guard', 'sablon-hijyeni.sh'), 0o755);
+  writeFileSync(join(kok, '.gitignore'),
+    '.DS_Store\n# === KUTU-DURUMU-BASLANGIC ===\ntools/sevk/kanal.conf\ntools/sevk/.nabiz-son\n# === KUTU-DURUMU-SON ===\n');
+  for (const y of kirli) writeFileSync(join(kok, y), 'deneme\n');
+  return kok;
+}
+
+test('bakımcı kopyası TEMİZ: hijyen satırı DOĞMAZ (ısrar yok, açılış şişmez)', () => {
+  const r = kos(bakimciKopyasi());
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), '');
+});
+
+test('bakımcı kopyası KİRLİ: uyarı doğar ve kirli dosyayı ADIYLA sayar', () => {
+  const r = kos(bakimciKopyasi(['tools/sevk/kanal.conf', 'tools/sevk/.nabiz-son']));
+  assert.equal(r.status, 0, 'açılış kancası kilitlemez — haber verir, durdurmaz');
+  assert.match(r.stdout, /Şablon ağacı kirli/);
+  assert.match(r.stdout, /· tools\/sevk\/kanal\.conf/);
+  assert.match(r.stdout, /· tools\/sevk\/\.nabiz-son/);
+});
+
+test('kurulu kutu (.keel-kaynak YOK): kanal.conf meşrudur, hijyen satırı DOĞMAZ', () => {
+  // Yanlış-pozitif basan kapıya kimse bakmaz; kurulu kutuda bu dosya MEŞRUDUR.
+  const kok = bakimciKopyasi(['tools/sevk/kanal.conf']);
+  rmSync(join(kok, 'tools', 'guard', '.keel-kaynak'));
+  assert.doesNotMatch(kos(kok).stdout, /Şablon ağacı kirli/);
+});
+
+test('hijyen betiği yoksa açılış YİNE çalışır (eski kurulumlar kırılmaz)', () => {
+  const kok = bakimciKopyasi(['tools/sevk/kanal.conf']);
+  rmSync(join(kok, 'tools', 'guard', 'sablon-hijyeni.sh'));
+  const r = kos(kok);
+  assert.equal(r.status, 0);
+  assert.doesNotMatch(r.stdout, /Şablon ağacı kirli/);
 });
