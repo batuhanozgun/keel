@@ -256,6 +256,20 @@ test('el-kitabi-zorunlu.txt biçimsiz kalem (öneksiz satır) → KIRMIZI (fail-
   assert.match(r.stdout, /biçimsiz kalem: onek-yok-bozuk-kalem/);
 });
 
+test('hasım #4: boş gövdeli `baslik:` kalemi sessiz GEÇMEZ — biçimsiz KIRMIZI (eski kod her şeyi eşleştirirdi)', () => {
+  const r = kos(kurulum({ liste: 'baslik:\n' }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /biçimsiz kalem: baslik:/);
+});
+
+test('hasım #11: gramer çekirdekle eş — kalem kırpılır (kenar boşluğu eşleşmeyi bozmaz), ters-bölü fail-closed', () => {
+  const temiz = kos(kurulum({ liste: '  baslik:## D-kuralları  \n' }));
+  assert.ok(!/zorunlu başlık eksik/.test(temiz.stdout), temiz.stdout);
+  const tersBolu = kos(kurulum({ liste: 'baslik:## D\\.kuralları\n' }));
+  assert.equal(tersBolu.status, 2);
+  assert.match(tersBolu.stdout, /ters-bölü taşıyor/);
+});
+
 test('zorunlu ibare eksik (Değer aksiyomu silinmiş) → KIRMIZI (ibare kendi adıyla raporlanır)', () => {
   const r = kos(kurulum({ ek: EK_TAM.replace('**Değer aksiyomu:** İşi bitiren en küçük çıktı en iyisidir.\n', '') }));
   assert.equal(r.status, 2);

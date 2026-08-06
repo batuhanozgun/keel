@@ -23,23 +23,26 @@ if [ ! -f "$EK" ]; then
 else
   #   Zorunlu kümenin TEK EVİ tools/bekci/el-kitabi-zorunlu.txt (bekçi sözleşmesi §5①) — üç
   #   kopya dönemi bitti (K1 adım 5): çekirdek, bu betik ve kalıp-eşlik testi AYNI dosyayı okur.
-  #   Fail-closed: liste yok ya da kalem biçimsiz → KIRMIZI (küme evsizken "geçti" basılamaz).
-  #   baslik: SATIR BAŞINDA çapalı aranır — yorum/paragraf içinde geçen söz başlık sayılmaz
-  #   (soğuk-denetim bulgusu C4, 2026-07-16). Desen BRE'dir; kaleme .*[ gibi metakarakter
-  #   KOYMA (yanlış-eşleşme; listenin kendi başlık notu da yasaklar).
-  #   ibare:/kural: gevşek sabit-dize (grep -qF); "Değer aksiyomu" başlık değil ibaredir.
+  #   GRAMER ÇEKİRDEKLE EŞ (cekirdek.mjs el-kitabi-butunlugu; hasım #4/#11): satır kırpılır ·
+  #   boş gövdeli/öneksiz kalem BİÇİMSİZ=KIRMIZI (fail-closed, sessiz geçmez) · baslik: LİTERAL
+  #   satır-başı önek (çekirdeğin startsWith'i — BRE değil; awk index()==1) · ibare:/kural:
+  #   gevşek sabit-dize (grep -qF). Yorum/paragraf içinde geçen söz başlık sayılmaz (C4,
+  #   2026-07-16). Kaleme ters-bölü koyma — biçimsiz sayılır (awk -v sınırı, mekanik kapı).
   LISTE="$KOK/tools/bekci/el-kitabi-zorunlu.txt"
   if [ ! -f "$LISTE" ]; then
     kirmizi "tools/bekci/el-kitabi-zorunlu.txt yok — EL_KITABI bütünlük kümesi evsiz (fail-closed)"
   else
-    while IFS= read -r KALEM || [ -n "$KALEM" ]; do
+    while IFS= read -r HAM_KALEM || [ -n "$HAM_KALEM" ]; do
+      KALEM="$(printf '%s' "$HAM_KALEM" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
       case "$KALEM" in
         ''|'#'*) : ;;
-        baslik:*) B="${KALEM#baslik:}"
-                  grep -q "^$B" "$EK" || kirmizi "EL_KITABI zorunlu başlık eksik: $B" ;;
-        ibare:*)  B="${KALEM#ibare:}"
+        *\\*)     kirmizi "el-kitabi-zorunlu.txt kalemi ters-bölü taşıyor: $KALEM (fail-closed)" ;;
+        baslik:?*) B="${KALEM#baslik:}"
+                  awk -v b="$B" 'index($0, b) == 1 { f=1 } END { exit f ? 0 : 1 }' "$EK" \
+                    || kirmizi "EL_KITABI zorunlu başlık eksik: $B" ;;
+        ibare:?*)  B="${KALEM#ibare:}"
                   grep -qF "$B" "$EK" || kirmizi "EL_KITABI zorunlu ibare eksik: $B" ;;
-        kural:*)  B="${KALEM#kural:}"
+        kural:?*)  B="${KALEM#kural:}"
                   grep -qF "$B" "$EK" || kirmizi "EL_KITABI zorunlu kural eksik: $B" ;;
         *)        kirmizi "el-kitabi-zorunlu.txt biçimsiz kalem: $KALEM (fail-closed)" ;;
       esac

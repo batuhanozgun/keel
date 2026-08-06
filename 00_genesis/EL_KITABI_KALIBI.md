@@ -81,7 +81,7 @@ yeni açık-soru maliyettir. (Neden: DEFO_MODELI #3 — eklemek güvenli görün
   en az bir çıkarım/soru. Teyit anında ilgili dosyaya tek satır delta-damgası düşer (retro izi).
   Delta yoksa açıkça: "ekleyecek şeyim yok, yalnız teyit ediyorum" (DEFO_MODELI #2).
 - **D9 · İş-icat yasağı.** İş yalnız iki kaynaktan doğar: aktif kutunun görevleri ya da sahibin
-  koyduğu amaç. Kutu bitince sistem DURUR: pano BEKLEME gösterir, sahibe "sıradaki dilim?"
+  koyduğu amaç. Kutu bitince sistem DURUR: pano durağı gösterir, sahibe "sıradaki dilim?"
   sorulur. Boşta kalan rol iş icat etmez; sözleşmesindeki standby modülüyle TEK satır bekleme
   raporu verir (DEFO_MODELI #5, #10). Kendi yazılı ertelemen ("sonraki oturumun işi") sessizce
   çiğnenmez: öne çekiş beyanlı gerekçe + risk işareti ister. ERTELENENLER bu ekin dışındadır:

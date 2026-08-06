@@ -871,19 +871,24 @@ if [ "${BEKCI_GEREK:-0}" = "1" ]; then
   BEKCI_CIKIS=0
   BEKCI_CIKTI="$(cd "$KOK" && CLAUDE_PROJECT_DIR="$KOK" bash "$BEKCI" 2>&1)" || BEKCI_CIKIS=$?
   MAKINE="$(printf '%s\n' "$BEKCI_CIKTI" | grep '^BEKCI v1 ' | tail -n 1 || true)"
-  B_DURDURAN=""; B_KILIT=""; B_UYARI=""
+  B_DURDURAN=""; B_KILIT=""; B_UYARI=""; B_ARIZA=""
   if [ -n "$MAKINE" ]; then
     B_DURDURAN="$(printf '%s' "$MAKINE" | sed -n 's/.* durduran=\([0-9][0-9]*\) .*/\1/p')"
     B_KILIT="$(printf '%s' "$MAKINE" | sed -n 's/.* kilit=\([0-9][0-9]*\) .*/\1/p')"
     B_UYARI="$(printf '%s' "$MAKINE" | sed -n 's/.* uyari=\([0-9][0-9]*\) .*/\1/p')"
+    B_ARIZA="$(printf '%s' "$MAKINE" | sed -n 's/.* ariza=\([0-9][0-9]*\) .*/\1/p')"
   fi
   BEKCI_SEBEP=""
   if [ -z "$MAKINE" ]; then
     BEKCI_ISIK="KIRMIZI"; BEKCI_SEBEP="makine satırı yok (BEKCI v1 …); bekçi çıkış kodu $BEKCI_CIKIS — ölçemedim ile temiz aynı şey değildir (fail-closed)"
-  elif [ -z "$B_DURDURAN" ] || [ -z "$B_KILIT" ] || [ -z "$B_UYARI" ]; then
+  elif [ -z "$B_DURDURAN" ] || [ -z "$B_KILIT" ] || [ -z "$B_UYARI" ] || [ -z "$B_ARIZA" ]; then
     BEKCI_ISIK="KIRMIZI"; BEKCI_SEBEP="makine satırı çözümlenemedi: ${MAKINE} (fail-closed)"
   elif [ "$BEKCI_CIKIS" != "0" ] && [ "$BEKCI_CIKIS" != "1" ]; then
     BEKCI_ISIK="KIRMIZI"; BEKCI_SEBEP="bekçi çıkış kodu $BEKCI_CIKIS — 2 bekçinin kendi arızasıdır (sözleşme §2), fail-closed"
+  elif [ "$B_ARIZA" != "0" ]; then
+    # ariza>0 sözleşmede çıkış 2 demektir; buraya düştüysek üretici çıkış 0/1 basmış — çelişki.
+    # Arıza hattı hiçbir çıkış koduyla sessiz yeşile dönemez (hasım bulgusu #5/#12, fail-closed).
+    BEKCI_ISIK="KIRMIZI"; BEKCI_SEBEP="makine satırı ariza=$B_ARIZA ama çıkış kodu $BEKCI_CIKIS — arıza hattı sessiz geçemez (sözleşme §2, fail-closed)"
   elif { [ "$BEKCI_CIKIS" = "1" ] && [ "$B_DURDURAN" = "0" ]; } || { [ "$BEKCI_CIKIS" = "0" ] && [ "$B_DURDURAN" != "0" ]; }; then
     BEKCI_ISIK="KIRMIZI"; BEKCI_SEBEP="çıkış kodu ($BEKCI_CIKIS) ile makine satırı (durduran=$B_DURDURAN) çelişiyor — fail-closed"
   elif [ "$B_DURDURAN" != "0" ]; then

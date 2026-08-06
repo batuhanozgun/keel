@@ -72,3 +72,25 @@ test('F3 metnindeki tavan ↔ kurulum-denetimi sabiti eş (WF-2 sınıfı uyumsu
   assert.ok(m, 'kalıp F3 satırında "EL_KITABI NKB" bulunamadı');
   assert.equal(Number(m[1]) * 1024, tavanOku(), 'F3 metni ile kurulum-denetimi tavanı ayrışmış');
 });
+
+test('hasım #13: şablon bekci.conf tavanları ↔ kalıp F3 kalemleri bire bir eş (kuruluş günü UYARI doğmasın)', () => {
+  // Çekirdeğin tavan-ayar-ayrismasi gözü kurulu projede ikisini karşılaştırır; şablonun kendi
+  // içinde ayrışırsa her yeni kurulum ilk koşuda UYARI ile doğar. Eşliği burada tartıyoruz.
+  const conf = readFileSync(join(BURASI, '..', '..', 'bekci', 'bekci.conf'), 'utf8');
+  const confDeger = {};
+  for (const m of conf.matchAll(/^tavan_([a-z_]+)=(\d+)$/gm)) confDeger[m[1]] = Number(m[2]);
+  const kalip = readFileSync(KALIP_YOLU, 'utf8');
+  const capa = '**Tavanlar (sarı eşik):**';
+  const yer = kalip.indexOf(capa);
+  assert.ok(yer > 0, 'kalıpta Tavanlar çapası yok');
+  const parca = kalip.slice(yer + capa.length, yer + capa.length + 600).split('Sarı = uyarı')[0].replace(/\n/g, ' ');
+  const esle = { PANO: 'pano', SAGLIK: 'saglik', DURUM: 'durum', KUTU: 'kutu', ERTELENENLER: 'ertelenenler', SENDE_BEKLEYEN: 'sende_bekleyen', BRIFING: 'brifing', NOTLAR: 'notlar', EL_KITABI: 'el_kitabi' };
+  let sayilan = 0;
+  for (const kalem of parca.split(' · ')) {
+    const m = kalem.trim().match(/^([A-ZÇĞİÖŞÜ_]+)\s+(\d+)KB/);
+    if (!m || !esle[m[1]]) continue;
+    sayilan += 1;
+    assert.equal(confDeger[esle[m[1]]], Number(m[2]) * 1024, m[1] + ': conf ile F3 ayrışmış');
+  }
+  assert.equal(sayilan, 9, 'F3 satırında 9 kalemin 9\'u da çözülmeli (çözülmeyen kalem sessiz kaçak olur)');
+});

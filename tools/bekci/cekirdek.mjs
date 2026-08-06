@@ -7,7 +7,11 @@
 // Çıktı sözleşmesi: insan satırları + SON satır makine satırı (BEKCI v1 …); çıkış 0/1/2.
 // Makine satırında ciddiyet kelimesi GEÇMEZ; insan satırları da KIRMIZI/SARI kelimesi taşımaz
 // (sevk'in eski metin taraması bir açıklama cümlesiyle dönem durdurmasın — sözleşme §1).
-// Türkçe harf güvenliği: bütün eşleştirmeler dönüşümsüz birebirdir (BEKCI_TARIFI madde 1).
+// Türkçe harf güvenliği: bütün eşleştirmeler dönüşümsüz birebirdir (tarifin harf maddesi).
+// ATIF KÜNYESİ (hasım #1): aşağıdaki yorumlarda geçen 'BEKCI_TARIFI md.N' atıfları, tarifin
+// KIRPMA-ÖNCESİ gövdesine işaret eder — o gövde K1 adım 4'te işaretçiye kırpıldı ve yalnız
+// geliştirme deposunun git tarihinde yaşar (kırpan commit'in ebeveyni); kurulu projede YOKTUR.
+// Canlı hüküm her zaman sözleşmededir (tools/bekci/README.md); md.N yalnız doğuş izidir.
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -585,7 +589,13 @@ if (conf) {
       for (let y of (ham.includes(' -> ') ? ham.split(' -> ') : [ham])) {
         y = y.trim().replace(/^"|"$/g, '');
         if (y.startsWith('.claude/worktrees/')) continue; // meşru riskli-görev worktree'si (E2 notu)
+        // Bekçi-ayarı istisnası (hasım bulgusu #2, file-guard.sh:439-440 ile AYNI karar):
+        // bekci.conf [SORULUR]dur ama tools/bekci/ [SERT] dizininin İÇİNDE yaşar — tam yol,
+        // dizin kuralını ezer, karar [SORULUR] kuralına düşer (sözleşme §0 tablosu · §4:
+        // '[SORULUR] kirli → UYARI'). Sahibin retro kalibrasyonu commit'e kadar DURDURAN yemez.
+        const ayarIstisnasi = y === 'tools/bekci/bekci.conf';
         for (const k of kurallar) {
+          if (ayarIstisnasi && k.bolum === '[SERT]') continue;
           const dizinKurali = k.yol.endsWith('/');
           const vurdu = dizinKurali ? (y === k.yol.slice(0, -1) || y.startsWith(k.yol)) : y === k.yol;
           if (!vurdu) continue;
@@ -722,7 +732,11 @@ for (const b of bulgular) sayac[b.hal]++;
 // ── çıktı yüzeyleri: SAGLIK + PANO (biçim = PANO_SOZLESMESI, kırmızı çizgi) ──
 // Işık eşlemesi (beyan): AKIŞ kırmızısı yalnız DURDURAN'dan doğar (duran kapı); DOSYA kırmızısı
 // DURDURAN ya da KİLİT'ten (kapanış kilidi de sahibin tek ezberinde görünmeli).
-const AKIS = sayac.DURDURAN > 0 ? 'KIRMIZI' : (bosBacklog ? 'BEKLEME' : 'YEŞİL');
+// Boş backlog'da AKIŞ=VERİ-YOK (hasım #6): PANO_SOZLESMESI ışık sözlüğü sabittir
+// (YEŞİL·SARI·KIRMIZI·VERİ-YOK) ve kokpit sözlük-dışı değere 'tanınmayan ışık' uyarısı basar —
+// o alarm tipo yakalamak için var, kasıtlı değerle normalleştirilemez (kokpit kırmızı çizgi).
+// Ölçülecek akış yokken dürüst değer VERİ-YOK'tur; durak zaten D9 satırıyla ayrıca yazılır.
+const AKIS = sayac.DURDURAN > 0 ? 'KIRMIZI' : (bosBacklog ? 'VERİ-YOK' : 'YEŞİL');
 const DOSYA = (sayac.DURDURAN > 0 || sayac.KILIT > 0) ? 'KIRMIZI' : (sayac.UYARI > 0 ? 'SARI' : 'YEŞİL');
 const panoDizini = join(KOK, '00_pano');
 const saglikYolu = join(panoDizini, 'SAGLIK.md');

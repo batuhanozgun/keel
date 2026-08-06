@@ -704,6 +704,14 @@ test('bekçi: arıza (çıkış 2) duran kapıdır — makine satırı temiz gö
   assert.match(r.stdout, /çıkış kodu 2/);
 });
 
+test('bekçi: ariza>0 + temiz çıkış kodu (bozuk üretici) sessiz YEŞİL olamaz — duran kapı (hasım #5/#12)', () => {
+  const kok = bekciliDonem();
+  bekciYaz(kok, "#!/bin/bash\nprintf 'ARIZA [tavan] glob patladi ama cikis kodu unutuldu\\n'\nprintf 'BEKCI v1 durduran=0 kilit=0 uyari=0 bilgi=0 ariza=1 kadran=tam pencere=isletim\\n'\nexit 0\n");
+  const r = sevk(kok);
+  assert.match(r.stdout, /bekçi KIRMIZI/);
+  assert.match(r.stdout, /arıza hattı sessiz geçemez/);
+});
+
 test('bekçi: bozuk makine satırı (sayı olmayan alan) fail-closed duran kapıdır', () => {
   const kok = bekciliDonem();
   bekciYaz(kok, "#!/bin/bash\nprintf 'BEKCI v1 durduran=x kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'\nexit 0\n");

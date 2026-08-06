@@ -86,16 +86,20 @@ const AYARLAR_JSON = JSON.stringify({
   },
 }, null, 2);
 
-const KORUNAN_YOLLAR = `# korunan-yollar — fixture (biçim: file-guard.sh grameri)
+const KORUNAN_YOLLAR = `# korunan-yollar — fixture (biçim: file-guard.sh grameri; tools/bekci
+# girdileri GERÇEK dosyayla eş — hasım bulgusu #2: fixture bu ikisini taşımayınca testler
+# SERT-dizin-içi-SORULUR vakasına kördü)
 [SERT]
 tools/guard/
 tools/sevk/
+tools/bekci/
 .claude/
 .kurulum-tamam
 02_kanon/kilitli/
 00_pano/zarf-gunlugu.jsonl
 
 [SORULUR]
+tools/bekci/bekci.conf
 02_kanon/golden/
 00_genesis/
 `;

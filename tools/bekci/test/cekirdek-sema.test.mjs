@@ -331,13 +331,16 @@ test('KÜÇÜK kadran: TAM gözleri hiç koşmaz ve kapalı oldukları İLAN edi
   temizle(kok);
 });
 
-test('boş-backlog durağı: aktif kutu yoksa BİLGİ + AKIŞ=BEKLEME + pano durak satırı (D9)', () => {
+test('boş-backlog durağı: aktif kutu yoksa BİLGİ + AKIŞ=VERİ-YOK + pano durak satırı (D9)', () => {
+  // AKIŞ değeri sözlük İÇİNDEN (hasım #6): BEKLEME kokpitte 'tanınmayan ışık' uyarısı üretiyordu
+  // ve o alarm tipo yakalamak için var — kasıtlı sözlük-dışı değer alarmı normalleştirir.
   const kok = kurulum();
   rmSync(join(kok, '01_kutular', 'KT-001-proje-plani'), { recursive: true });
   const r = kos(kok);
   assert.ok(/BİLGİ \[şema\] bos-backlog: aktif kutu yok — insan girdisi bekleniyor \(D9\)/.test(r.stdout), r.stdout);
   const saglik = readFileSync(join(kok, '00_pano', 'SAGLIK.md'), 'utf8');
-  assert.ok(saglik.includes('AKIŞ=BEKLEME'), saglik);
+  assert.ok(saglik.includes('AKIŞ=VERİ-YOK'), saglik);
+  assert.ok(!saglik.includes('BEKLEME'), 'sözlük dışı değer geri dönmemeli: ' + saglik);
   const pano = readFileSync(join(kok, '00_pano', 'PANO.md'), 'utf8');
   assert.ok(pano.includes('Durak: insan girdisi bekleniyor (D9)'), pano);
   assert.ok(pano.includes('Görevler: —'), pano);

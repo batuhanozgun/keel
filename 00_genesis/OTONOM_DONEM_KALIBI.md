@@ -59,10 +59,10 @@ kutunun izin listesinde yazmayan sınıf engellenir, o adım ATLANIR, zarfın İ
 düşer ve sahibin kuyruğuna not gider; dönem sürer. Pencere açıp insan beklemek, tanım gereği
 otonomluğun bittiği andır.
 
-**Dönemi durduran KIRMIZI'lar sayılıdır:** bekçi KIRMIZI'sı · zarf günlüğü bütünlük
-KIRMIZI'sı. **KUTU tavan KIRMIZI'sı bunlardan DEĞİLDİR:** bugünkü davranışını korur —
-kapanış kilididir, duran kapı değil (F3'ün aynısı). SARI hiçbir yerde durdurmaz; kapanış
-bloğuna yazılır.
+**Dönemi durduran KIRMIZI'lar sayılıdır:** bekçi KIRMIZI'sı (`durduran>0`) · zarf günlüğü
+bütünlük KIRMIZI'sı. **Bekçinin KİLİT bulguları bunlardan DEĞİLDİR** (tavan 1,5× · bayat dış
+göz brifingi; tam liste sözleşmede): kapanış kilididir, duran kapı değil (F3'ün aynısı). SARI
+hiçbir yerde durdurmaz; kapanış bloğuna yazılır.
 
 ## 2 · Duruş sözleşmesi (kutu kurulumuna beş zorunlu satır)
 
@@ -105,10 +105,9 @@ G-12: onkosul=G-07 G-08 · risk=riskli — <tek satır gerekçe>
 G-13: onkosul=yok · risk=düşük — <tek satır gerekçe>
 ```
 
-Blok MAKİNE-OKURDUR ve muafiyetin uygulayıcısı bekçi çekirdeğidir (`tools/bekci`, sözleşme):
-tavan gözü bloğu başlığıyla birlikte KUTU ölçümünden DÜŞER, içerik-sınıfı (kural-atıf) gözü
-bloğu MUAF tutar, şema gözü biçimini tartar — üçü de testli (ölçülmüş karar — 25 görevlik
-blok 2,9KB; oturum-günlüğü emsali).
+Blok MAKİNE-OKURDUR; muafiyeti bekçi çekirdeği uygular (sözleşme): tavan gözü bloğu
+başlığıyla KUTU ölçümünden düşer, kural-atıf gözü muaf tutar, şema gözü biçim tartar — üçü de
+testli (ölçülmüş karar: 25 görevlik blok 2,9KB; oturum-günlüğü emsali).
 Risk satırlarını kurulum oturumu taslaklar, **kurulum denetçisi bağımsız gözden geçirip kendi
 hükmünü yazar** (kuran kendi işine risk notu veremez); uyuşmazlık kurulum bulgusudur.
 `risk=riskli` → görev `isolation: worktree` ile koşar ve doğrulayıcı yeşili gelmeden çıktısı

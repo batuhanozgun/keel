@@ -2,7 +2,7 @@
 # catal-kuyruk — sahibe giden çatalın kuyruk mekaniği (E3): CEVAP-BEKLİYOR durumu + mekanik ekleme.
 # Kaynağı: tasarım §7.1 ("sessizlik onay değildir" üç mekaniği) + D-21 kalıcı kuyruğu.
 # Kuyruk dosyası 00_pano/SENDE_BEKLEYEN.md'dir — AYRI kuyruk açılmaz (D-21: madde SİLİNMEZ,
-# tavan 2KB, madde başına TEK satır). ÇATAL maddesi o kuyruğun bir SINIFIDIR:
+# tavan 10KB [K1 sözleşmesi §6①], madde başına TEK satır). ÇATAL maddesi o kuyruğun bir SINIFIDIR:
 #   - [ ] <tarih> · <rol> · ÇATAL Ç-NN · "<çeviri>" · etki: <etki> · bekletir: G-.. · kaynak: zarf-günlüğü satır N
 # Cevaplanınca aynı satır: "- [x] … · cevap: "<sahip cevabı>" · <tarih>" (D-21 biçimi korunur).
 #

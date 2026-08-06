@@ -5,7 +5,12 @@
      derlenerek değil; her hüküm bir `dosya:satır` çapası taşır. Çapasız madde buraya girmez.
      Tasarının bilgisi ve ölçüm kayıtları ürünün DIŞINDA, geliştirme tarafının kendi evinde
      tutulur; buraya yalnız hüküm iner.
-     Bu dosya bir KALIP DEĞİLDİR: kuruluma kopyalanmaz, çekirdekle birlikte gelir. -->
+     Bu dosya bir KALIP DEĞİLDİR: kuruluma kopyalanmaz, çekirdekle birlikte gelir.
+     ÇAPA NOTU (K1 adım 7, hasım bulgusu #1): BEKCI_TARIFI.md adım 4'te işaretçiye KIRPILDI ve
+     bu dosyanın oraya attığı satır-çapaları öldü. Onarım: ölen çapalar ya hükmün CANLI evine
+     çevrildi ya "kırpma-öncesi gövde" diye işaretlendi — o gövde geliştirme deposunun git
+     tarihindedir (kırpan commit'in ebeveyni); kurulu projede o tarih YOKTUR, oradan
+     doğrulanacak hüküm aranmaz. Oynak satır numarası yerine içerik çapası kullanılır. -->
 
 Bugün her kurulum kendi bekçisini sıfırdan yazıyor. Ölçüldü: **altı gerçek kurulumda altı
 farklı bekçi** doğdu — biri Python, biri rol dizininde, biri kancasız, üçünde zorunlu-küme
@@ -105,16 +110,17 @@ Dört hâl vardır, beşincisi yoktur: **DURDURAN · KİLİT · UYARI · BİLGİ
 ```
 
 `<göz-adı>` bulgunun okunabilirliğini taşır; **yeni kategori açmaz.** Zorunlu kategori kümesi
-kadrandan türer ve `tools/guard/kurulum-denetimi.sh:394` onu ilan satırında arar — yeni bir
-zorunlu ad açmak eski kurulumların ilanını kırar (`00_genesis/BEKCI_TARIFI.md:18` bu kararı üç
-kez veriyor). Çekirdeğin ilan satırı:
+kadrandan türer ve `tools/guard/kurulum-denetimi.sh` onu ilan satırında arar (kadran denetimi,
+`# kategoriler:` çapası) — yeni bir zorunlu ad açmak eski kurulumların ilanını kırar (karar
+üç kez verilmişti; doğuş evi tarifin kırpma-öncesi gövdesi, canlı hüküm BU madde). Çekirdeğin
+ilan satırı:
 
 ```
 # kategoriler: tavan şema koruma-hattı bağ-varlık golden-tazelik
 ```
 
-`golden-tazelik`, `tazelik`i **alt dize olarak içerir**; kurulum denetimi
-(`kurulum-denetimi.sh:400`) `grep -qF` ile baktığı için eski zorunluluk aynen karşılanır ve
+`golden-tazelik`, `tazelik`i **alt dize olarak içerir**; kurulum denetimi ilan satırına
+`grep -qF` ile baktığı için eski zorunluluk aynen karşılanır ve
 denetim koduna dokunulmaz. Ad neden değişti: **"tazelik" üründe iki ayrı şeyin adıydı** —
 kokpitin sahibe bastığı tazelik SAGLIK damgasının yaşıdır
 (`tools/kokpit/lib/status.mjs:197-225`) ve `README.md:77` onu sahibin **tek ezberi** ilan
@@ -125,7 +131,8 @@ sütun olmazsa "bir kez koştur" adımı `.taban-ref` doğmadan koşar ve **her 
 KIRMIZI** basar. Kural üç satırdır:
 
 1. **Koruma-hattı kablo denetimi HER ZAMAN tamdır** — kurulum penceresinde de. Kablo yoksa
-   kurulum zaten yarımdır (`00_genesis/BEKCI_TARIFI.md:16` açıkça böyle diyor).
+   kurulum zaten yarımdır (`00_genesis/BEKCI_TARIFI.md` kablo-listesi maddesi bunu bugün de
+   söylüyor: "kurulum penceresinde de tam").
 2. **Geri kalan her göz kurulum penceresinde BİLGİ'ye düşer.** Kurulumda kilitliye yazmak,
    şemayı doldurmak, tavanı aşmak normaldir.
 3. **Pencere hâli makine satırında `pencere=` alanıyla İLAN EDİLİR.** Böylece "temiz çıktı"
@@ -160,7 +167,7 @@ beşincidir; `TAM` yazan göz KÜÇÜK kadranda hiç koşmaz.
 | sahip kuyruğu: kapanış bloğu yok/biçimsiz | UYARI | denetlenmez | her |
 | zarf günlüğü bütünlüğü bozuk | DURDURAN | BİLGİ | her |
 | duruş sözleşmesi / bağımlılık-risk bloğu biçimsiz | UYARI | BİLGİ | her |
-| dış göz brifingi bayat/yok (kapanışa gelmiş kutuda) | **KİLİT** | BİLGİ | her |
+| dış göz brifingi bayat/yok (kapanışa gelmiş kutuda) | **KİLİT** | denetlenmez | her |
 | porcelain dikişi `fark` | UYARI | BİLGİ | her |
 | kanal yapılandırılmış ama hazır değil | UYARI | denetlenmez | her |
 | watchdog işareti var, iş yüklü değil / nabız bayat | DURDURAN | denetlenmez | her |
@@ -169,7 +176,7 @@ beşincidir; `TAM` yazan göz KÜÇÜK kadranda hiç koşmaz.
 | EL_KITABI bütünlüğü (zorunlu başlık/kural eksik) | DURDURAN | BİLGİ | her |
 | arşive giden kutuda `açık` görev | UYARI | BİLGİ | TAM |
 | retro bloğu boş (arşive giden kutu) | UYARI | BİLGİ | TAM |
-| boş-backlog durağı (`AKIŞ=BEKLEME` + pano satırı) | BİLGİ | BİLGİ | her |
+| boş-backlog durağı (`AKIŞ=VERİ-YOK` + pano durak satırı) | BİLGİ | BİLGİ | her |
 
 ### Kategori `koruma-hattı`
 
@@ -237,7 +244,8 @@ Her boşluk ya MEKANİKLEŞİR ya BEYANLA kapsam dışına alınır; üçüncü 
 - Golden dizini yok ya da boş → **BİLGİ** (kanon-fakir esnemesi;
   `00_genesis/EL_KITABI_KALIBI.md:196` çapası).
 - Git yok / `git log` hatası → **DURDURAN, fail-closed.** "Ölçemedim" ile "taze" aynı şey
-  değildir; `00_genesis/BEKCI_TARIFI.md:16` kilitli-tarih gözünde aynı hükmü zaten veriyor.
+  değildir; emsal, kilitli-tarih gözünün kendi fail-closed hükmüdür (§4 koruma-hattı tablosu;
+  doğuş evi tarifin kırpma-öncesi gövdesi).
 - "Ürün kodu" kümesinin tek evi **proje ayar dosyasıdır**; EL_KITABI ona işaret eder,
   kopyalamaz. K-01'in ilan ettiği düzen buraya yazılır.
 - **Bugün ne var:** hiçbir şey. Altı bekçinin beşinde kategori yok; altıncısında
@@ -300,41 +308,45 @@ sebebi yazılı: sayılar ilk retroda ölçümle kalibre edilir, harita edilmez.
   `EL_KITABI §6` diye anıyor. Numara kurulumlar arasında kaymış. Sayılar ayardan okunur;
   EL_KITABI ile ayarın ayrışması UYARI'dır (sahibin kalibrasyonu ile bekçinin ölçüsü tek
   doğrultuda kalsın diye).
-- **`## Bağımlılık ve risk` bloğu KUTU tavanından DÜŞÜLÜR** — `00_genesis/BEKCI_TARIFI.md:19`
-  yazıyor, ölçümü de orada (25 görevlik blok 2,9 KB = sarı tavanın ~%29'u). Altı bekçinin
+- **`## Bağımlılık ve risk` bloğu KUTU tavanından DÜŞÜLÜR** — hüküm ve ölçümü (25 görevlik
+  blok 2,9 KB = sarı tavanın ~%29'u) tarifin kırpma-öncesi gövdesinden BURAYA taşındı; canlı
+  ev bu madde + `00_genesis/OTONOM_DONEM_KALIBI.md` risk-bloğu bölümü. Altı bekçinin
   hiçbirinde bu düşme yok; çekirdek uygular.
 
 **⑤ İçerik-sınıfı SARI'sı. İKİSİ MEKANİKLEŞİR, BİRİ BEYANLA DÜŞER.**
 Kural `00_genesis/EL_KITABI_KALIBI.md:106-108`'de üç sınıf sayıyor; hiçbirinin makine tanımı
 yok ve altı bekçinin altısında sıfır uygulama var.
 
-- **`kural-atıf açılımı/kopyası` → MEKANİKLEŞİR:** bir dosyada `02_kanon/EL_KITABI.md`
-  gövdesinden **200 bayt ya da daha uzun birebir tekrar** → UYARI, tavandan bağımsız. Eşik
-  beyandır; değişirse gerekçe yazılır. Kuralın kendi dersi tam bu sınıfı adlandırıyor:
+- **`kural-atıf açılımı/kopyası` → MEKANİKLEŞİR:** `02_kanon/EL_KITABI.md`
+  gövdesinden **200 bayt ya da daha uzun birebir tekrar** → UYARI, tavandan bağımsız.
+  **Kapsam (beyan):** tekrar ardışık-satır düzeyinde ölçülür ve yalnız tavan haritasının
+  insan-okur dosyalarında aranır — EL_KITABI'nın kendisi ve bekçinin yazdığı SAGLIK hariç,
+  KUTU'daki risk bloğu muaf (§6③). Eşik beyandır; değişirse gerekçe yazılır. Kuralın kendi dersi tam bu sınıfı adlandırıyor:
   "kanıt zorunluluğu atıf-zırhı üretti; dosyalar tavana yapıştı"
   (`00_genesis/EL_KITABI_KALIBI.md:56`).
 - **`1 satırı aşan açık-kalem anlatısı` → DAR BİÇİMDE MEKANİKLEŞİR:** yalnız kuyruk biçimi
   tanımlı iki dosyada (`00_pano/SENDE_BEKLEYEN.md` · `00_pano/ERTELENENLER.md`) bir madde
-  birden çok satıra yayılıyorsa UYARI. Biçim zaten sözleşmeli
-  (`00_genesis/BEKCI_TARIFI.md:18`: `- [ ]`/`- [x]` + `YYYY-AA-GG` + ` · `).
+  birden çok satıra yayılıyorsa UYARI. Biçim zaten sözleşmeli — canlı ev `tools/sevk/catal-kuyruk.sh`
+  başlığı (D-21 biçimi: `- [ ]`/`- [x]` + `YYYY-AA-GG` + ` · `).
 - **`süreç-günlüğü` → BEYANLA DÜŞER.** Bir metnin "olan biteni anlatan günlük" olduğuna karar
   vermek sınıflandırma değil YARGIDIR; makine tanımı yoktur ve uydurma bir desen yanlış UYARI
   üretir. Düşerken F3 metninden de silinir — yazılı ama ölü kural, boşluktan pahalıdır.
-- **Muafiyet cümleleri yeniden yazılır.** `00_genesis/BEKCI_TARIFI.md:19` ve
-  `00_genesis/OTONOM_DONEM_KALIBI.md:108` bugün "`## Bağımlılık ve risk` bloğuna içerik-sınıfı
-  denetimi uygulanmaz" diyor — **var olmayan bir denetimden muafiyet.** Denetim var olduğuna
-  göre muafiyet artık gerçek bir hükümdür ve öyle yazılır.
+- **Muafiyet cümleleri yeniden yazılır.** Tarifteki eş cümle adım 4 kırpmasında silindi;
+  `00_genesis/OTONOM_DONEM_KALIBI.md` risk-bloğu bölümünün "içerik-sınıfı denetimi uygulanmaz"
+  cümlesi — **var olmayan bir denetimden muafiyetti** — adım 5'te gerçek denetime bağlandı
+  (tavan gözü düşer · kural-atıf gözü muaf tutar · şema gözü biçim tartar).
 
 ## 6 · Üç çelişkinin hükmü
 
-**① `SENDE_BEKLEYEN` tavanı: 10KB kazanır.** Bugün şablonun içinde iki sayı var ve ikisi de
-testli: `00_genesis/EL_KITABI_KALIBI.md:103` **10KB** (`test/cevap-kanali.test.mjs:740`
-çapalıyor) · `00_genesis/BEKCI_TARIFI.md:18` **2KB** (`tools/sevk/catal-kuyruk.sh:168` +
-`test/catal.test.mjs:649`). Gerekçe: bu dosyanın maddeleri **SİLİNMEZ** (EL_KITABI F1 istisna
-2), yani tekdüze büyür; silinemeyen bir dosyaya dar tavan koymak tasarım hatasıdır ve
-`catal-kuyruk.sh:168`'in kendi yorumu bunu ölçmüş ("birkaç çatal dosyayı sarıya itebiliyordu").
-Ayrıca 10KB, bekçinin fiilen okuduğu yoldur (tavan sayıları F3'ten gelir). `BEKCI_TARIFI.md:18`
-düzeltilir, iki çapa güncellenir.
+**① `SENDE_BEKLEYEN` tavanı: 10KB kazanır — KAPANDI.** Hüküm günü şablonda iki sayı vardı ve
+ikisi de testliydi: `00_genesis/EL_KITABI_KALIBI.md` F3 **10KB** (`test/cevap-kanali.test.mjs`
+"kuyruk tavanı 10 KB" testi çapalıyor) · tarifin kırpma-öncesi gövdesi **2KB**
+(`catal-kuyruk.sh` + `test/catal.test.mjs` o gün 2KB'ı çapalıyordu). Gerekçe: bu dosyanın
+maddeleri **SİLİNMEZ** (EL_KITABI F1 istisna 2), yani tekdüze büyür; silinemeyen bir dosyaya
+dar tavan koymak tasarım hatasıdır ve `catal-kuyruk.sh`'ın kendi yorumu bunu ölçmüş ("birkaç
+çatal dosyayı sarıya itebiliyordu"). Ayrıca 10KB, bekçinin fiilen okuduğu yoldur (tavan
+sayıları ayardan gelir, F3 sahibin ilanı). Uygulandı: 2KB satırı adım 4 kırpmasıyla silindi;
+`catal-kuyruk.sh` yorumu + `catal.test.mjs` başlığı adım 5'te 10KB'a çekildi.
 
 **② Tavan birimi: BAYT.** Satır ölçen iki bekçi yanlıştı (§5④).
 

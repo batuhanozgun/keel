@@ -2,7 +2,7 @@
 // kilitli-tarih (MDRT · yeni dosya A · taban-ref fail-closed). BEKCI_TARIFI md.16.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { writeFileSync, readFileSync, rmSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { kurulum, kos, temizle, commitEt, git } from './yardimci.mjs';
 
@@ -66,6 +66,26 @@ test('[SORULUR] yolda commit-dışı değişim → UYARI (meşru olabilir; sahib
   writeFileSync(join(kok, '02_kanon', 'golden', 'yeni-golden.md'), 'aday çıktı\n');
   const r = kos(kok);
   assert.ok(/UYARI \[koruma-hattı\] korunan-yol-kirliligi: \[SORULUR\] yolda commit-dışı değişim \(meşru olabilir; sahibe not\): 02_kanon\/golden\/yeni-golden\.md/.test(r.stdout), r.stdout);
+  temizle(kok);
+});
+
+test('bekçi-ayarı istisnası: commit-dışı bekci.conf değişimi UYARI (DURDURAN değil) — sahip kalibrasyonu dönem öldürmez (hasım #2)', () => {
+  const kok = kurulum();
+  appendFileSync(join(kok, 'tools', 'bekci', 'bekci.conf'), '# sahip kalibrasyonu: tavan_pano=3072 adayı\n');
+  const r = kos(kok);
+  assert.ok(/UYARI \[koruma-hattı\] korunan-yol-kirliligi: \[SORULUR\] yolda commit-dışı değişim \(meşru olabilir; sahibe not\): tools\/bekci\/bekci\.conf/.test(r.stdout), r.stdout);
+  assert.ok(!/DURDURAN \[koruma-hattı\] korunan-yol-kirliligi/.test(r.stdout), r.stdout);
+  assert.equal(r.alanlar.durduran, 0, r.stdout);
+  assert.equal(r.rc, 0, r.stdout);
+  temizle(kok);
+});
+
+test('bekçi-ayarı istisnası DAR: tools/bekci/ altındaki BAŞKA dosya [SERT] kalır (istisna yalnız conf)', () => {
+  const kok = kurulum();
+  writeFileSync(join(kok, 'tools', 'bekci', 'kacak.txt'), 'kirli\n');
+  const r = kos(kok);
+  assert.ok(/DURDURAN \[koruma-hattı\] korunan-yol-kirliligi: \[SERT\] yolda commit-dışı değişim: tools\/bekci\/kacak\.txt/.test(r.stdout), r.stdout);
+  assert.equal(r.rc, 1);
   temizle(kok);
 });
 
