@@ -431,7 +431,13 @@ const bagsiz = (yol) => {
   return true;
 };
 let sertMuaf = false;
-const sert = kurallar.find((k) => k.bolum === "[SERT]" && eslesir(k));
+// Bekci-ayari istisnasi (K1/sira 9): bekci.conf [SORULUR]dur ama tools/bekci/ [SERT] dizininin
+// ICINDE yasar — tam-yol + bagsiz eslesme SERT dizin kuralini ezer, karar asagidaki [SORULUR]
+// kuralina duser (kurulumda GEC: GENESIS doldurur · isletimde SOR: sahip onayi). Emsal:
+// korunan-yollar.txt / kanal.conf — SERT alanda yasayan VERI dosyasi, source edilmez.
+// Oncelik BOZULMAZ: [SERT] bu tek dosya icin atlanir ama rol kafesi asagida yine kosar.
+const bekciAyari = hedef === kanonik(resolve(KOKE, "tools/bekci/bekci.conf")) && bagsiz("tools/bekci/bekci.conf");
+const sert = !bekciAyari && kurallar.find((k) => k.bolum === "[SERT]" && eslesir(k));
 if (sert) {
   if (kurulumSuruyor) {
     // Cekirdekli istisna: kurulum surerken yalniz tools/guard/ + .claude/ + tools/sevk/ sert
@@ -440,7 +446,10 @@ if (sert) {
     // kuran ajan koruma/sevk KODUNU ve damgalar/ prova fislerini kurulum penceresinde yeniden
     // yazamasin. (Otonom kipin KURAL EVI artik elle kopyalanmiyor ama o dosya 02_kanon/ altinda
     // [SORULUR]dur, bu cekirdegin icinde degil — G3.3f.)
-    const cekirdekte = altinda("tools/guard") || altinda(".claude") || altinda("tools/sevk");
+    // tools/bekci cekirdege K1/sira 9 ile girdi: bekci sabit cekirdegi SABLONLA SABIT gelir —
+    // kuran ajan denetim govdesini kurulum penceresinde yeniden yazamasin (tools/sevk E1-A5
+    // emsaliyle ayni sinif). Ayari (bekci.conf) ustteki istisnayla zaten SERT-disi.
+    const cekirdekte = altinda("tools/guard") || altinda(".claude") || altinda("tools/sevk") || altinda("tools/bekci");
     const listeDosyasi = hedef === kanonik(resolve(KOKE, "tools/guard/korunan-yollar.txt"));
     // GENESIS gercek-veri isaret listesini kurulumda doldurabilmeli (korunan-yollar.txt emsali —
     // ikisi de tools/guard/ altinda VERI dosyasidir; hasim bulgusu: doldurma yolu mekanikce kapaliydi).

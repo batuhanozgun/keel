@@ -10,6 +10,10 @@
 # Kesin engel (exit 2): oturum içinde ASLA değiştirilmez. Meşru ihtiyaç → sahip kararı + tören.
 tools/guard/
 tools/sevk/
+# Bekçi sabit çekirdeği (K1/sıra 9): denetim gövdesi + sarmalayıcı + zorunlu-küme evi ŞABLONLA
+# SABİT gelir, kurulum YAZMAZ (sözleşme: tools/bekci/README.md §0). Tek istisna bekci.conf —
+# o [SORULUR] bölümünde; ayrımı file-guard tam-yol istisnasıyla yapar.
+tools/bekci/
 .claude/
 .kurulum-tamam
 02_kanon/kilitli/
@@ -21,6 +25,9 @@ tools/sevk/
 # Sahibe sorulur (ask): golden güncellemesi meşru olabilir, karar sahibindir.
 02_kanon/golden/
 00_genesis/
+# Bekçinin proje ayarı: tavanlar/ürün yolları projenin normal yaşamında değişir — [SERT] olsaydı
+# kurulumdan sonra hiçbir kanaldan güncellenemezdi (sözleşme §0). Kurulumda serbest (GENESIS doldurur).
+tools/bekci/bekci.conf
 # Otonom kipin kural evi (E1): kurulumda G3.3f kurar; dönem içinde sessizce değiştirilemez.
 02_kanon/OTONOM_DONEM.md
 # Sahibin karar alanı (E3): hangi sorunun sahibe gideceğinin yazılı evi (soru çizgisi + profil).

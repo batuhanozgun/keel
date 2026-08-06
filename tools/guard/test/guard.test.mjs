@@ -815,3 +815,47 @@ function e2CardUret() {
   for (let i = 0; i < r.length; i++) { let x = r[i]; if (i % 2 === 0) { x *= 2; if (x > 9) x -= 9; } top += x; }
   return hane + String((10 - (top % 10)) % 10);
 }
+
+// ── Bekçi sabit çekirdeği (K1/sıra 9): tools/bekci/ SERT · bekci.conf tek-yol istisnasıyla SORULUR ──
+const BEKCI_LISTE = `[SERT]
+tools/guard/
+tools/bekci/
+.claude/
+.kurulum-tamam
+02_kanon/kilitli/
+
+[SORULUR]
+02_kanon/golden/
+tools/bekci/bekci.conf
+`;
+
+test('bekçi çekirdeği [SERT]: işletimde cekirdek.mjs/bekci.sh Edit → exit 2', () => {
+  const kok = kurulum({ liste: BEKCI_LISTE });
+  assert.equal(kos(kok, edit(kok, 'tools/bekci/cekirdek.mjs')).status, 2);
+  assert.equal(kos(kok, edit(kok, 'tools/bekci/bekci.sh')).status, 2);
+  assert.equal(kos(kok, edit(kok, 'tools/bekci/el-kitabi-zorunlu.txt')).status, 2);
+});
+
+test('bekçi ayarı istisnası: işletimde bekci.conf Edit → SERT dizini EZİLİR, sahibe sorulur', () => {
+  const kok = kurulum({ liste: BEKCI_LISTE });
+  const r = kos(kok, edit(kok, 'tools/bekci/bekci.conf'));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, 'ask');
+});
+
+test('kurulum penceresi: bekçi çekirdeği YİNE SERT (kuran ajan denetim gövdesini yazamaz — A5 ruhu)', () => {
+  const kok = kurulum({ liste: BEKCI_LISTE, kurulumTamam: false });
+  assert.equal(kos(kok, write(kok, 'tools/bekci/cekirdek.mjs')).status, 2);
+});
+
+test('kurulum penceresi: bekci.conf serbest (GENESIS doldurur — korunan-yollar.txt emsali)', () => {
+  const kok = kurulum({ liste: BEKCI_LISTE, kurulumTamam: false });
+  const r = kos(kok, write(kok, 'tools/bekci/bekci.conf'));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout.trim(), '', 'ask penceresi açılmamalı (kurulumda GEC): ' + r.stdout);
+});
+
+test('bekçi ayarı istisnası rol kafesini DELMEZ: yazamaz rolde bekci.conf → exit 2', () => {
+  const kok = kurulum({ liste: BEKCI_LISTE, aktifRol: 'disgoz\tyazamaz\t03_roller/disgoz/\n' });
+  assert.equal(kos(kok, edit(kok, 'tools/bekci/bekci.conf')).status, 2);
+});
