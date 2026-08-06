@@ -1,6 +1,6 @@
 # Otonom KEEL — E5 paketi tasarısı (kanal + nabız + sabah yüzeyi)
 
-**Tarih:** 2026-07-28 · **Çapa:** `OS Architect/Araştırmalar/04_dış-göz-incelemeleri/2026-07-23_loop-engineering-araştırması/18_Otonom KEEL — tasarım.md`
+**Tarih:** 2026-07-28 · **Çapa:** "Otonom KEEL — tasarım" (geliştirme arşivi; bu depoda yoktur)
 (§7.3 haber kanalı · §7.4 frenler [şişme alarmı] · §8 sessiz ölüm + watchdog · §10 E5 satırı/T6) ·
 **önceki paketler:** E0 `20` · E1 `21` · E2 `22` · E3 `23` · E4 `24` (+ `2026-07-28-e4-sevk-tetik-kurulum-tasarisi.md`) ·
 **kararlar:** D-24 (K-E · K-F · K-G) · D-25 ① · D-21 · D-22 · D-23 · D-02 · D-10

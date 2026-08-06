@@ -1,5 +1,5 @@
 // donem-dikisleri.test.mjs — Faz 2 sıra 7 · dönem dikişleri (F1-5a…f, F1-5h).
-// Sözleşme: Araştırmalar/…/36_Otonom KEEL — Faz 1 tasarımı.md §P3 + …/28 planı Faz 2 satır 7.
+// Sözleşme: "Otonom KEEL — Faz 1 tasarımı" §P3 + "…eksikleri kapatma planı" Faz 2 satır 7 — geliştirme arşivi
 //
 // Ölçülen dört iddia:
 //   (a) Üretim bitince kapanış denetimi KENDİLİĞİNDEN başlar — sahip ikinci komut yazmaz.

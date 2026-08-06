@@ -173,7 +173,7 @@ boşaldığında ve proje bitmediğinde). Sıraya bağlanan kural, ikinci örnek
 | Ne | Neden |
 |---|---|
 | **`koşul`** kelimesi (= şart) | "koşu" ile ilgisi yok; LICENSE'taki "Kullanım Koşulları" dâhil |
-| **`docs/superpowers/plans/`** altındaki tarihli kayıtlar ve **`docs/TASARIM.md`** (2026-07-03 taslağı) | O günün kaydıdır; dilini değiştirmek kaydı çarpıtır. Eski kelimeleri orada okursan karşılığı bu dosyadadır |
+| **`docs/superpowers/plans/`** altındaki tarihli kayıtlar | O günün kaydıdır; dilini değiştirmek kaydı çarpıtır. Eski kelimeleri orada okursan karşılığı bu dosyadadır |
 | **`damga`** — rol damgası, kapanış damgası, tarih damgası | Gerçekten damgadır; tek istisna aşağıda |
 | **`yapim` · `kurulum` · `kapanis`** dönem **evreleri** | `yapim` iş üretir; `kurulum` ve `kapanis` hiçbir şey üretmez, **denetim evresidir**. Faz 2 sıra 7'de "tür" değil **evre** dendi (aynı dönemin üç hâli) ama makine-okur değerler DEĞİŞMEDİ: gösterge ve `/donem` argümanı aynı üç kelimeyi kullanır — değer değişimi geri-uyum bedeli ister, ad değişimi istemez |
 | kokpitteki İngilizce `gates` · `parseGates` alanları | Türkçe "kapı"nın iki anlamı İngilizce adda çakışmıyor: kodda mekanizmalara hiçbir yerde `gate` denmiyor. Ad kokpitin JSON sözleşmesidir ve üç kopyada bayt-bayt ortaktır — değiştirmek D-02 eşitleme riskini karşılıksız artırırdı |

@@ -1,6 +1,6 @@
 # Otonom KEEL — E2 paketi tasarısı (önleme: içerik süzgeci + dışa-giden sınıfı + worktree kuralı)
 
-**Tarih:** 2026-07-27 · **Çapalar:** Otonom KEEL tasarımı §4 + §10/E2 (`OS Architect/Araştırmalar/04_dış-göz-incelemeleri/2026-07-23_loop-engineering-araştırması/18_Otonom KEEL — tasarım.md`) · E0 raporu §4.2 + §9.1 (`…/20`) · E1 raporu §4.1 (`…/21`) · D-24 · D-25 ②
+**Tarih:** 2026-07-27 · **Çapalar:** "Otonom KEEL — tasarım" §4 + §10/E2 (geliştirme arşivi; bu depoda yoktur) · E0 raporu §4.2 + §9.1 (`…/20`) · E1 raporu §4.1 (`…/21`) · D-24 · D-25 ②
 **Durum:** danışmanın yazı işi (D-23: uygulama mührü istenmez); kanıt = guard testleri + T2 tatbikatı. Bu belge E2'nin ŞEMA KARARLARINI sabitler — tasarımın "E2'de tasarlanır" dediği her boşluğun cevabı burada.
 
 ---

@@ -1,6 +1,6 @@
 # Otonom KEEL — E3 paketi tasarısı (soru kanalı: karar alanı · çatal denetçisi · CEVAP-BEKLİYOR)
 
-**Tarih:** 2026-07-27 · **Çapa:** `OS Architect/Araştırmalar/04_dış-göz-incelemeleri/2026-07-23_loop-engineering-araştırması/18_Otonom KEEL — tasarım.md`
+**Tarih:** 2026-07-27 · **Çapa:** "Otonom KEEL — tasarım" (geliştirme arşivi; bu depoda yoktur)
 (§7.1 sessizlik kuralı · §7.2 çatal denetçisi beş kalem · §6 gözlerin bakış listeleri · §2.4 TÜRETME-İZİ · §10 E3 satırı · §13 damga şartı) ·
 **karar-alanı girdileri:** aynı klasör `19_Otonom KEEL — karar-alanı konuşması.md` (ÇIKTI 1 soru çizgisi · ÇIKTI 2 sahip profili) ·
 **önceki paketler:** E0 `20` · E1 `21` (+ `2026-07-27-e1-durus-zarf-tasarisi.md`) · E2 `22` (+ `2026-07-27-e2-onleme-tasarisi.md`) ·

@@ -1,5 +1,5 @@
 // cevap-kanali.test.mjs — F1-5g: haber kanalının GELEN yönü (Faz 2 · sıra 8).
-// Sözleşme: OS Architect/Araştırmalar/…/37_Otonom KEEL — cevap kanalı tasarısı (sıra 8).md
+// Sözleşme: "Otonom KEEL — cevap kanalı tasarısı (sıra 8)" — geliştirme arşivi
 //   §3 kimlik (Message-ID/In-Reply-To) · §3.1 MIME-farkında gövde · §4 sözleşme genişlemeleri ·
 //   §5 mekanik akış · §6 kırılma tablosu · §8 bitti ölçütü.
 //

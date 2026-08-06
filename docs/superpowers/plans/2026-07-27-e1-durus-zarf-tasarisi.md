@@ -1,6 +1,6 @@
 # Otonom KEEL — E1 paketi tasarısı (duruş sözleşmesi + dönüş zarfı)
 
-**Tarih:** 2026-07-27 · **Çapalar:** Otonom KEEL tasarımı §10/E1 (`OS Architect/Araştırmalar/04_dış-göz-incelemeleri/2026-07-23_loop-engineering-araştırması/18_Otonom KEEL — tasarım.md`) · E0 raporu §4.1 + §6.1 (`…/20`) · D-24 · D-25
+**Tarih:** 2026-07-27 · **Çapalar:** "Otonom KEEL — tasarım" §10/E1 (geliştirme arşivi; bu depoda yoktur) · E0 raporu §4.1 + §6.1 (`…/20`) · D-24 · D-25
 **Durum:** danışmanın yazı işi (D-23: uygulama mührü istenmez); kanıt = guard testleri + T1 tatbikatı. Bu belge E1'in ŞEMA KARARLARINI sabitler — tasarımın "E1'de yazılır" dediği her boşluğun cevabı burada.
 
 ---

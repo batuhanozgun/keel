@@ -1,6 +1,6 @@
 # Otonom KEEL — E4 paketi tasarısı (sevk + tetik + kurulum kapısı; K2+K3)
 
-**Tarih:** 2026-07-28 · **Çapa:** `OS Architect/Araştırmalar/04_dış-göz-incelemeleri/2026-07-23_loop-engineering-araştırması/18_Otonom KEEL — tasarım.md`
+**Tarih:** 2026-07-28 · **Çapa:** "Otonom KEEL — tasarım" (geliştirme arşivi; bu depoda yoktur)
 (§2.1 koşu · §2.2 model-aracılı halka + dikişler · §2.5 kapı modeli · §3 sevk · §5.1/§5.2 duruş + kurulum kapısı · §7.4 frenler · §8 kapılanma · §10 E4 satırı) ·
 **önceki paketler:** E0 `20` · E1 `21` (+ `2026-07-27-e1-durus-zarf-tasarisi.md`) · E2 `22` (+ `…-e2-onleme-tasarisi.md`) · E3 `23` (+ `…-e3-soru-kanali-tasarisi.md`) ·
 **kararlar:** D-24 · D-25 ① · D-21 · D-22 · D-23 · D-02 · D-10
