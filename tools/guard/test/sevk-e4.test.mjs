@@ -87,6 +87,11 @@ function kurulum({ donem = null, kadro = ['uretici', 'dogrulayici', 'catal-denet
   // cevap-sozlugu.txt VERİ dosyasıdır ve catal-kuyruk.sh onu FAIL-CLOSED arar: kurulu bir
   // projede her zaman vardır, o yüzden simülasyon da onu taşımak zorunda (F1-5g).
   try { copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'cevap-sozlugu.txt'), join(kok, 'tools', 'sevk', 'cevap-sozlugu.txt')); } catch {}
+  // gorev-durumlari.txt VERI dosyasidir ve sevk onu FAIL-CLOSED arar (K5 tek evi; kume
+  // bekci ile ORTAK): kurulu projede her zaman vardir, simulasyon da tasimak zorunda.
+  mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
+  copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
+               join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
   copyFileSync(join(KOK_REPO, 'tools', 'guard', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '---\nname: ' + a + '\ntools: Read\n---\n# test ajanı\n');
   mkdirSync(join(kok, '03_roller', 'uretici'), { recursive: true });
@@ -362,6 +367,101 @@ test('sevk/karne şartı: taze YEŞİL karne görevi kapatır; KIRMIZI karne dur
   const r2 = sevk(kirmizi);
   assert.equal(r2.status, 0);
   assert.match(r2.stdout, /karnesi KIRMIZI/);
+});
+
+// ── K5 · `mühür-bekliyor` cinsi: sevk ile bekçi AYNI kümeden okur ─────────────────────────
+// DOĞUŞ (U2 · U3, ölçüldü 2026-08-08): `acikVar` satırı `mühür-bekliyor`u AÇIK üretim görevi
+// sayıyordu. Sonucu, yalnız mühür bekleyen görevi kalan kutunun kapanış evresine HİÇ
+// girmemesiydi: sevk "açık görev var ama hiçbiri açılamıyor" deyip dönemi DURAN KAPIda
+// kapatıyor, aynı anda bekçi o kutuyu kapanışta sayıp kapanış kilidini basıyordu. Aynı görev,
+// iki makinede iki hâl — ve "üretimden mühre tek tuş" vaadi tam da vaadin işlemesi gereken
+// kolda mekanik olarak kırık. Ayrım artık TEK EVDE: `tools/bekci/gorev-durumlari.txt`.
+// Bekçi ayağı ve onun bozmaları: tools/bekci/test/gorev-durum-tek-ev.test.mjs.
+const DURUM_EVI = (kok) => join(kok, 'tools', 'bekci', 'gorev-durumlari.txt');
+const muhurBekleyenDonem = () => {
+  const kok = kurulum({ donem: true, kutu: kutuMetni({
+    gorevler: [
+      { id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' },
+      { id: 'G-02', is: 'sahip mührünü bekleyen iş', sahip: 'uretici', durum: 'mühür-bekliyor', kanit: '00_pano/PANO.md' },
+    ],
+    onkosul: { 'G-01': 'yok', 'G-02': 'yok' },
+  }) });
+  bekciKur(kok, 'YEŞİL');
+  ekle(kok, { tip: 'zarf', ajan: 'uretici', gorev: 'G-01', sinif: 'is', alanlar: { catal: 'yok' } });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'G-01', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  return kok;
+};
+
+test('K5: yalnız mühür bekleyen görev kalınca dönem KAPANIŞ evresine geçer (duran kapı DEĞİL)', () => {
+  const kok = muhurBekleyenDonem();
+  const r = sevk(kok);
+  assert.equal(r.status, 2, 'duran kapı basıldı — üretimden mühre tek tuş bu kolda kırık: ' + r.stdout);
+  assert.match(r.stderr, /subagent_type: disgoz/, 'kapanış evresinin ilk gözü açılmalı');
+  assert.equal(readFileSync(GOSTERGE(kok), 'utf8').split('\n')[0].split('\t')[2], 'kapanis',
+    'göstergenin evre alanı kapanis olmalı');
+  assert.ok(!/muhur bekliyor/.test(r.stdout),
+    'mühür bekleyen görev dönemi DURDURMAMALI (sahip mührü kapanış paketiyle birlikte gelir): ' + r.stdout);
+});
+
+test('K5: mühür bekleyen görev sahip yüzeyinde ADIYLA geçer (kırık vaat sessiz vaade dönmez)', () => {
+  // Hasım turu bulgusu (kendi değişikliğimize): `mühür-bekliyor` artık üretimi durdurmuyor,
+  // yani kutu onunla birlikte kapanışa gidiyor. Sahibe "kapanış denetimi YEŞİL, mühür sende"
+  // deyip o görevin de mühür beklediğini SÖYLEMEMEK, kırık vaadi sessiz vaade çevirirdi.
+  const kok = muhurBekleyenDonem();
+  assert.equal(sevk(kok).status, 2, 'ön koşul: kapanış evresine geçilmeli');
+  ekle(kok, { tip: 'brifing', ajan: 'disgoz', yol: '03_roller/disgoz/BRIFING.md', bayt: 400 });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'KAPANIS', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  const r = sevk(kok);
+  assert.equal(r.status, 0, 'YEŞİL kapanış karnesi dönemi bitirmeli: ' + r.stdout);
+  assert.match(r.stdout, /DÖNEM KAPANDI/);
+  assert.match(r.stdout, /SENIN MUHRUNU bekliyor: G-02/,
+    'mühür bekleyen görev üç blokta adıyla geçmeli: ' + r.stdout);
+});
+
+test('K5/BOZMA · sahip yüzeyindeki mühür cümlesi silinirse ad KAYBOLUR (cümle taşıyıcıdır)', () => {
+  // Fixture'ın KENDİ sevk.sh kopyası bozulur; kaynak ağaca dokunulmaz (sabah-yüzeyi emsali).
+  const kok = muhurBekleyenDonem();
+  const yol = join(kok, 'tools', 'sevk', 'sevk.sh');
+  const kaynak = readFileSync(yol, 'utf8');
+  const bozuk = kaynak.replace(
+    /\+ \(OZET\.muhur\.length \? "; " \+ OZET\.muhur\.length \+ " gorev SENIN MUHRUNU bekliyor: " \+ OZET\.muhur\.join\(" "\) : ""\);/,
+    '+ "";');
+  assert.notEqual(bozuk, kaynak, 'bozma çapası kaynakta bulunamadı — test bayatladı');
+  writeFileSync(yol, bozuk);
+  assert.equal(sevk(kok).status, 2);
+  ekle(kok, { tip: 'brifing', ajan: 'disgoz', yol: '03_roller/disgoz/BRIFING.md', bayt: 400 });
+  ekle(kok, { tip: 'karne', ajan: 'dogrulayici', gorev: 'KAPANIS', hukum: 'YEŞİL', maddeler: 'x=DOĞRU' });
+  const r = sevk(kok);
+  assert.equal(r.status, 0);
+  assert.ok(!/MUHRUNU bekliyor/.test(r.stdout),
+    'bozma tutmadı — cümle silindiği hâlde ad hâlâ geçiyor, yani ölçtüğümüz şey bu cümle değil');
+});
+
+test('K5/BOZMA · tek evde mühür-bekliyor ÜRETİM tarafına alınırsa karar DURAN KAPIya döner', () => {
+  // Tek evin yük taşıdığının kanıtı. Gömülü kopyası olan bir sevk burada kızarır: dosya
+  // değişti, karar değişmedi demektir. Kaynak ağaca dokunulmaz — bozma fixture kopyasındadır.
+  const kok = muhurBekleyenDonem();
+  writeFileSync(DURUM_EVI(kok),
+    readFileSync(DURUM_EVI(kok), 'utf8').replace('kapanista:mühür-bekliyor', 'uretimde:mühür-bekliyor'));
+  const r = sevk(kok);
+  assert.equal(r.status, 0, 'ayrım tek evden okunmuyor (dosya değişti, karar değişmedi): ' + r.stdout);
+  assert.match(r.stdout, /muhur bekliyor \(sahip\)/);
+});
+
+test('K5/BOZMA · tek ev YOKSA sevk fail-closed durur — sözlük evsiz kalamaz', () => {
+  const kok = muhurBekleyenDonem();
+  rmSync(DURUM_EVI(kok));
+  const r = sevk(kok);
+  assert.equal(r.status, 0, 'evsiz kümeyle dönem sürmemeli');
+  assert.match(r.stdout, /gorev durum sozlugu yok/);
+});
+
+test('K5/BOZMA · biçimsiz kalem sevkte de fail-closed (ölçemedim ile temiz aynı şey değildir)', () => {
+  const kok = muhurBekleyenDonem();
+  writeFileSync(DURUM_EVI(kok), 'bicimsiz satir\n');
+  const r = sevk(kok);
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /bicimsiz kalem/);
 });
 
 test('sevk/karne tazeliği: karneden SONRA iş zarfı gelirse karne düşer (yeniden doğrulanır)', () => {

@@ -80,6 +80,11 @@ function kurulum({ gorevler, onkosul = {}, evre = 'yapim', gosterge = null } = {
     chmodSync(join(kok, 'tools', 'sevk', b), 0o755);
   }
   copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'cevap-sozlugu.txt'), join(kok, 'tools', 'sevk', 'cevap-sozlugu.txt'));
+  // gorev-durumlari.txt VERI dosyasidir ve sevk onu FAIL-CLOSED arar (K5 tek evi; kume
+  // bekci ile ORTAK): kurulu projede her zaman vardir, simulasyon da tasimak zorunda.
+  mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
+  copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
+               join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
   copyFileSync(join(KOK_REPO, 'tools', 'guard', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   for (const a of ['uretici', 'dogrulayici', 'catal-denetcisi', 'kurulum-denetcisi', 'disgoz']) {
     writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '---\nname: ' + a + '\ntools: Read\n---\n# test ajanı\n');
@@ -249,7 +254,13 @@ test('açılış: bugünün sabah yüzeyi varsa köprü satırı basılır; eski
 
   assert.ok(!/SABAH\.md/.test(kos()), 'dosya yokken satır hiç doğmamalı (ısrar yok — D-21)');
 
-  const bugun = new Date().toISOString().slice(0, 10);
+  // YEREL gün, UTC değil (2026-08-08 koşusunda kırmızı bulundu): `acilis.sh` günü
+  // `date '+%Y-%m-%d'` ile YEREL okur, `sevk.sh` künyeyi yine yerel `date` ile yazar.
+  // `toISOString()` UTC verir — UTC+3'te gece 00:00-03:00 arasında iki gün AYRIŞIR ve bu
+  // test saatin kendisine bağlı olarak kızarırdı (test kusuru; ürün doğruydu). Yeşilliği
+  // duvar saatine bağlı test, kanıt değildir.
+  const g = new Date(); const iki = (n) => String(n).padStart(2, '0');
+  const bugun = `${g.getFullYear()}-${iki(g.getMonth() + 1)}-${iki(g.getDate())}`;
   writeFileSync(SABAH(kok), `# SABAH — ${KUTU_ADI} · ${DONEM_ID} · ${bugun} 03:14\n`);
   assert.match(kos(), /Bu gece bir dönem oldu — üç blok hazır: 00_pano\/SABAH\.md/);
 
@@ -265,9 +276,12 @@ test('bozma 1 · PAS uyarısı 3. bloktan çıkarılırsa ayrım ÇÖKER (yukar�
   const kok = dustuKurulumu();
   const yol = join(kok, 'tools', 'sevk', 'sevk.sh');
   const kaynak = readFileSync(yol, 'utf8');
+  // ÇAPA K5'TE GÜNCELLENDİ: PAS cümlesi artık deyimi BİTİRMİYOR — ardından mühür bekleyen
+  // görevlerin cümlesi geliyor, `;` oraya taşındı. Eski çapa sondaki `;`e bağlıydı ve testin
+  // kendisi "bozma çapası bulunamadı" diyerek kızardı; çapanın bayatlaması sessiz geçmedi.
   const bozuk = kaynak.replace(
-    /\+ \(OZET\.pas\.length \? "; " \+ OZET\.pas\.length \+ " gorev PAS \(is YAPILMADI: " \+ OZET\.pas\.join\(" "\) \+ "\)" : ""\);/,
-    '+ "";');
+    /\+ \(OZET\.pas\.length \? "; " \+ OZET\.pas\.length \+ " gorev PAS \(is YAPILMADI: " \+ OZET\.pas\.join\(" "\) \+ "\)" : ""\)/,
+    '+ ""');
   assert.notEqual(bozuk, kaynak, 'bozma çapası kaynakta bulunamadı — test bayatladı');
   writeFileSync(yol, bozuk);
   assert.equal(sevk(kok).status, 0);

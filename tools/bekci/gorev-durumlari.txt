@@ -1,0 +1,30 @@
+# gorev-durumlari — görev durum sözlüğünün ve ÜRETİM/KAPANIŞ ayrımının TEK EVİ (K5, 2026-08-08).
+#
+# DOĞUŞ (ölçülmüş kusur): `mühür-bekliyor` cinsi iki makinede ZIT anlamdaydı. sevk onu AÇIK
+# üretim görevi sayıyor (`acikVar`) ve kutu yalnız mühür bekleyen görevle kalınca dönemi
+# DURAN KAPIya sokuyordu; bekçi ise aynı görevi kapanış tarafında sayıp kapanış kilidini
+# sevkten bir tur ÖNCE ateşliyordu. Aynı olguyu iki yerde ayrı ayrı yazmak sürüklenmenin en
+# ucuz doğduğu yerdir: küme artık TEK EVDE yaşar, iki taraf da buradan okur, kopya testle
+# ölçülür (tools/bekci/test/gorev-durum-tek-ev.test.mjs).
+#
+# HÜKÜM — `mühür-bekliyor` KAPANIŞ tarafındadır. Gerekçesi kanonun kendi cümlesidir
+# (OTONOM_DONEM §1): evre geçişinin şartı "açık ÜRETİM görevi kalmaması"dır. Mühür bekleyen
+# görevin işi bitmiştir ve yapının onu ilerletecek HİÇBİR hamlesi yoktur — sevk zaten onu
+# sevk edilemez sayar (engel: "muhur bekliyor (sahip)"). Onu üretim tarafında saymak, kutuyu
+# kapanış evresine hiç sokmadan dönemi duran kapıda öldürür: "üretimden mühre tek tuş" vaadi
+# tam da vaadin işlemesi gereken yerde kırılır. Sahip mührü kapanış paketiyle BİRLİKTE verir.
+#
+# BİÇİM: `<sınıf>:<durum>` — sınıf `uretimde` ya da `kapanista`; boş satır ve `#` yorum satırı
+# atlanır. Eşleştirme DÖNÜŞÜMSÜZ birebirdir (İ/ı güvenliği): küçültme ve `grep -i` yasak.
+# Görev durum SÖZLÜĞÜ iki sınıfın BİRLEŞİMİDİR — sevk `DURUM_SOZ`u buradan kurar, ayrı bir
+# liste tutmaz. Sözlüğün sahip yüzeyindeki kopyası 00_genesis/EL_KITABI_KALIBI.md'dedir ve
+# tek eve testle bağlıdır.
+#
+# OKUYANLAR: tools/sevk/sevk.sh (çözümleyici) · tools/bekci/cekirdek.mjs (dis-goz-brifingi gözü).
+# Dosya yok/biçimsizse İKİSİ DE fail-closed: sevk dönemi durdurur, bekçi arıza hattına yazar.
+# "Ölçemedim" ile "temiz" aynı şey değildir.
+uretimde:açık
+uretimde:sürüyor
+kapanista:mühür-bekliyor
+kapanista:kapalı
+kapanista:pas

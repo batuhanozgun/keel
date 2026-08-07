@@ -176,7 +176,7 @@ let BEKCI_GEREK = 0;
 // yaz() ile kuruluyordu; artik HER karar yolunda OZET icinden uretilir ve UC yere birden gider:
 // stdout (sahip ekrani) · 00_pano/SABAH.md (sabah yuzeyi) · e-posta govdesi. Ayni cumleyi iki
 // yerde ayri ayri kurmak surüklenmenin en ucuz dogdugu yerdir (D-02 dersi).
-const OZET = { sevk: 0, gorevToplam: 0, karneli: 0, bulgu: 0, miras: 0, izin: 0, pas: [], bekleyen: null, simdi: "" };
+const OZET = { sevk: 0, gorevToplam: 0, karneli: 0, bulgu: 0, miras: 0, izin: 0, pas: [], muhur: [], bekleyen: null, simdi: "" };
 const ucBlok = () => {
   const b1 = (OZET.gorevToplam
     ? OZET.sevk + " alt-ajan cagrisi · " + OZET.karneli + "/" + OZET.gorevToplam + " gorev karneyle kapali"
@@ -190,8 +190,13 @@ const ucBlok = () => {
     ? "kuyruk durumu okunamadi (00_pano/SENDE_BEKLEYEN.md)"
     : (OZET.bekleyen ? OZET.bekleyen + " gorevi bekleten acik catal var (00_pano/SENDE_BEKLEYEN.md)"
                      : "kuyrukta acik catal yok");
+  // MUHUR BEKLEYEN GOREV ADIYLA GECER (K5): `mühür-bekliyor` artik uretimi durdurmuyor, yani
+  // kutu onunla birlikte kapanis evresine giriyor. Sahibe "kapanis denetimi YESIL, muhur sende"
+  // denip o gorevin de mühür beklediginin SOYLENMEMESI, kirik vaadi sessiz vaade cevirirdi —
+  // `pas` ile ayni ders (is YAPILMADI sessiz gecmez).
   const b3 = (OZET.simdi || "durdu")
-    + (OZET.pas.length ? "; " + OZET.pas.length + " gorev PAS (is YAPILMADI: " + OZET.pas.join(" ") + ")" : "");
+    + (OZET.pas.length ? "; " + OZET.pas.length + " gorev PAS (is YAPILMADI: " + OZET.pas.join(" ") + ")" : "")
+    + (OZET.muhur.length ? "; " + OZET.muhur.length + " gorev SENIN MUHRUNU bekliyor: " + OZET.muhur.join(" ") : "");
   return [b1, b2, b3];
 };
 const bitir = (karar) => {
@@ -239,7 +244,31 @@ const kutuYol = join(KOK, "01_kutular", KUTU, "KUTU.md");
 if (!KUTU || !existsSync(kutuYol)) dur("donem gostergesindeki kutu bulunamadi: 01_kutular/" + KUTU + "/KUTU.md — sevk neyi koşturacagini bilmiyor");
 const kutuMetin = readFileSync(kutuYol, "utf8");
 
-const DURUM_SOZ = new Set(["açık", "sürüyor", "mühür-bekliyor", "kapalı", "pas"]);
+// GOREV DURUM SOZLUGU + URETIM/KAPANIS AYRIMI — TEK EV: tools/bekci/gorev-durumlari.txt (K5).
+// Kume BEKCI ILE ORTAKTIR; cekirdek.mjs ayni dosyayi okur. Ayri ayri yazilan iki kopya
+// `mühür-bekliyor` cinsini iki makinede ZIT anlama sokmustu: burasi onu ACIK uretim gorevi
+// sayip kutuyu kapanis evresine hic sokmadan donemi duran kapiya dusuruyor, bekci ise ayni
+// gorevi kapanis tarafinda sayip kapanis kilidini bir tur ONCE atesliyordu (U2 · U3).
+// Okuma FAIL-CLOSED: evsiz ya da bicimsiz kume ile donem surmez — olcemedim ile temiz ayni
+// sey degildir. Bu dosyada AYRI bir liste tutulmaz; sozluk iki sinifin birlesimidir.
+const durumYolu = join(KOK, "tools", "bekci", "gorev-durumlari.txt");
+let durumMetin = null;
+try { durumMetin = readFileSync(durumYolu, "utf8"); } catch { durumMetin = null; }
+if (durumMetin === null) {
+  dur("gorev durum sozlugu yok: tools/bekci/gorev-durumlari.txt — sozluk ve URETIM/KAPANIS ayrimi evsiz; bekci ile ORTAK tek evdir (fail-closed)");
+}
+const URETIMDE = [], KAPANISTA = [];
+for (const ham of durumMetin.split("\n")) {
+  const satir = ham.replace(/\r$/, "").trim();
+  if (!satir || satir.startsWith("#")) continue;
+  const m = satir.match(/^(uretimde|kapanista):(.+)$/);
+  if (!m) dur("gorev durum sozlugu bicimsiz kalem: " + satir + " (tools/bekci/gorev-durumlari.txt) — fail-closed");
+  (m[1] === "uretimde" ? URETIMDE : KAPANISTA).push(m[2].trim());
+}
+if (!URETIMDE.length || !KAPANISTA.length) {
+  dur("gorev durum sozlugunde iki sinifin IKISI de dolu olmali (uretimde · kapanista): tools/bekci/gorev-durumlari.txt — fail-closed");
+}
+const DURUM_SOZ = new Set([...URETIMDE, ...KAPANISTA]);
 const gorevler = [];
 for (const s of kutuMetin.split("\n")) {
   if (!/^\s*\|/.test(s)) continue;
@@ -251,7 +280,7 @@ for (const s of kutuMetin.split("\n")) {
 }
 if (!gorevler.length) dur("KUTU.md gorev tablosu okunamadi (G-NN satiri yok) — sevk gorev listesini goremiyor");
 for (const k of gorevler) {
-  if (!DURUM_SOZ.has(k.durum)) dur("gorev durumu sozlukte yok: " + k.id + " = " + JSON.stringify(k.durum) + " (izinli: açık · sürüyor · mühür-bekliyor · kapalı · pas)");
+  if (!DURUM_SOZ.has(k.durum)) dur("gorev durumu sozlukte yok: " + k.id + " = " + JSON.stringify(k.durum) + " (izinli: " + [...DURUM_SOZ].join(" · ") + ")");
 }
 
 const blok = (baslik) => {
@@ -390,6 +419,7 @@ OZET.gorevToplam = gorevler.length;
 OZET.bulgu = buKosu.filter((r) => r.j.tip === "bulgu").length;
 OZET.miras = buKosu.filter((r) => r.j.cins === "miras-gorev").length;
 OZET.pas = gorevler.filter((k) => k.durum === "pas").map((k) => k.id);
+OZET.muhur = gorevler.filter((k) => k.durum === "mühür-bekliyor").map((k) => k.id);
 OZET.bekleyen = bekletilen.size;
 
 // ── IZIN ENGELI: atlanan adim sahibin kuyruguna duser (F1-5f) ────────────────────────────
@@ -822,7 +852,11 @@ if (secilen) {
 
 // (c) Uretim bitti → KAPANIS EVRESI (F1-5a; eskiden burada donem KAPANIR ve sahip ikinci komutu
 //     yazardi). Gosterge tur alani yerinde `kapanis` olur, uretim kilitlenir, ayni donem surer.
-const acikVar = gorevler.some((k) => k.durum === "açık" || k.durum === "sürüyor" || k.durum === "mühür-bekliyor");
+// AYRIM TEK EVDEN (K5): `mühür-bekliyor` URETIM gorevi DEGILDIR — isi bitmistir, sahip muhrunu
+// bekler ve yapinin onu ilerletecek hicbir hamlesi yoktur (yukarida engel olarak yazildi).
+// Onu burada acik saymak, kutuyu kapanis evresine hic sokmadan donemi duran kapida oldururdu:
+// uretimden muhre tek tus vaadi tam da vaadin islemesi gereken yerde kirilirdi.
+const acikVar = gorevler.some((k) => URETIMDE.includes(k.durum));
 if (!acikVar) {
   // PAS AYRI SAYILIR (hasim bulgusu): pas gorevde IS YAPILMADI; onu "kapali" diye raporlamak
   // sahip yuzeyinde yalan olur. Kapanis cumlesi pas sayisini acikca soyler (ucBlok icinde).

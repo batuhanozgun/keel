@@ -23,13 +23,33 @@ sahibin yerel proje envanteri ürünün taşıyacağı bilgi değildir. `K-a` �
 kullanılır; hangi kısaltmanın hangi kuruluma karşılık geldiği geliştirme tarafının kendi
 kaydındadır. Ölçümün kanıt gücü ADDA değil, SAYIDA ve DAVRANIŞTADIR.
 
-## 0 · Üç dosya, üç sahip
+## 0 · Beş dosya, üç sahip
 
 | Dosya | Sınıf | Kim değiştirir |
 |---|---|---|
 | `tools/bekci/cekirdek` — sabit denetim gövdesi | `[SERT]` | yalnız KEEL; kurulum YAZMAZ |
 | `tools/bekci/bekci.sh` — ince sarmalayıcı | `[SERT]` | yalnız KEEL |
+| `tools/bekci/el-kitabi-zorunlu.txt` — EL_KITABI zorunlu kümesinin tek evi (§5①) | `[SERT]` | yalnız KEEL |
+| `tools/bekci/gorev-durumlari.txt` — görev durum sözlüğünün tek evi | `[SERT]` | yalnız KEEL |
 | `tools/bekci/bekci.conf` — proje ayarı | `[SORULUR]` | sahip, kurulumdan sonra da |
+
+**İki VERİ dosyası neden burada:** ikisi de bir KÜMENİN tek evidir ve iki ayrı makine tarafından
+okunur. Kümeyi koda gömmek, aynı olguyu iki yerde yazmaktır; sürüklenme oradan doğar.
+
+**`gorev-durumlari.txt` — SEVK İLE ORTAK küme (K5, 2026-08-08).** Dosya iki şeyi birden tanımlar:
+görev durum sözlüğü (`açık` · `sürüyor` · `mühür-bekliyor` · `kapalı` · `pas`) ve o sözlüğün
+**ÜRETİM/KAPANIŞ ayrımı** (`uretimde:` / `kapanista:` önekleri). Çekirdek onu `dis-goz-brifingi`
+gözünde, `tools/sevk/sevk.sh` çözümleyicisinde okur; ikisi de dosya yok/biçimsizse fail-closed
+(çekirdek arıza hattına yazar, sevk dönemi durdurur).
+
+*Doğuş — ölçülmüş çelişki:* `mühür-bekliyor` cinsi iki makinede ZIT anlamdaydı. Sevk onu AÇIK
+üretim görevi sayıyordu, yani yalnız mühür bekleyen görevi kalan kutu kapanış evresine hiç
+girmeden duran kapıda ölüyordu; bekçi ise aynı görevi kapanış tarafında sayıp kapanış kilidini
+sevkten bir tur önce basıyordu. **Hüküm:** `mühür-bekliyor` KAPANIŞ tarafındadır — kanonun
+kendi cümlesi evre geçişini "açık **ÜRETİM** görevi kalmaması"na bağlar (`OTONOM_DONEM §1`) ve
+mühür bekleyen görevin işi bitmiştir; yapının onu ilerletecek hiçbir hamlesi yoktur. Kümenin
+yük taşıdığını iki bozma ölçer (dosya ters çevrilir, iki tarafın hükmü de onunla döner):
+`tools/bekci/test/gorev-durum-tek-ev.test.mjs` · `tools/guard/test/sevk-e4.test.mjs` (K5).
 
 **Sarmalayıcı neden ayrı:** kapanış kancası (`tools/guard/kapanis.sh:165`), sevk
 (`tools/sevk/sevk.sh:864`) ve korunan-yollar kaydı bekçiyi **`tools/bekci/bekci.sh`** yolundan
@@ -56,9 +76,11 @@ BEKCI v1 durduran=<n> kilit=<n> uyari=<n> bilgi=<n> ariza=<n> kadran=<tam|kucuk>
 
 - **Satır başında `BEKCI ` çapası**, alanlar boşlukla ayrılır, değerler ASCII.
 - **Hiçbir ciddiyet kelimesi geçmez** — `KIRMIZI` · `SARI` · `YEŞİL` · `sari` bu satırda
-  YASAKTIR. Sebebi ölçülmüş: bugün `sevk.sh:872-886` bekçinin çıktısını **satır satır tarayıp
-  `KIRMIZI` kelimesini arıyor**. Metinde geçen tek açıklama cümlesi dönemi durdurabiliyor.
-  Ciddiyet kelimesi makine satırına girerse o tarama geri döner.
+  YASAKTIR. Sebebi ölçülmüş: sözleşme yazıldığı gün `sevk.sh` bekçinin çıktısını **satır satır
+  tarayıp `KIRMIZI` kelimesini arıyordu** ve metinde geçen tek açıklama cümlesi dönemi
+  durdurabiliyordu. Tarama K1 adım 5'te EMEKLİ edildi (karar artık makine satırından ve çıkış
+  kodundan okunur); yasak yürürlükte kalır, çünkü ciddiyet kelimesi bu satıra girerse o
+  taramanın geri dönmesinin önü açılır.
 - **Alan adları ASCII:** `uyari`, `sari` değil. Türkçe harf güvenliği (`İ`/`ı`) makine
   eşleşmesinde hiçbir dönüşüme izin vermez; alan adını ASCII tutmak tartışmayı kapatır.
 - Satır **hiç basılmamışsa** tüketici fail-closed durur: "ölçemedim" ile "temiz" aynı şey
@@ -74,11 +96,12 @@ BEKCI v1 durduran=<n> kilit=<n> uyari=<n> bilgi=<n> ariza=<n> kadran=<tam|kucuk>
 | `bilgi` | BİLGİ | yalnız kayıt |
 | `ariza` | bekçinin KENDİ hatası | fail-closed durdurur |
 
-**`kilit` neden ayrı bir sayı:** `tools/sevk/sevk.sh:861` bugün bu ayrımı `[tavan]` **önek
-eşleşmesiyle** yapıyor — tavan kırmızısı kapanış kilididir, duran kapı değildir
-(`02_kanon/OTONOM_DONEM.md §1`). Önek eşleşmesi kırılgandır: K-a bekçisi tavan
-bulgusunu `tavan aşımı 1.5x: …` diye köşeli parantezsiz basıyor ve o bulgu bugün DURDURAN
-sayılıyor. Sayıyı bekçinin kendisi verirse ayrım tüketicinin metin okumasına bağlı kalmaz.
+**`kilit` neden ayrı bir sayı:** sözleşme yazıldığı gün `tools/sevk/sevk.sh` bu ayrımı
+`[tavan]` **önek eşleşmesiyle** yapıyordu — tavan kırmızısı kapanış kilididir, duran kapı
+değildir (`02_kanon/OTONOM_DONEM.md §1`). Önek eşleşmesi kırılgandır: K-a bekçisi tavan
+bulgusunu `tavan aşımı 1.5x: …` diye köşeli parantezsiz basıyordu ve o bulgu DURDURAN
+sayılıyordu. Sayıyı bekçinin kendisi verince ayrım tüketicinin metin okumasına bağlı kalmadı;
+önek eşleşmesi K1 adım 5'te emekli oldu, sevk `kilit` alanını okur (`sevk.sh` KILIT dalı).
 
 ## 2 · Çıkış kodları
 
@@ -369,7 +392,7 @@ sayıları ayardan gelir, F3 sahibin ilanı). Uygulandı: 2KB satırı adım 4 k
 
 ## 8 · Kabul — bu sözleşme ne zaman "uygulandı" sayılır
 
-1. Üç dosya kurulu: çekirdek + sarmalayıcı + ayar.
+1. Beş dosya kurulu: çekirdek + sarmalayıcı + iki VERİ evi + ayar (§0).
 2. **En az sekiz kasıtlı bozma yazıldı ve sekizi de kırmızı.** Test oracle'ı
    `warnings.length === 0` **DEĞİLDİR** — kokpit gerçek bozulmada sıfır uyarı basabiliyor;
    oracle makine satırının alanlarıdır.

@@ -51,6 +51,11 @@ function kurulum({ donem = true, kadro = ['po', 'catal-denetcisi'], profil = tru
   // cevap-sozlugu.txt VERİ dosyasıdır ve catal-kuyruk.sh onu FAIL-CLOSED arar: kurulu bir
   // projede her zaman vardır, o yüzden simülasyon da onu taşımak zorunda (F1-5g).
   try { copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'cevap-sozlugu.txt'), join(kok, 'tools', 'sevk', 'cevap-sozlugu.txt')); } catch {}
+  // gorev-durumlari.txt VERI dosyasidir ve sevk onu FAIL-CLOSED arar (K5 tek evi; kume
+  // bekci ile ORTAK): kurulu projede her zaman vardir, simulasyon da tasimak zorunda.
+  mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
+  copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
+               join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '# test ajanı\n');
   if (donem) writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'DONEM-TEST\tKT-001\t2026-07-27T10:00:00Z\n');
   writeFileSync(join(kok, '00_pano', 'PANO.md'), '# pano\n');

@@ -38,6 +38,11 @@ function kurulum({ kanal = true, donem = null, pano = true } = {}) {
   for (const b of BETIKLER) {
     copyFileSync(join(KOK_REPO, 'tools', 'sevk', b), join(kok, 'tools', 'sevk', b));
     chmodSync(join(kok, 'tools', 'sevk', b), 0o755);
+  // gorev-durumlari.txt VERI dosyasidir ve sevk onu FAIL-CLOSED arar (K5 tek evi; kume
+  // bekci ile ORTAK): kurulu projede her zaman vardir, simulasyon da tasimak zorunda.
+  mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
+  copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
+               join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
   }
   for (const g of ['icerik-suzgeci.sh', 'gercek-veri-isaretleri.txt']) {
     copyFileSync(join(KOK_REPO, 'tools', 'guard', g), join(kok, 'tools', 'guard', g));

@@ -10,8 +10,9 @@
 # Kesin engel (exit 2): oturum içinde ASLA değiştirilmez. Meşru ihtiyaç → sahip kararı + tören.
 tools/guard/
 tools/sevk/
-# Bekçi sabit çekirdeği (K1/sıra 9): denetim gövdesi + sarmalayıcı + zorunlu-küme evi ŞABLONLA
-# SABİT gelir, kurulum YAZMAZ (sözleşme: tools/bekci/README.md §0). Tek istisna bekci.conf —
+# Bekçi sabit çekirdeği (K1/sıra 9): denetim gövdesi + sarmalayıcı + VERİ evleri (EL_KITABI
+# zorunlu kümesi · görev durum sözlüğü — K5) ŞABLONLA SABİT gelir, kurulum YAZMAZ
+# (sözleşme: tools/bekci/README.md §0). Tek istisna bekci.conf —
 # o [SORULUR] bölümünde; ayrımı file-guard tam-yol istisnasıyla yapar.
 tools/bekci/
 .claude/

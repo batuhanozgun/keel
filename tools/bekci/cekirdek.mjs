@@ -3,7 +3,9 @@
 // # kategoriler: tavan şema koruma-hattı bağ-varlık golden-tazelik
 //   (kurulum denetiminin grep'lediği asıl ilan satırı sarmalayıcıdadır: tools/bekci/bekci.sh —
 //    .mjs dosyası satır başında '#' taşıyamaz; buradaki kopya insan içindir.)
-// Üç dosya modeli: cekirdek.mjs [SERT] · bekci.sh [SERT, ince sarmalayıcı] · bekci.conf [SORULUR].
+// Beş dosya modeli (sözleşme §0): cekirdek.mjs [SERT] · bekci.sh [SERT, ince sarmalayıcı] ·
+// el-kitabi-zorunlu.txt [SERT, VERİ] · gorev-durumlari.txt [SERT, VERİ — sevk ile ORTAK] ·
+// bekci.conf [SORULUR].
 // Çıktı sözleşmesi: insan satırları + SON satır makine satırı (BEKCI v1 …); çıkış 0/1/2.
 // Makine satırında ciddiyet kelimesi GEÇMEZ; insan satırları da KIRMIZI/SARI kelimesi taşımaz
 // (sevk'in eski metin taraması bir açıklama cümlesiyle dönem durdurmasın — sözleşme §1).
@@ -97,6 +99,34 @@ function gorevleriOku(kutuMetin) {
     sonuc.push({ id: (hucreler[0] || '').trim(), durum, kanit: hucreler.length >= 5 ? hucreler[4] : undefined, satir: i + 1, hucreSayisi: hucreler.length });
   }
   return sonuc;
+}
+
+// Görev durum sözlüğü + ÜRETİM/KAPANIŞ ayrımı — TEK EV: tools/bekci/gorev-durumlari.txt.
+// Küme SEVK İLE ORTAKTIR (sözleşme §0). İki tarafın ayrı ayrı yazdığı kopya, `mühür-bekliyor`
+// cinsini iki makinede ZIT anlama sokmuştu: sevk açık üretim görevi sayıp dönemi duran kapıya
+// sokuyor, bekçi kapanış tarafında sayıp kilidi bir tur önce ateşliyordu (K5, 2026-08-08).
+// Okuma FAIL-CLOSED: dosya yok/biçimsizse fırlatır, çağıran göz onu arıza hattına yazar —
+// "ölçemedim" ile "temiz" aynı şey değildir. Kurulu projede dosya KOK altındadır; geliştirme
+// koşusunda (KOK başka bir ağaç) çekirdeğin kendi dizini yedek evdir — el-kitabi-zorunlu emsali.
+let DURUM_KUMESI = null;
+function gorevDurumlari() {
+  if (DURUM_KUMESI) return DURUM_KUMESI;
+  const kurulu = join(KOK, 'tools', 'bekci', 'gorev-durumlari.txt');
+  const metin = oku(dosyaMi(kurulu) ? kurulu : join(BURASI, 'gorev-durumlari.txt'));
+  if (metin === null) throw new Error('gorev-durumlari.txt okunamadı — görev durum sözlüğü evsiz (fail-closed)');
+  const kume = { uretimde: [], kapanista: [] };
+  for (const ham of metin.split('\n')) {
+    const satir = ham.replace(/\r$/, '').trim();
+    if (!satir || satir.startsWith('#')) continue;
+    const m = satir.match(/^(uretimde|kapanista):(.+)$/);
+    if (!m) throw new Error('gorev-durumlari.txt biçimsiz kalem: ' + satir);
+    kume[m[1]].push(m[2].trim());
+  }
+  if (!kume.uretimde.length || !kume.kapanista.length) {
+    throw new Error('gorev-durumlari.txt eksik: `uretimde` ve `kapanista` sınıflarının İKİSİ de dolu olmalı');
+  }
+  DURUM_KUMESI = kume;
+  return kume;
 }
 
 function blokKes(metin, baslikOnek) {
@@ -426,6 +456,10 @@ if (conf) {
   goz('şema', 'dis-goz-brifingi', () => {
     // Evre çapası (tasarı düzeltmesi): dönem açıksa yalnız evre 'kapanis'te ölçülür; dönem yoksa
     // görev-durumu tetikler (BEKCI_TARIFI md.20). Sınıf KAPANIŞ KİLİDİdir, duran kapı değil.
+    // Sözlük PENCERE ELEMESİNDEN ÖNCE okunur (K5 hasım turu): evsiz/bozuk küme kurulum
+    // penceresinde de arıza basmalı, yoksa eksik dosya ilk GERÇEK döneme kadar görünmez ve
+    // orada sevki fail-closed durdururdu. Küme bir KABLODUR; kablo denetimi her zaman tamdır.
+    const DURUM = gorevDurumlari();
     if (PENCERE === 'kurulum') { return; }
     const brifingRel = '03_roller/disgoz/BRIFING.md';
     let kapanista = false;
@@ -442,8 +476,9 @@ if (conf) {
         const metin = oku(k.kutuMd);
         if (metin === null) continue;
         const gorevler = gorevleriOku(metin);
-        if (gorevler.length && gorevler.every((g) => ['kapalı', 'mühür-bekliyor', 'pas'].includes(g.durum))) kapanista = true;
-        if (gorevler.some((g) => ['açık', 'sürüyor'].includes(g.durum))) { kapanista = false; break; }
+        // Küme TEK EVDEN gelir — sevk aynı dosyayı okur; gömülü liste drift kapısıdır (K5).
+        if (gorevler.length && gorevler.every((g) => DURUM.kapanista.includes(g.durum))) kapanista = true;
+        if (gorevler.some((g) => DURUM.uretimde.includes(g.durum))) { kapanista = false; break; }
       }
     }
     if (!kapanista) return;
