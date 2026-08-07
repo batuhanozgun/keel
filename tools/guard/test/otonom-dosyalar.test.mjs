@@ -26,7 +26,13 @@ const GEN = join(KOK_REPO, '00_genesis');
 // TAVAN SAYILARI BURADA SABİTTİR (otonom-sim emsali, hasım bulgusu 2026-07-28): tavanı ölçtüğü
 // dosyanın kendi yorumundan okumak, metni büyüten kişi aynı düzenlemede sayıyı da büyütünce
 // freni fren olmaktan çıkarıyordu. Tavan değişikliği İKİ dosyada bilinçli edim ister.
-const TAVANLAR = { KILAVUZ: 5632, ROL_ALT_AJAN: 2816 };
+// KILAVUZ tavanı 5.632 -> 5.760 (K2, 2026-08-07). BEYAN — ölçülen, tahmin değil. Sebep tek
+// kalem: kılavuz otonom kipten SIFIR satır söz ediyordu ve 13. bölüm (## Sen yokken çalışması)
+// ZORUNLU kalem olarak eklendi. Sıkıştırma ÖNCE koşuldu ve ölçüldü: bölüm dört turda 640 -> 452 B'a
+// indi (marj 296 -> 496 B), yani frene 4 B kaldı. Dördüncü bayt için sahibe bakan cümleyi budamak
+// tavanın işi YÖNETMESİ olurdu; tavan işi KORUMAK için var. Artış 128 B tutuldu: yeni marj 624 B,
+// kardeşlerinin bandında (513 · 621). SONRAKİ ARTIŞ YİNE BEYAN İSTER — bu satır yazılmadan sayı değişmez.
+const TAVANLAR = { KILAVUZ: 5760, ROL_ALT_AJAN: 2816 };
 const MARJ_FRENI = 500;
 
 function kalipTavani(metin, ad) {
@@ -92,7 +98,12 @@ test('KILAVUZ_KALIBI sahibin zorunlu kalemlerinin hepsini taşıyor', () => {
                         // 12. bölüm ilk yazımda listede YOKTU (hasım bulgusu): silinse hiçbir test
                         // kırmızı olmuyordu ve tam da davranış-kalkanına ait kalem korumasızdı.
                         '## Ara sıra sana iki kontrol sorusu gelebilir', '## Tek ezberin',
-                        '## Tek ekrandan izleme', '## Düşman-gözü incelemesi']) {
+                        '## Tek ekrandan izleme', '## Düşman-gözü incelemesi',
+                        // 13. bölüm (K2, 2026-08-07): kılavuz otonom kipten SIFIR satır söz
+                        // ediyordu — sahip `/donem` diye bir şey olduğunu hiçbir yüzeyden
+                        // öğrenemiyordu. Komut adı birebir geçer (yazacağı şey odur), kavram
+                        // sahip diline çevrilir; dosyanın `/rol-<rol>` için yaptığının aynısı.
+                        '## Sen yokken çalışması']) {
     assert.ok(sim.includes(baslik), `sahip kılavuzunda zorunlu bölüm eksik: ${baslik}`);
   }
   assert.match(sim, /BİTEN · SENDE BEKLEYEN · SIRADAKİ/, 'kapanışın üç başlığı yazılı değil');
@@ -102,8 +113,14 @@ test('KILAVUZ_KALIBI sahibin zorunlu kalemlerinin hepsini taşıyor', () => {
   assert.match(sim, /sana taşınan karar gerçekten senin miydi/, 'iki kontrol sorusundan biri düşmüş');
   // BÖLÜM SAYISI SABİT: yeni bölüm eklenip zorunlu listeye yazılmazsa bu satır KIRMIZI olur
   // (11'e 12 kalem sığdıran ilk yazımın kör noktası buydu).
-  assert.equal((sim.match(/^## /gm) || []).length, 12,
+  assert.equal((sim.match(/^## /gm) || []).length, 13,
     'kılavuz bölüm sayısı değişti — zorunlu kalem listesini de güncelle');
+  // K2: otonom kipin sahibe bakan üç kalemi. Bölüm başlığı dursa da bu üçü düşerse kılavuz
+  // "var ama işe yaramaz" hâline gelir — sahip ne yazacağını, neyin onu koruduğunu ve
+  // kurulmamışsa ne olacağını öğrenemez.
+  assert.match(sim, /`\/donem`/, 'sen yokken çalışma: sahip ne yazacağını öğrenemiyor');
+  assert.match(sim, /onayın olmadan başlamaz/, 'sen yokken çalışma: mekanik kilit yazılı değil');
+  assert.match(sim, /durur ve sana haber verir/, 'sen yokken çalışma: durma sözü düşmüş');
 });
 
 test('KILAVUZ_KALIBI ilanı ↔ gövdesi EŞ: ilan edilen her alan gövdede geçer', () => {

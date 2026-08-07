@@ -10,7 +10,11 @@
      (EL_KITABI_KALIBI emsali, G3.1). Kalıbın kendisini bir projeye özel doldurma.
      Bu dosya SAHİP YÜZEYİDİR: jargon yasak. KEEL sözlüğünden kelime (kadran · kanon ·
      çapa · sevk · dönem · zarf · karne) bu metne GİRMEZ; girmişse çeviri kusurudur.
-     Tavan: 5.632 B + MARJ FRENİ 500 B (ölçen: tools/guard/test/otonom-dosyalar.test.mjs;
+     Tavan: 5.760 B + MARJ FRENİ 500 B (ölçen: tools/guard/test/otonom-dosyalar.test.mjs;
+     5.632 -> 5.760 (K2, 2026-08-07): 13. bölüm «## Sen yokken çalışması» ZORUNLU kalem olarak
+     eklendi — kılavuz otonom kipten sıfır satır söz ediyordu. Sıkıştırma ÖNCE koşuldu, bölüm
+     640 -> 452 B'a indi ve frene 4 B kaldı; dördüncü bayt için sahibe bakan cümleyi budamak
+     tavanın işi yönetmesi olurdu. Gerekçenin ikinci evi testin TAVANLAR sabitidir, ikisi eş olmak zorunda;
      ilk yazımda 7.168 B kondu ve hasım turu haklı çıktı: ölçüm 4.6 KB idi, yani 2,5 KB serbest
      büyüme demekti — "kaçış yolu olmasın" ilanı mekanik olarak tutmuyordu. Sayı kardeşlerinin
      marjına (513 B · 621 B) çekildi;
@@ -39,6 +43,16 @@ En çok muhatabın iki koltuk: fikir/şikâyet/demo → `/rol-«PO-SLUG»` · s�
 
 Rolü **sen** açarsın; ekip kendi rolünü açamaz — bu kilit bilinçlidir. Rol değiştirmek yeni
 oturum ister.
+
+## Sen yokken çalışması
+
+Ekip sen uyurken de çalışabilir. Başlatmak: `/donem` (tek iş paketi varsa
+onunla başlar, çoksa sorar) · bitirmek: `/donem kapat`.
+
+**Senin onayın olmadan başlamaz** — o paketin onay satırı boşken makine reddeder; nezaket
+değil, mekanik kilit. Bir karara ihtiyacı olursa **durur ve sana haber verir**, uydurmaz;
+sabah o gecenin özeti önüne gelir. Bunun için e-posta bildirimi ve "yapı susarsa seni uyaran
+nöbetçi" kurulmuş olmalı; kurulmadıysa bu biçim hiç açılmaz ve ekip sebebini söyler.
 
 ## İlk işin
 

@@ -8,7 +8,12 @@
      otonom kural evi BU dosyadır. Keşfi ÜÇ yoldan: sevkin devir metnindeki `kural:` işaretçisi ·
      rolün alt-ajan koltuğundaki açılış okuma listesi (G3.3e) · rol sözleşmesinin "Açılış
      ek-okumaları" satırı. İlk ikisi mekaniktir, üçüncüsü serbest metin.
-     Tavan: 17.664 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
+     Tavan: 17.920 B + MARJ FRENİ 500 B (şablon testi tools/guard/test/otonom-sim.test.mjs
+     17.664 -> 17.920 (K3 hasım turu, 2026-08-07): açılış mührü HER kutunun zorunlusu oldu ve
+     bu sözleşmede yazılı olmak zorunda — hasım bulgusu, kapı her kutuya işlerken satırın evi
+     yalnız ilk kutunun kalıbıydı, yani KT-002 duvara çarpardı. Metin önce asgariye indirildi
+     (700 -> 200 B); dosya zaten marjın dibindeydi, yani HERHANGİ bir ekleme beyan istiyordu.
+     Artış 256 B; ikinci ev otonom-sim.test.mjs'in TAVANLAR sabitidir, ikisi eş olmak zorunda;
      ölçer; kurulu bekçiye girmez — F3 tablosu EL_KITABI'nda ve ona dokunulmuyor).
      ALTINCI ARTIŞ (2026-07-31, SAHİP KARARI): 17.408 → 17.664 (+256 B). Sebep tek bir kural:
      sahibe giden üç satır SADE, GÜNDELİK ve KISA olacak (§6.6; bayt tavanları kapıda mekanik,
@@ -65,6 +70,10 @@ göz brifingi; tam liste sözleşmede): kapanış kilididir, duran kapı değil 
 hiçbir yerde durdurmaz; kapanış bloğuna yazılır.
 
 ## 2 · Duruş sözleşmesi (kutu kurulumuna beş zorunlu satır)
+
+**Açılış mührü (K3):** her kutunun `KUTU.md`'si bu bloktan ÖNCE `**Açılış mührü:** bekliyor`
+satırını taşır (mühür gelince `<ad> · YYYY-AA-GG`). Mührü **sahip** verir; mühürsüz kutuya
+`donem-ac.sh` dönem AÇMAZ ve `kurulum-kapisi.sh` satırın yokluğunu EKSİK basar.
 
 Otonom döneme girecek her kutunun `KUTU.md`'sinde `## Duruş sözleşmesi` bloğu:
 

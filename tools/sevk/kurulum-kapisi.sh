@@ -83,6 +83,15 @@ else {
       } else cik.push("GECTI\tİZİN: yok (hicbir sinif onceden serbest degil)");
     }
   }
+  // AÇILIŞ MÜHRÜ (K3 hasım turu, 2026-08-07): bu kapı HER KUTU AÇILIŞINDA koşar; donem-ac.sh
+  // ise mührü ön koşul sayar. İkisi ayrışırsa bir KT-002 kutusu buradan YEŞİL geçip dönem
+  // açarken exit 1 yer ve sebebi kurulumda aranmaz — iki denetim aynı dosya hakkında zıt hüküm
+  // verir. Burada satırın VARLIĞI ölçülür, değeri değil: mührü sahip verir, `bekliyor` meşrudur.
+  {
+    const m = satirlar.find((x) => /^\*\*Açılış mührü:\*\*\s*\S/.test(x));
+    if (!m) cik.push("EKSIK\tacilis muhru satiri yok: **Açılış mührü:** (mühürsüz kutuya donem-ac dönem açmaz)");
+    else cik.push("GECTI\tacilis muhru satiri yerinde");
+  }
   for (const ad of ["BİTİŞ HÂLİ", "KANIT", "KISIT", "BÜTÇE"]) {
     const s = durus.split("\n").find((x) => new RegExp("^\\s*" + ad + "\\s*:").test(x));
     if (!s) { cik.push("EKSIK\tdurus sozlesmesi satiri yok: " + ad); continue; }

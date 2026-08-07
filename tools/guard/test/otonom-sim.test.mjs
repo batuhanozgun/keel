@@ -18,7 +18,12 @@ const KUTU_SARI = 10 * 1024; // EL_KITABI F3 (değişmedi; buraya kopya değil �
 // dosyanın KENDİ yorum satırından okuyordu — metni büyüten kişi aynı düzenlemede sayıyı da
 // büyütünce hem tavan testi hem marj freni yeşil kalıyordu, yani fren fren değildi.
 // Artık tavanı değiştirmek İKİ ayrı dosyada bilinçli edim ister ve diff'te görünür.
-const TAVANLAR = { OTONOM_DONEM: 17664, KARAR_ALANI: 8192 };
+// OTONOM_DONEM 17.664 -> 17.920 (K3 hasım turu, 2026-08-07). BEYAN — ölçülen, tahmin değil:
+// açılış mührü her kutunun zorunlusu oldu ve sözleşmede yazılı olmak ZORUNDA (kapı her kutuya
+// işlerken satırın evi yalnız ilk kutunun kalıbıydı — KT-002 duvara çarpardı). Metin asgariye
+// indirildi (700 -> ~200 B) ama dosya zaten marjın dibindeydi (495 B): herhangi bir ekleme
+// beyan istiyordu. SONRAKİ ARTIŞ YİNE BEYAN İSTER.
+const TAVANLAR = { OTONOM_DONEM: 17920, KARAR_ALANI: 8192 };
 
 function kalipTavani(kalip, ad) {
   const m = kalip.match(/Tavan:\s*([\d.]+)\s*B/);

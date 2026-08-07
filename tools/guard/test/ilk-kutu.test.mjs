@@ -413,6 +413,20 @@ test('DÖNEM AÇILIYOR: mühür damgalanınca kabuk töreni geçiriyor (kabuk ş
   assert.match(r.stdout, new RegExp(`kutu : ${KABUK_AD}`));
 });
 
+test('kurulum kapısı: açılış mührü satırı yoksa EKSIK (iki kapı ayrışmasın — K3 hasım turu)', () => {
+  // Hasım bulgusu: donem-ac mührü HER kutuda ön koşul sayıyordu, kutu-kurulum kapısı ise onu
+  // hiç sormuyordu. Bir KT-002 kutusu buradan YEŞİL geçip dönem açarken exit 1 yiyordu; iki
+  // denetim aynı dosya hakkında zıt hüküm veriyordu. Kapı burada satırın VARLIĞINI ölçer.
+  const kok = sevkFixture();
+  const y = join(kok, '01_kutular', KABUK_AD, 'KUTU.md');
+  const eksik = readFileSync(y, 'utf8').replace(/^\*\*Açılış mührü:\*\*.*$/m, '');
+  assert.ok(!/\*\*Açılış mührü:\*\*/.test(eksik), 'mutasyon inmedi — test kendi arızası');
+  writeFileSync(y, eksik);
+  const r = spawnSync('bash', [join(kok, 'tools', 'sevk', 'kurulum-kapisi.sh'), KABUK_AD, kok],
+    { encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: kok } });
+  assert.match(r.stdout, /EKSİK\s+· acilis muhru satiri yok/, r.stdout);
+});
+
 test('kurulum kapısı kabuğu mekanik olarak geçiriyor (duruş · risk · kadro)', () => {
   const kok = sevkFixture();
   const r = spawnSync('bash', [join(kok, 'tools', 'sevk', 'kurulum-kapisi.sh'), KABUK_AD, kok],
@@ -658,4 +672,17 @@ test('kök CLAUDE.md ajanı KÖKE yönlendiriyor (README ile çelişki kapandı)
   assert.match(c, /proje \*\*KÖKÜNDE\*\*|\*\*proje KÖKÜNDE\*\*/);
   const gc = readFileSync(join(KOK_REPO, '00_genesis', 'CLAUDE.md'), 'utf8');
   assert.match(gc, /proje kökünde açılır/);
+  // U12'nin İKİNCİ yarısı (K2, 2026-08-07): çelişkinin ölçülen kısmı "oturum nerede açılır"dı
+  // ve kapandı; ÖLÇÜLMEYEN kısmı YÜZEY KİMLİĞİydi — kök CLAUDE.md "İşletim disiplini şablonu",
+  // README "KEEL" diye açıyordu, yani aynı ürüne iki ad. Üstelik CLAUDE.md README'yi "sahibin
+  // kılavuzu" diye anıyordu, README ise sahip kılavuzunu NASIL_KULLANILIR.md ilan ediyordu:
+  // üç yüzey, iki iddia. ÖLÇÜLDÜ: `.claude/` kablosunun CLAUDE.md içeriğine mekanik bağı SIFIR
+  // (settings.json'daki dokuz kancanın hiçbiri onu okumaz); tek bağ bekçinin varlık denetimidir.
+  // Yani riskin tamamı "ajanın okuduğu ilk cümle"dir ve çare de oradadır.
+  assert.match(c, /^# KEEL/, 'kök CLAUDE.md ürüne README\'den farklı bir ad veriyor');
+  assert.ok(!/Sahibin kılavuzu da bunu söyler/.test(c),
+    'kök CLAUDE.md README\'yi sahip kılavuzu sanıyor — sahip kılavuzu NASIL_KULLANILIR.md\'dir');
+  const rd = readFileSync(join(KOK_REPO, 'README.md'), 'utf8');
+  assert.match(rd, /`NASIL_KULLANILIR\.md`.*sahip kılavuzu|sahip kılavuzu.*NASIL_KULLANILIR/s,
+    'README sahip kılavuzunu adıyla göstermiyor — üç yüzey ayrışır');
 });
