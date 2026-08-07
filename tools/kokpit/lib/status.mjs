@@ -223,7 +223,7 @@ async function computeFreshness(root, saglik, warnings) {
   if (ageMs > 24 * 3600 * 1000) {
     out.stale = true;
     const gun = Math.floor(ageMs / (24 * 3600 * 1000));
-    out.staleReason = 'son sağlık denetimi ' + gun + ' gün önce — bekçi güncel değil';
+    out.staleReason = 'son sağlık denetimi ' + gun + ' gün önce — otomatik sağlık kontrolü güncel değil';
   }
   // Koşudan sonra değişen dosyalar (bekçi çıktıları hariç) → ışıklar geride olabilir
   const skip = new Set(['00_pano/SAGLIK.md', '00_pano/PANO.md']);
@@ -411,7 +411,7 @@ async function findActiveBox(root, warnings) {
   try {
     entries = await fs.readdir(kutularDir, { withFileTypes: true });
   } catch {
-    warnings.push('01_kutular okunamadı');
+    warnings.push('işlerin klasörü okunamadı (01_kutular)');
     return null;
   }
   // Tek-aktif-kutu varsayımı: birden fazla açık kutu görürsek deterministik (ada göre sıralı)
@@ -421,8 +421,8 @@ async function findActiveBox(root, warnings) {
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })); // KT-2 < KT-10 (sayısal — hasım turu 2026-07-16)
   if (adaylar.length > 1) {
     warnings.push(
-      'birden fazla açık kutu var (' + adaylar.map((e) => e.name.match(/^(KT-\d+)/)[1]).join(', ') +
-      ') — tek-aktif-kutu varsayımı bozuk; ayrıntı paneli ada göre ilkini gösteriyor'
+      'birden fazla açık iş var (' + adaylar.map((e) => e.name.match(/^(KT-\d+)/)[1]).join(', ') +
+      ') — normalde tek iş açık olur; ayrıntı paneli ada göre ilkini gösteriyor'
     );
   }
   const active = adaylar[0];
@@ -472,7 +472,7 @@ async function readRoles(root, warnings) {
   try {
     entries = await fs.readdir(rollerDir, { withFileTypes: true });
   } catch {
-    warnings.push('03_roller okunamadı');
+    warnings.push('ekibin klasörü okunamadı (03_roller)');
     return [];
   }
   const roles = [];

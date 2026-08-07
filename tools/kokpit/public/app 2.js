@@ -80,7 +80,7 @@ function renderTopbar() {
     rib.innerHTML = '<b>Sağlık damgası eski.</b> ' + esc(s.staleReason || 'damga bir günden eski') + ' — damga bir günden eskiyse ışıklar yeşil görünse bile sistem kırmızı sayılır.';
   } else if (s.driftAfterRun) {
     rib.hidden = false; rib.className = 'ribbon amber';
-    rib.innerHTML = '<b>Işıklar biraz eskimiş olabilir.</b> Son kontrolden sonra ' + s.driftCount + ' dosya değişti; otomatik sağlık kontrolü henüz yeniden çalışmadı — ışıklar bir sonraki oturum kapanınca kendini günceller. Sorun değil, sadece bilgi.';
+    rib.innerHTML = '<b>Işıklar biraz eskimiş olabilir.</b> Son kontrolden sonra ' + s.driftCount + ' dosya değişti; otomatik sağlık kontrolü (bekçi) henüz yeniden çalışmadı — ışıklar bir sonraki oturum kapanınca kendini günceller. Sorun değil, sadece bilgi.';
   } else {
     rib.hidden = true; rib.innerHTML = '';
   }
@@ -149,8 +149,8 @@ function renderPano() {
         '<span class="gsahip">' + esc(g.sahip) + '</span>' +
         '<span class="pill ' + pillClass(d) + '">' + esc(d) + '</span></div>';
     });
-  } else gb = '<div class="muted">şu an açık iş yok</div>';
-  var sevkte = (k && k.fazA && k.fazA.sevkte) ? 'ilk aşama · dağıtıldı' : '';
+  } else gb = '<div class="muted">aktif kutu yok</div>';
+  var sevkte = (k && k.fazA && k.fazA.sevkte) ? 'faz A · sevkte' : '';
 
   // Şimdi sıra (mercan odak) — #6: SIRADAKİ rolü zaten hareket ettiyse "koordinatör sevki bekleniyor"
   // Rol açılış TARİFİ config'e bağlı (soğuk-denetim A2): rolToreni=true → /rol-<slug> töreni
@@ -167,8 +167,8 @@ function renderPano() {
   if (y.siradakiStale && y.sonHareketRol) {
     nb = '<div class="now-in stale"><div class="now-eyebrow">sıradaki adım · koordinatörde</div>' +
       '<div class="now-role"><span class="now-verb">son hareket:</span> ' + esc(y.sonHareketRol) + '<span class="dot">.</span></div>' +
-      '<div class="now-desc">Bu rol işini bitirdi; sıra koordinatöre döndü. Panodaki "sıradaki" satırı, koordinatör bir sonrakini yazana kadar eski görünebilir.</div>' +
-      '<div class="now-how">→ ' + acTarifi(koordRol) + ' (sıradakini koordinatör verir).</div>' +
+      '<div class="now-desc">Bu rol işini bitirdi; sıra koordinatöre döndü. Panodaki "sıradaki" satırı koordinatör bir sonraki sevki yazana kadar eski görünebilir.</div>' +
+      '<div class="now-how">→ ' + acTarifi(koordRol) + ' (bir sonrakini koordinatör sevk eder).</div>' +
       '</div>';
   } else if (y.siradakiOturum) {
     var rol = y.siradakiRol || '';
@@ -204,14 +204,11 @@ function renderPano() {
   mb += '</div>';
   if (state.warnings && state.warnings.length) mb += '<div class="warns">okuma notu: ' + state.warnings.map(esc).join(' · ') + '</div>';
 
-  // SAHİP DİLİ (U24): ekrana basılan hiçbir cümle KEEL sözlüğü taşımaz. "üç ışığı" da
-  // düzeltildi — ışıkların sayısı sabit DEĞİL, panoya göre değişir (PANO_SOZLESMESI: adlar
-  // ve sayı serbest); ekranda sabit sayı yazmak sahibe yanlış bir kesinlik veriyordu.
-  var left = panel('sağlık', lb, { sub: 'sistemin genel durumu — ışıkları otomatik sağlık kontrolü ölçer · yeşil iyi, sarı dikkat, kırmızı sorun' }) +
-    panel('açık iş · görevler', gb, { grow: true, aside: sevkte, sub: 'açık işin görevleri — hangi iş kimde ve ne durumda' });
+  var left = panel('sağlık', lb, { sub: 'sistemin genel durumu — üç ışığı bekçi ölçer · yeşil iyi, sarı dikkat, kırmızı sorun' }) +
+    panel('kutu · görevler', gb, { grow: true, aside: sevkte, sub: 'açık kutudaki görevler — hangi iş kimde ve ne durumda' });
   var right = '<section class="panel now">' + nb + '</section>' +
     panel('roller', rb, { grow: true, aside: 'kendi ağzından', sub: 'ekibin (' + (state.roller || []).length + ' yapay zeka rolü) — her biri en son ne yaptı' }) +
-    panel('ana plan', mb, { cls: 'mini', aside: k ? esc(k.id) : '', sub: 'işler ve ertelenen işler' });
+    panel('ana plan', mb, { cls: 'mini', aside: k ? esc(k.id) : '', sub: 'işler (kutular) ve ertelenen işler' });
 
   $('pano-view').innerHTML = '<div class="col left">' + left + '</div><div class="col right">' + right + '</div>';
   markMore();

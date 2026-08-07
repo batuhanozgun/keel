@@ -1,0 +1,15 @@
+{
+  "baslik": "Proje",
+  "altBaslik": "panosu",
+  "sahip": "",
+  "koordinatorRol": "koordinator",
+  "rolToreni": true,
+  "vaultYolu": "../..",
+  "port": 4173,
+  "isikIpuclari": {
+    "AKIŞ": "süreç: arşivde açık / sahipsiz iş",
+    "DOSYA": "dosya/şema disiplini: tavan aşımı",
+    "DAVRANIŞ": "daha ölçülmedi — kutu kapanınca dolar"
+  },
+  "renkler": null
+}

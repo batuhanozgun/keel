@@ -89,7 +89,7 @@ test('B2: GELECEKTEKİ sağlık damgası bayat sayılır → sistem KIRMIZI (taz
   assert.equal(s.saglik.sistemGenel, 'KIRMIZI');
 });
 
-test('B5: birden fazla açık kutu → uyarı basılır, ayrıntı paneli ada göre İLKİNİ gösterir', async () => {
+test('B5: birden fazla açık iş → uyarı basılır, ayrıntı paneli ada göre İLKİNİ gösterir', async () => {
   const kok = await tempVault({});
   for (const ad of ['KT-002-ikinci', 'KT-001-birinci']) {
     await fs.mkdir(path.join(kok, '01_kutular', ad), { recursive: true });
@@ -97,7 +97,8 @@ test('B5: birden fazla açık kutu → uyarı basılır, ayrıntı paneli ada g�
   }
   const s = await buildState(kok);
   assert.equal(s.kutu.id, 'KT-001', 'deterministik: ada göre ilk');
-  assert.ok(s.warnings.some((w) => w.includes('birden fazla açık kutu')), 'uyarı basılmalı: ' + JSON.stringify(s.warnings));
+  // Metin U24'te sahip diline çevrildi ("kutu" -> "iş"); uyarının VARLIĞI ölçülüyor, dizesi değil.
+  assert.ok(s.warnings.some((w) => w.includes('birden fazla açık iş')), 'uyarı basılmalı: ' + JSON.stringify(s.warnings));
 });
 
 test('A3: rakam içeren slug (po2) SIRADAKİ ayrıştırıcısında bütün okunur', async () => {

@@ -9,10 +9,13 @@
 // "yeni bir sohbet penceresi (oturum)"). Sahip kokpite kılavuzdan sonra bakar; kokpitin
 // içindeki "nasıl kullanılır" düğmesi de o dosyayı gösterir.
 //
-// KAPSAM SINIRI — BEYANLI: bu kapı YALNIZ K18'in beş terimini ölçer. Kokpitin sahibe bastığı
-// başka KEEL sözlüğü kelimeleri (kutu · sevk · faz · bekçi · 02_kanon) HÂLÂ DURUYOR ve bu
-// kapı onları görmez. Onlar ayrı bir arızadır — bilgi/keel/urun-buglar.md → U24. Buraya
-// tek tek eklemek, kapısız düzeltme üretir: liste büyümeden metin düzeltilirse geri sızar.
+// KAPSAM SINIRI — BEYANLI, ve artık KÖR NOKTASI KAPALI (U24, 2026-08-07): bu kapı YALNIZ
+// K18'in beş terimini ölçer ve daha fazlasını ölçEMEZ, çünkü `kutu` · `sevk` · `faz` aynı
+// dosyada hem sahibin cümlesi hem DEĞİŞKEN ADIdır (`state.kutu` · `k.fazA` · `var sevkte`);
+// kaynağı tarayan bir kapı ikisini ayıramaz. Kalan sözlüğü ölçen kardeş kapı ayrı dosyada ve
+// başka yönden bakıyor: `sahip-ekrani.test.mjs` app.js'i sanal bir kabukta KOŞTURUP ÇİZİLEN
+// EKRANIN metnini tarar — değişken adı ekrana çıkmadığı için orada liste tam olabiliyor.
+// İki kapı bilerek ayrı: bu kapı fixture'ın uğramadığı dizeyi de görür, öteki gerçeği görür.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
