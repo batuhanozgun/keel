@@ -4,7 +4,8 @@
 // boş-backlog · kadran tanıkları.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, readFileSync, appendFileSync, rmSync, mkdirSync, chmodSync } from 'node:fs';
+import { writeFileSync, readFileSync, appendFileSync, rmSync, mkdirSync, chmodSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { kurulum, kos, temizle, commitEt, EK_TAM, KUTU_METNI } from './yardimci.mjs';
 
@@ -14,6 +15,96 @@ test('kök zorunlu küme: eksik dizin → DURDURAN (whitelist eksiği görmezdi 
   const r = kos(kok);
   assert.ok(/DURDURAN \[şema\] kok-zorunlu: kök zorunlu dizin yok: 02_kanon\//.test(r.stdout), r.stdout);
   assert.equal(r.rc, 1);
+  temizle(kok);
+});
+
+// K6 (2026-08-07): AŞAĞIDAKİ ALTI TEST, ŞEMA'nın KIRMIZI basabilen ama HİÇ ÖLÇÜLMEYEN
+// dallarını kapatır. Ölçüldü: kategorisi 'şema' olan 42 bulgu çağrısından 13'ü KIRMIZI'ya
+// dönebiliyordu; testler bunların yalnız 8'ini tutuyordu. Kalan beşi "var ama görünmez"
+// sınıfındaydı — tam da U4'ün adını koyduğu arıza sınıfı, ama U4 onu YANLIŞ ANAHTARLA
+// aramıştı: çekirdek insan satırına asla "KIRMIZI" yazmaz (cekirdek.mjs:8), seviyelerin
+// adı DURDURAN ve KİLİT'tir. "KIRMIZI" geçen satırları saymak sıfır bulur ve arıza
+// olduğundan geniş görünür. Ölçüm cümlesi de denetime girer.
+
+test('kök zorunlu küme: eksik DOSYA → DURDURAN (dizin kolu ölçülüyordu, dosya kolu değil)', () => {
+  // İki kol aynı satırda değil: 240 dizinleri, 241 dosyaları sayar. Dosya kolu bugüne kadar
+  // hiç koşmadı, yani NASIL_KULLANILIR.md silinse bekçi sessiz kalabilirdi.
+  const kok = kurulum();
+  rmSync(join(kok, 'NASIL_KULLANILIR.md'));
+  const r = kos(kok);
+  assert.ok(/DURDURAN \[şema\] kok-zorunlu: kök zorunlu dosya yok: NASIL_KULLANILIR\.md/.test(r.stdout), r.stdout);
+  assert.equal(r.rc, 1);
+  temizle(kok);
+});
+
+test('kadran tanıkları: EL_KITABI kadran dizesi OKUNAMAZSA DURDURAN (fail-closed kolu)', () => {
+  // Ayrışma kolu (259) ölçülüyordu; okunamama kolu (258) değil. İkisi ayrı arıza: biri
+  // "iki tanık çelişiyor", öteki "ikinci tanık hiç konuşmuyor" — ve fail-closed olan bu.
+  const kok = kurulum();
+  const y = join(kok, '02_kanon', 'EL_KITABI.md');
+  writeFileSync(y, readFileSync(y, 'utf8').replace(/Ağırlık kadranı: \*\*[^\n]*/, 'Ağırlık kadranı: belirsiz'));
+  const r = kos(kok);
+  assert.ok(/DURDURAN \[şema\] kadran-taniklari: EL_KITABI kadran dizesi okunamadı/.test(r.stdout), r.stdout);
+  assert.equal(r.rc, 1);
+  temizle(kok);
+});
+
+// ── WATCHDOG: üç KIRMIZI kolu da belirlenimli ölçülüyor ──────────────────────────────────
+// Bu göz `launchctl` çağırır ve iki kolu CANLI bir launchd işine bağlıydı — yani hiçbir
+// makinede güvenilir koşmuyordu. Var olan tek test "DURDURAN ya da BİLGİ" diyordu: launchctl
+// olmayan bir makinede yeşil kalır, olanda kırmızıya döner. Oracle kandırılabilir bir yüzeydi.
+// ÇÖZÜM ÜRÜNE DOKUNMAZ: çekirdek `launchctl`i PATH'ten çözer, test PATH'in başına sahte bir
+// launchctl koyar. Üretime "test için kapatma düğmesi" (ortam değişkeni) AÇILMADI.
+function sahteLaunchctl(cikisKodu) {
+  const d = mkdtempSync(join(tmpdir(), 'sahte-launchctl-'));
+  writeFileSync(join(d, 'launchctl'), `#!/bin/sh\nexit ${cikisKodu}\n`);
+  chmodSync(join(d, 'launchctl'), 0o755);
+  return d;
+}
+const ISARET = (kok) => join(kok, 'tools', 'sevk', 'watchdog-kurulu');
+
+test('watchdog: işarette etiket= satırı yoksa DURDURAN (launchctl\'e hiç varmadan)', () => {
+  const kok = kurulum();
+  writeFileSync(ISARET(kok), 'plist=/tmp/yok.plist\naralik_sn=300\n');
+  const r = kos(kok);
+  assert.ok(/DURDURAN \[şema\] watchdog: watchdog işaretinde etiket= satırı yok/.test(r.stdout), r.stdout);
+  assert.equal(r.rc, 1);
+  temizle(kok);
+});
+
+test('watchdog: iş YÜKLÜ DEĞİLSE DURDURAN — sahte launchctl ile belirlenimli', () => {
+  const kok = kurulum();
+  writeFileSync(ISARET(kok), 'etiket=dev.keel.nabiz.deneme\nplist=/tmp/yok.plist\n');
+  const yol = sahteLaunchctl(1);   // iş yok → çekirdek "yüklü değil" demeli
+  const r = kos(kok, { PATH: yol + ':' + process.env.PATH });
+  assert.ok(/DURDURAN \[şema\] watchdog: watchdog işareti var ama iş yüklü değil \(dev\.keel\.nabiz\.deneme\)/.test(r.stdout), r.stdout);
+  assert.equal(r.rc, 1);
+  rmSync(yol, { recursive: true, force: true });
+  temizle(kok);
+});
+
+test('watchdog: iş yüklü ama NABIZ BAYAT/YOK → DURDURAN (en derin kol, ilk kez ölçülüyor)', () => {
+  const kok = kurulum();
+  writeFileSync(ISARET(kok), 'etiket=dev.keel.nabiz.deneme\nplist=/tmp/yok.plist\n');
+  const yol = sahteLaunchctl(0);   // iş yüklü → çekirdek nabza bakmalı
+  rmSync(join(kok, 'tools', 'sevk', '.nabiz-son'), { force: true });
+  const r = kos(kok, { PATH: yol + ':' + process.env.PATH });
+  assert.ok(/DURDURAN \[şema\] watchdog: watchdog işareti var ama nabız bayat\/yok/.test(r.stdout), r.stdout);
+  assert.equal(r.rc, 1);
+  rmSync(yol, { recursive: true, force: true });
+  temizle(kok);
+});
+
+test('watchdog TERS YÖN: iş yüklü + nabız TAZE ise hiç konuşmaz (yanlış-pozitif kapısı)', () => {
+  // Üç kırmızı kolun karşı kutbu. Bu olmadan yukarıdaki üç test "kapı her şeye kırmızı
+  // basıyor"dan da geçerdi ve ölçtüğünü ölçmezdi.
+  const kok = kurulum();
+  writeFileSync(ISARET(kok), 'etiket=dev.keel.nabiz.deneme\nplist=/tmp/yok.plist\n');
+  writeFileSync(join(kok, 'tools', 'sevk', '.nabiz-son'), new Date().toISOString() + '\n');
+  const yol = sahteLaunchctl(0);
+  const r = kos(kok, { PATH: yol + ':' + process.env.PATH });
+  assert.ok(!/\[şema\] watchdog/.test(r.stdout), 'taze nabızda watchdog konuştu: ' + r.stdout);
+  rmSync(yol, { recursive: true, force: true });
   temizle(kok);
 });
 
@@ -256,14 +347,14 @@ test('watchdog: işaret yokken denetlenmez; işaret var + iş yüklü değil →
   const r = kos(kok);
   assert.ok(!/watchdog/.test(r.stdout), r.stdout);
 
-  writeFileSync(join(kok, 'tools', 'sevk', 'watchdog-kurulu'),
-    'etiket=dev.keel.nabiz.bekci-cekirdek-test-olmayan-is\nplist=/tmp/yok.plist\naralik_sn=300\n');
-  const r2 = kos(kok);
-  // launchctl olan makinede sahte etiket "iş yüklü değil" DURDURAN'dır; launchctl yoksa
-  // ölçülemeyen göz ADIYLA ilan edilir (sözleşme §7) — iki meşru hâl, ikisi de sessiz değil.
-  const durduran = /DURDURAN \[şema\] watchdog: watchdog işareti var ama iş yüklü değil/.test(r2.stdout);
-  const ilan = /BİLGİ \[şema\] watchdog: launchctl yok/.test(r2.stdout);
-  assert.ok(durduran || ilan, r2.stdout);
+  // ZAYIF ORACLE KALDIRILDI (K6, 2026-08-07). Burada eskiden "DURDURAN ya da BİLGİ ilanı"
+  // kabul ediliyordu: launchctl olan makinede kırmızıya dönen, olmayanda yeşil kalan bir
+  // iddia. İki meşru hâli tek assert'te toplamak, oracle'ı kandırılabilir bir yüzeye çevirir
+  // — hangi kolun koştuğunu test bilmiyorsa, kolun ÖLDÜĞÜNÜ de bilemez. Üç KIRMIZI kol artık
+  // sahte launchctl ile ayrı ayrı ve belirlenimli ölçülüyor (yukarıdaki üç test).
+  // İLAN EDİLMİŞ SINIR: `launchctl` HİÇ YOKKEN doğan BİLGİ ilanı (ENOENT kolu) burada
+  // ölçülMEZ — onun için PATH'i boşaltmak gerekir ve o, çekirdeğin git çağrılarını da
+  // kırarak testi ölçmek istediğinden başka bir şeyi ölçer hâle getirir.
   temizle(kok);
 });
 
