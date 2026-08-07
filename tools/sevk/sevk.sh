@@ -218,7 +218,19 @@ const bitir = (karar) => {
 };
 const dur = (sebep) => {
   kayit({ tip: "bulgu", cins: "duran-kapi", detay: sebep });
-  if (!OZET.simdi) OZET.simdi = "durdu — " + String(sebep).split("\n")[0];
+  // SAHIP YUZEYINE GIDEN OZET SESSIZCE KIRPILMAZ (U13, 2026-08-07). Eskiden yalniz ILK satir
+  // aliniyordu; cok satirli tek cagri "acik gorev var ama hicbiri acilamiyor:\n  - ..." oldugu
+  // icin sabah yuzeyinde ve postada ASILI bir cumle doguyordu: "...acilamiyor:; 1 gorev PAS".
+  // Iki nokta bir liste vaat eder, liste yoktur. Kural (EL_KITABI uslup hukmu): kirpilan
+  // parcanin izi DUSER. Iz burada kalan satir SAYISIDIR; satirlarin kendisi kaybolmuyor —
+  // tamami hem ekrana (yaz) hem gunluge (yukaridaki kayit) gidiyor. Sayi yerine satirlari
+  // yapistirmak BILINCLI OLARAK yapilmadi: sabah yuzeyi sade/gundelik/kisa olmak zorunda
+  // (OTONOM_DONEM §6.6) ve engel satirlari makine dilindedir.
+  if (!OZET.simdi) {
+    const satirlar = String(sebep).split("\n");
+    const kalan = satirlar.length - 1;
+    OZET.simdi = "durdu — " + satirlar[0].replace(/[\s:]+$/, "") + (kalan ? " (" + kalan + " sebep)" : "");
+  }
   yaz(sebep); bitir("DUR");
 };
 
