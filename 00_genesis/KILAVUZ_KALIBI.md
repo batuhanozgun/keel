@@ -8,8 +8,15 @@
      DERLEME YOK: metin BU KALIPTA yaşar, adım dosyasında değil. Kural eklemek/çıkarmak
      kalıbı düzenlemektir — serbest derleme iki kurulumda tarif-buharlaşması üretti
      (EL_KITABI_KALIBI emsali, G3.1). Kalıbın kendisini bir projeye özel doldurma.
-     Bu dosya SAHİP YÜZEYİDİR: jargon yasak. KEEL sözlüğünden kelime (kadran · kanon ·
-     çapa · sevk · dönem · zarf · karne) bu metne GİRMEZ; girmişse çeviri kusurudur.
+     Bu dosya SAHİP YÜZEYİDİR: jargon yasak. İKİ cins kusur var (K18, 2026-08-07):
+     (a) KEEL sözlüğü — ürünün iç adları; bu metne GİRMEZ.
+     (b) TANIMSIZ ÖZEL ANLAM — gündelik Türkçe görünen ama burada özel anlam taşıyan
+         kelime. Yasak listesi bu cinsi yakalayamaz, çünkü kelime zaten Türkçedir.
+     Hüküm: sahip dilinde karşılığı VARSA çıkarılır ve yasak listesine eklenir; ürünün
+     gerçek kavramıysa (sahip onu PANO'da AYNEN görüyorsa) çıkarılmaz, ilk geçtiği
+     `## ` bölümünde TANIMLANIR. Liste buraya KOPYALANMAZ — iki yerde yaşayan liste
+     sürüklenir; tek evi tools/guard/test/otonom-dosyalar.test.mjs (SAHIP_YASAGI ·
+     TANIM_CAPALARI) ve üçünün de kasıtlı bozması orada kırmızı basar.
      Tavan: 5.760 B + MARJ FRENİ 500 B (ölçen: tools/guard/test/otonom-dosyalar.test.mjs;
      5.632 -> 5.760 (K2, 2026-08-07): 13. bölüm «## Sen yokken çalışması» ZORUNLU kalem olarak
      eklendi — kılavuz otonom kipten sıfır satır söz ediyordu. Sıkıştırma ÖNCE koşuldu, bölüm
@@ -24,20 +31,20 @@
      Çıkarma bir kaçış yolu OLMASIN diye kalıp kendi ölçülen tavanını taşıyor. -->
 # «PROJE-ADI» — nasıl kullanılır
 
-Bu dosya kalıcıdır: kurulum bittikten sonra da günlük kullanma kılavuzun budur.
+Kurulum bittikten sonra da günlük kılavuzun budur.
 
 ## Ekibin
 
 «EKİP-LİSTESİ»
 
-En çok muhatabın iki koltuk: fikir/şikâyet/demo → `/rol-«PO-SLUG»` · süreç/sıra/takılma →
+En çok muhatabın iki rol: fikir/şikâyet/demo → `/rol-«PO-SLUG»` · süreç/sıra/takılma →
 `/rol-«KOORDİNATÖR-SLUG»`.
 
 ## Günlük döngü
 
 1. `00_pano/PANO.md`'yi aç.
 2. **"SIRADAKİ OTURUM: <rol>"** satırını gör.
-3. Proje klasöründe yeni bir oturum aç.
+3. Proje klasöründe yeni bir sohbet penceresi (oturum) aç.
 4. `/rol-<rol>` yaz.
 5. Açılış çıktısı **"ROL AÇIK"** deyince `devam` yaz.
 
@@ -46,7 +53,7 @@ oturum ister.
 
 ## Sen yokken çalışması
 
-Ekip sen uyurken de çalışabilir. Başlatmak: `/donem` (tek iş paketi varsa
+Ekip sen uyurken de çalışabilir. Başlatmak: `/donem` (tek iş varsa
 onunla başlar, çoksa sorar) · bitirmek: `/donem kapat`.
 
 **Senin onayın olmadan başlamaz** — o paketin onay satırı boşken makine reddeder; nezaket
@@ -62,15 +69,15 @@ nereye kaydedileceği. **Kod bundan sonra yazılır.**
 
 ## Nerede sen dahilsin
 
-Bir iş paketinin **başında** onay, **sonunda** onay. Arada ürün sahibiyle sohbet ve sana gelen
+Bir işin **başında** onay, **sonunda** onay. Arada ürün sahibiyle sohbet ve sana gelen
 "itiraz eder misin" davetleri. Arası ekibin işidir.
 
 ## Sonunda önüne gelecek paket
 
 Kapanışta **dört şey** gelir: (1) başlangıçta söz verilen "gözünle göreceklerin"in nasıl
-gösterileceği, (2) göstergelerin durumu + taze tarih, (3) bağımsız denetleyenin hükmü,
+gösterileceği, (2) sağlık ışıkları ve son ölçüm tarihi, (3) denetleyenin hükmü,
 (4) dış gözün brifingi. **Dördünden biri eksikse onaylamayın** — eksik paket geçersizdir.
-Sana teknik bir soru soran paket hatalıdır: *"bunu bağımsız denetleyene sor"* de. Teknik kanıtı
+Sana teknik bir soru soran paket hatalıdır: *"bunu denetleyene sor"* de. Teknik kanıtı
 SEN değerlendirmezsin; paketin tam olmasına bakarsın.
 
 ## Her kapanışın üç başlığı
@@ -90,7 +97,7 @@ Ekipte iş yapmayan, hiçbir dosyaya dokunmayan, yalnız SANA konuşan bir koltu
 **durum brifingi** — ne yapılıyor · neden · bu normal mi · sırada ne var + senden ne istenecek.
 Sapma yazarsa arkasına kanıt satırı koymak zorundadır; bakamadığı yeri de yazar.
 
-İstediğin an **"durumu anlat"** dersen açılır ve brifingi getirir; **iş paketi kapanışında
+İstediğin an **"durumu anlat"** dersen açılır ve brifingi getirir; **iş kapanışında
 brifing zorunludur** (paketin dördüncüsü). Uzun süre brifing yazılmamışsa oturum açılışında tek
 satır hatırlatma görürsün — ısrar etmez.
 
@@ -113,17 +120,17 @@ cevabın ekibin en sinsi iki hatasını yakalar.
 
 ## Tek ezberin
 
-`00_pano/SAGLIK.md`'de **taze tarih damgası yoksa sistem KIRMIZI'dır.**
+`00_pano/SAGLIK.md`'deki tarih damgası **yoksa ya da bir günden eskiyse sistem KIRMIZI'dır.**
 
 ## Tek ekrandan izleme
 
-`tools/kokpit`'i çalıştırınca tarayıcıda tek ekranda göstergeler · sıradaki adım · açık işin
+`tools/kokpit`'i çalıştırınca tarayıcıda tek ekranda sağlık ışıkları · sıradaki adım · açık işin
 maddeleri · roller görünür. Açmak: `launcher/Kokpit.command`'i Masaüstüne kopyala + çift tıkla,
 ya da `cd tools/kokpit && npm start` → `http://127.0.0.1:«KOKPIT-PORT»`. **Salt-okunur** —
 hiçbir şeye dokunmaz. İçindeki **"nasıl kullanılır"** düğmesi bu dosyayı gösterir.
 
 ## Düşman-gözü incelemesi (isteğe bağlı)
 
-Büyük bir iş onayına gelmeden önce `/hasim-inceleme` yazarsan ekip, işi bağımsız merceklerle
-tarar ve çürütme süzgecinden geçirir. Uzun sürer ve yakıt yakar; küçük işte gerekmez —
-koordinatör gerektiğinde önerir.
+Büyük bir iş onayına gelmeden önce `/hasim-inceleme` yazarsan ekip, işi birbirinden bağımsız
+birkaç açıdan tarar ve bulduklarını çürütmeye çalışır. Uzun sürer ve pahalıdır; küçük işte
+gerekmez — koordinatör gerektiğinde önerir.

@@ -96,7 +96,7 @@ function parseSaglik(saglik, warnings) {
     out.lastRun = stamp[1];
     out.runNo = Number(stamp[2]);
   } else {
-    warnings.push('SAGLIK tazelik damgası bulunamadı');
+    warnings.push('SAGLIK dosyasında tarih damgası bulunamadı');
   }
   const isik = saglik.match(/\*\*Işıklar:\*\*\s*(.+)/);
   if (isik) out.lights = parseLights(isik[1]);
@@ -199,7 +199,7 @@ async function computeFreshness(root, saglik, warnings) {
   const out = { lastRun: saglik.lastRun, stale: false, staleReason: null, driftAfterRun: false, driftFiles: [] };
   if (!saglik.lastRun) {
     out.stale = true;
-    out.staleReason = 'SAGLIK tazelik damgası yok';
+    out.staleReason = 'SAGLIK dosyasında tarih damgası yok';
     return out;
   }
   const stampTime = new Date(saglik.lastRun.replace(' ', 'T') + ':00');
@@ -217,7 +217,7 @@ async function computeFreshness(root, saglik, warnings) {
   // gelecek-damgalar saatler/günler ötede olur, bu eşik onları yine yakalar. Yön fail-safe.
   if (ageMs < -300 * 1000) {
     out.stale = true;
-    out.staleReason = 'sağlık damgası GELECEKTE görünüyor (saat/dilim hatası?) — tazelik güvenilmez';
+    out.staleReason = 'sağlık damgası GELECEKTE görünüyor (saat/dilim hatası?) — damganın yaşı güvenilmez';
     return out;
   }
   if (ageMs > 24 * 3600 * 1000) {

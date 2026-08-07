@@ -70,14 +70,14 @@ function renderTopbar() {
   var chip = $('sys-light');
   var g = s.sistemGenel || 'VERI-YOK';
   chip.className = 'sys-pill ' + lightClass(g);
-  chip.textContent = s.stale ? 'sistem: kırmızı · tazelik' : ('sistem: ' + (g === 'VERI-YOK' ? 'veri yok' : g.toLocaleLowerCase('tr')));
+  chip.textContent = s.stale ? 'sistem: kırmızı · damga eski' : ('sistem: ' + (g === 'VERI-YOK' ? 'veri yok' : g.toLocaleLowerCase('tr')));
   $('stamp').textContent = s.lastRun ? ('sağlık denetimi ' + s.lastRun + ' · #' + (s.runNo == null ? '?' : s.runNo)) : 'damga yok';
   $('updated').textContent = 'güncel ' + new Date().toLocaleTimeString('tr-TR');
 
   var rib = $('ribbon');
   if (s.stale) {
     rib.hidden = false; rib.className = 'ribbon red';
-    rib.innerHTML = '<b>Tazelik uyarısı.</b> ' + esc(s.staleReason || 'sağlık damgası taze değil') + ' — taze damga yoksa ışıklar yeşil görünse bile sistem kırmızı sayılır.';
+    rib.innerHTML = '<b>Sağlık damgası eski.</b> ' + esc(s.staleReason || 'damga bir günden eski') + ' — damga bir günden eskiyse ışıklar yeşil görünse bile sistem kırmızı sayılır.';
   } else if (s.driftAfterRun) {
     rib.hidden = false; rib.className = 'ribbon amber';
     rib.innerHTML = '<b>Işıklar biraz eskimiş olabilir.</b> Son kontrolden sonra ' + s.driftCount + ' dosya değişti; otomatik sağlık kontrolü (bekçi) henüz yeniden çalışmadı — ışıklar bir sonraki oturum kapanınca kendini günceller. Sorun değil, sadece bilgi.';
@@ -208,7 +208,7 @@ function renderPano() {
     panel('kutu · görevler', gb, { grow: true, aside: sevkte, sub: 'açık kutudaki görevler — hangi iş kimde ve ne durumda' });
   var right = '<section class="panel now">' + nb + '</section>' +
     panel('roller', rb, { grow: true, aside: 'kendi ağzından', sub: 'ekibin (' + (state.roller || []).length + ' yapay zeka rolü) — her biri en son ne yaptı' }) +
-    panel('ana plan', mb, { cls: 'mini', aside: k ? esc(k.id) : '', sub: 'iş paketleri (kutular) ve ertelenen işler' });
+    panel('ana plan', mb, { cls: 'mini', aside: k ? esc(k.id) : '', sub: 'işler (kutular) ve ertelenen işler' });
 
   $('pano-view').innerHTML = '<div class="col left">' + left + '</div><div class="col right">' + right + '</div>';
   markMore();

@@ -107,7 +107,15 @@ test('KILAVUZ_KALIBI sahibin zorunlu kalemlerinin hepsini taşıyor', () => {
     assert.ok(sim.includes(baslik), `sahip kılavuzunda zorunlu bölüm eksik: ${baslik}`);
   }
   assert.match(sim, /BİTEN · SENDE BEKLEYEN · SIRADAKİ/, 'kapanışın üç başlığı yazılı değil');
-  assert.match(sim, /taze tarih damgası yoksa sistem KIRMIZI/, '"tek ezber" kalemi düşmüş');
+  // ÇAPA JARGONA DEĞİL DAVRANIŞA BAĞLANIR (K18, 2026-08-07). Eskiden bu satır kalemin
+  // JARGONLU cümlesinin birebir kopyasıydı (/taze tarih damgası yoksa sistem KIRMIZI/):
+  // "taze"yi sahip diline çevirmek, kalem yerinde dururken testi KIRMIZI yapıyordu. Bir
+  // güvencenin çapası, düzeltilmesi gereken metnin kendisi olamaz — yoksa güvence, kusuru
+  // KORUR. Ölçülen üç parça: hangi dosya · neyin bayatladığı · sonucun ne olduğu.
+  assert.match(sim, /SAGLIK\.md[^\n]*damga[^\n]*KIRMIZI/, '"tek ezber" kalemi düşmüş');
+  // Eşik sahip diline YAZILI olmak zorunda: "bayat" bir yargı değil ölçüdür (tools/kokpit/
+  // lib/status.mjs → ageMs > 24*3600*1000). Eşiksiz cümle sahibe ezberletilemez.
+  assert.match(sim, /bir günden eskiyse/, '"tek ezber"in bayatlık eşiği sahip diline yazılmamış');
   assert.match(sim, /Dördünden biri eksikse onaylamayın/, 'eksik paket kuralı düşmüş');
   assert.match(sim, /Sahte seçenek menüsü gördün mü/, 'iki kontrol sorusundan biri düşmüş');
   assert.match(sim, /sana taşınan karar gerçekten senin miydi/, 'iki kontrol sorusundan biri düşmüş');
@@ -144,13 +152,65 @@ test('KILAVUZ_KALIBI sabit gövdesinde çevrilmemiş kısaltma yok', () => {
   assert.ok(!/\bPO\b/.test(govde), 'sahip kılavuzunda çevrilmemiş "PO" kısaltması var');
 });
 
-test('KILAVUZ_KALIBI SAHİP YÜZEYİDİR: KEEL sözlüğünden kelime geçmez', () => {
-  // Sahip kılavuzu, sahibin KEEL'i öğrenmeden okuduğu tek dosyadır. Jargon buraya sızarsa
-  // sahip anlamadığı bir tarifi izler (feedback-gercek-dosya-adi dersinin ürün tarafı).
-  const sim = kilavuzSim().toLocaleLowerCase('tr');
-  for (const k of ['kadran', 'kanon', 'çapa', 'sevk', 'dönem', 'zarf', 'karne', 'mühür',
-                   'bekçi', 'kadro', 'kutu']) {
-    assert.ok(!sim.includes(k), `sahip kılavuzunda KEEL sözlüğü var: "${k}"`);
+// ═══ SAHİP DİLİ KAPISI (K18, 2026-08-07) ═════════════════════════════════════════════════
+// Sahip kılavuzu, sahibin KEEL'i öğrenmeden okuduğu tek dosyadır. İki AYRI kusur cinsi var ve
+// tek liste ikisini birden tutamaz — U23'ün kökeni buydu:
+//
+//  (a) KEEL SÖZLÜĞÜ — ürünün iç adları (kadran … kutu). Sahip bunları hiç öğrenmez, YASAKlanır.
+//  (b) TANIMSIZ ÖZEL ANLAM — gündelik Türkçe görünen ama bu metinde özel anlam taşıyan
+//      kelime. Yasak listesi bu cinsi YAPISAL OLARAK yakalayamaz: kelime zaten Türkçedir.
+//      Vekil okur (K2) altı tane saydı. Beşinin sahip dilinde karşılığı vardı, çıkarıldılar
+//      ve (a)'ya eklendiler — böylece geri sızmaları kırmızı basar. Altıncısı `oturum`:
+//      ürünün 220 yerde geçen gerçek kavramı ve sahip onu PANO'da AYNEN görüyor, yani
+//      çıkarmak yalan olurdu. O TANIMLANDI; tanımın durduğunu alttaki tanım kapısı ölçer.
+//
+// Tanım kapısının ölçüsü sabit mesafe DEĞİL bölümdür: terimin ilk geçtiği `## ` bölümü,
+// tanım çapasını da taşımak zorunda. Sahip bir bölümü okurken terimi öğrenmiş olur.
+const SAHIP_YASAGI = ['kadran', 'kanon', 'çapa', 'sevk', 'dönem', 'zarf', 'karne', 'mühür',
+                      'bekçi', 'kadro', 'kutu',
+                      // (b)'den çıkarılan beşi — karşılıkları: iş · denetleyen · ışık ·
+                      // "bir günden eski" · "birbirinden bağımsız birkaç açı".
+                      // KÖK HÂLİNDE yazılır (ölçüm 2026-08-07): `'iş paketleri'.includes(
+                      // 'iş paketi')` FALSE döner — Türkçe çoğul eki iyelik ekinin yerine
+                      // geçer (paket-ler-i ≠ paket-i), yani çekimli hâl kapıdan kaçardı.
+                      'iş paket', 'bağımsız denetleyen', 'gösterge', 'taze', 'mercek'];
+const TANIM_CAPALARI = { 'oturum': 'sohbet' };
+
+const jargonTara = (metin) => {
+  const s = String(metin).toLocaleLowerCase('tr');
+  return SAHIP_YASAGI.filter((k) => s.includes(k));
+};
+const tanimsizTara = (metin) => {
+  const s = String(metin).toLocaleLowerCase('tr');
+  return Object.entries(TANIM_CAPALARI).filter(([terim, capa]) => {
+    if (!s.includes(terim)) return false;            // hiç geçmiyorsa tanım da gerekmez
+    const bolum = s.split(/^## /m).find((b) => b.includes(terim));
+    return !bolum || !bolum.includes(capa);
+  }).map(([terim]) => terim);
+};
+
+test('KILAVUZ_KALIBI SAHİP YÜZEYİDİR: yasak kelime geçmez, geçen terim tanımlı', () => {
+  const sim = kilavuzSim();
+  assert.deepEqual(jargonTara(sim), [], 'sahip kılavuzunda sahibin bilmediği kelime var');
+  assert.deepEqual(tanimsizTara(sim), [],
+    'terim geçiyor ama geçtiği bölümde tanımı yok — ya tanımla ya çıkar');
+});
+
+test('sahip dili kapısı KIRMIZIYA DÖNÜYOR: yasak terimlerin her biri tek tek yakalanıyor', () => {
+  // Yeşil test kanıt değildir; kırmızıya dönebilen test kanıttır. Liste büyüdükçe bu döngü
+  // de büyür — beyansız eklenen bir terim burada kendini gösterir.
+  const temiz = kilavuzSim();
+  assert.deepEqual(jargonTara(temiz), [], 'ön koşul: taban metin zaten temiz olmalı');
+  for (const k of SAHIP_YASAGI) {
+    assert.deepEqual(jargonTara(temiz + '\n' + k), [k], `yasak terim yakalanmadı: "${k}"`);
+  }
+});
+
+test('tanım kapısı KIRMIZIYA DÖNÜYOR: çapa silinince terim tanımsız kalır', () => {
+  for (const [terim, capa] of Object.entries(TANIM_CAPALARI)) {
+    const bozuk = kilavuzSim().replace(new RegExp(capa, 'gi'), 'xxx');
+    assert.deepEqual(tanimsizTara(bozuk), [terim],
+      `tanım çapası "${capa}" silindiği hâlde "${terim}" tanımsız sayılmadı`);
   }
 });
 
