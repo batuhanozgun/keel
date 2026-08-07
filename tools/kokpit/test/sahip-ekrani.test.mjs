@@ -18,38 +18,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createContext, runInContext } from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// Sahte DOM tek evdedir — kardeş kapı (okuma-butunlugu.test.mjs) da onu kullanır; ikinci
+// kopya sürüklenirdi. Gerekçe ekran-kabuk.mjs başlığında yazılı.
+import { sandbox } from './ekran-kabuk.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const KOK = path.join(__dirname, '..');
-
-// ── sahte DOM: app.js'in dokunduğu her şey, fazlası değil ────────────────────────────────
-function sandbox() {
-  const ekran = {};
-  const el = (id) => (ekran[id] ||= { id, innerHTML: '', textContent: '', className: '', hidden: false });
-  const ctx = {
-    document: {
-      getElementById: el,
-      querySelector: () => el('wm-sub'),
-      querySelectorAll: () => [],
-      addEventListener: () => {},
-      set title(v) { el('__title').textContent = v; },
-      get title() { return el('__title').textContent; },
-    },
-    // fetch: app.js yüklenirken kendiliğinden çağrılır. Hiç çözülmeyen bir söz veriyoruz ki
-    // testin çizdiği ekranı ağdan gelen bir cevap EZMESİN (belirlenimsizlik yok).
-    fetch: () => new Promise(() => {}),
-    requestAnimationFrame: () => {},
-    setInterval: () => 0,
-    console,
-    Promise, Date, String, Number, Object, Array, JSON, RegExp, Math,
-  };
-  createContext(ctx);
-  runInContext(readFileSync(path.join(KOK, 'public', 'app.js'), 'utf8'), ctx, { filename: 'app.js' });
-  return { ctx, ekran };
-}
 
 // Gerçekçi durum: kokpitin fixture'larından değil, PANO_SOZLESMESI'nin tanımladığı şekilden.
 const DURUM = {

@@ -12,14 +12,41 @@ import { splitRow } from './markdown.mjs';
 const MID = '·';   // ·  alan ayıracı (boşluklu)
 const DASH = '—';  // —  em-dash
 
+// ── OKUMA BÜTÜNLÜĞÜ (K13) ────────────────────────────────────────────────────────────────
+// Bu dosyanın eski kusuru bir satırda değil, bir ALIŞKANLIKTAYDI: "eşleşirse oku, eşleşmezse
+// yok say". Sözleşme (PANO_SOZLESMESI) bunun tersini vaat ediyordu — "söz dizimi bozulursa
+// okuma notu basılır, asla sessiz maskeleme". Ölçüm dört bozmada sıfır uyarı + YEŞİL saydı.
+//
+// İki sınıf ayrıdır çünkü bedelleri ayrıdır:
+//   NOT      → satır sözleşme dışı ama HÜKÜM kaybolmadı (fazladan açıklama, okunmayan damga).
+//              Uyarı yeter; genel duruma dokunmaz.
+//   BOŞLUK   → ışık hükmünün bir parçası KAYBOLDU (satır yok · parça çözülemedi · ikinci
+//              kaynak yok · değer sözlük dışı). Uyarı + genel durum YEŞİL BASAMAZ.
+// Boşluk YALNIZ yeşili düşürür: VERİ-YOK zaten "bilmiyorum", KIRMIZI zaten en kötü.
+
 // "AKIŞ=YEŞİL · DOSYA=SARI · DAVRANIŞ=VERİ-YOK" → [{ad,deger}] (sıralı).
 // Ad'lar serbest (vault'a göre değişir); yalnız söz dizimi sabit (NAME=val · NAME=val).
-export function parseLights(s) {
+export function parseLights(s, warnings, bosluklar) {
   if (typeof s !== 'string') return null;
   const out = [];
   for (const part of s.split(' ' + MID + ' ')) {
-    const m = part.trim().match(/^(.+?)=(\S+)$/);
-    if (m) out.push({ ad: m[1].trim(), deger: m[2] });
+    const ham = part.trim();
+    if (!ham) continue;
+    // Değerden SONRA gelen serbest metin ışığı DÜŞÜRMEZ; değer okunur, fazlalık nota yazılır.
+    // Gerekçe ölçülmüştür, tahmin değil: canlı Loopinance panosunda üçüncü ışık
+    // "DAVRANIŞ=VERİ-YOK (Denetçi örneklemesi …)" biçiminde yazılıyor ve eski desen
+    // (`^(.+?)=(\S+)$`) o ışığı sessizce düşürüyordu. KAYBOLAN ışık, sözleşme dışı yazılmış
+    // ışıktan tehlikelidir: KIRMIZI'yı da aynı sessizlikle götürür (K13 bozma 2).
+    const m = ham.match(/^([^=]+?)=(\S+)(?:\s+(.*))?$/);
+    if (!m) {
+      if (warnings) warnings.push('ışık parçası çözümlenemedi (ad=değer bekleniyor): ' + ham);
+      if (bosluklar) bosluklar.push('isik-parca-cozulemedi');
+      continue;
+    }
+    out.push({ ad: m[1].trim(), deger: m[2] });
+    if (m[3] && m[3].trim() && warnings) {
+      warnings.push('ışık satırında fazladan açıklama var (ad=değer bekleniyor): ' + ham);
+    }
   }
   return out.length ? out : null;
 }
@@ -41,8 +68,8 @@ async function statIf(abs) {
 }
 
 // --- PANO mekanik blok (fenced, makine) ---
-function parseMekanik(pano, warnings) {
-  const out = { lights: null, tasks: {}, red: null, yellow: null, lastRun: null, runNo: null };
+function parseMekanik(pano, warnings, bosluklar) {
+  const out = { lights: null, tasks: {}, red: null, yellow: null, lastRun: null, runNo: null, sira: null };
   if (!pano) {
     warnings.push('PANO.md okunamadı');
     return out;
@@ -59,11 +86,33 @@ function parseMekanik(pano, warnings) {
   if (son) {
     out.lastRun = son[1];
     out.runNo = Number(son[2]);
+  } else {
+    // NOT, boşluk değil: tazeliği SAGLIK damgası yönetir ve o ayrıca ölçülür. Ama okunamayan
+    // damga sessiz kalmaz — tek harflik sapma (Denetim/denetim) bu satırı düşürüyordu ve
+    // kokpit hiçbir şey söylemiyordu (K13 bozma 3).
+    warnings.push('PANO son denetim damgası okunamadı');
   }
   const isikLine = body.match(/Işıklar:\s*(.+)/);
-  if (isikLine) out.lights = parseLights(isikLine[1]);
-  else warnings.push('PANO Işıklar satırı okunamadı');
-  if (isikLine && !out.lights) warnings.push('PANO Işıklar satırı çözümlenemedi');
+  if (isikLine) out.lights = parseLights(isikLine[1], warnings, bosluklar);
+  else {
+    warnings.push('PANO Işıklar satırı okunamadı');
+    if (bosluklar) bosluklar.push('pano-isik-satiri-yok');
+  }
+  if (isikLine && !out.lights) {
+    warnings.push('PANO Işıklar satırı çözümlenemedi');
+    if (bosluklar) bosluklar.push('pano-isik-satiri-cozulemedi');
+  }
+  // Sıra kimde? — İSTEĞE BAĞLI satır (geri-uyum: satırı yazmayan vault bugünkü davranışta
+  // kalır, uyarı basılmaz). Değerler: `sahip` · `sistem` · `bilinmiyor`. Tanınmayan değer
+  // sessiz geçmez — ışık sözlüğüyle aynı disiplin.
+  const siraLine = body.match(/Sıra:\s*(\S+)/);
+  if (siraLine) {
+    if (['sahip', 'sistem', 'bilinmiyor'].includes(siraLine[1])) out.sira = siraLine[1];
+    else {
+      warnings.push('PANO Sıra satırı tanınmayan değer taşıyor: ' + siraLine[1]);
+      out.sira = 'bilinmiyor';
+    }
+  }
   const gorev = body.match(/Görevler:\s*(.+)/);
   if (gorev) {
     for (const part of gorev[1].split(' ' + MID + ' ')) {
@@ -84,7 +133,7 @@ function parseMekanik(pano, warnings) {
 }
 
 // --- SAGLIK.md (makine): damga + kalem metinleri ---
-function parseSaglik(saglik, warnings) {
+function parseSaglik(saglik, warnings, bosluklar) {
   const out = { lastRun: null, runNo: null, lights: null, items: [] };
   if (!saglik) {
     warnings.push('SAGLIK.md okunamadı');
@@ -98,8 +147,20 @@ function parseSaglik(saglik, warnings) {
   } else {
     warnings.push('SAGLIK dosyasında tarih damgası bulunamadı');
   }
+  // SAGLIK ışık satırı SESSİZ DEĞİLDİR (K13 bozma 4): satır tamamen silindiğinde kokpit
+  // eskiden hiçbir şey söylemiyor, ışıkları PANO'dan alıp YEŞİL basıyordu. Sağlık dosyası
+  // ışık hükmünün asıl evidir; okunamıyorsa iki-kaynaklı kötümser birleştirme de çalışmaz.
   const isik = saglik.match(/\*\*Işıklar:\*\*\s*(.+)/);
-  if (isik) out.lights = parseLights(isik[1]);
+  if (isik) {
+    out.lights = parseLights(isik[1], warnings, bosluklar);
+    if (!out.lights) {
+      warnings.push('SAGLIK Işıklar satırı çözümlenemedi');
+      if (bosluklar) bosluklar.push('saglik-isik-satiri-cozulemedi');
+    }
+  } else {
+    warnings.push('SAGLIK Işıklar satırı okunamadı');
+    if (bosluklar) bosluklar.push('saglik-isik-satiri-yok');
+  }
   for (const line of saglik.split(/\r?\n/)) {
     const m = line.match(/^-\s*\[(KIRMIZI|SARI|[iİI])\]\s*(.+)$/);
     if (m) out.items.push({ level: /^[iİI]$/.test(m[1]) ? 'BILGI' : m[1], text: m[2].trim() });
@@ -267,10 +328,24 @@ export function worstLight(lights) {
 // İki ışık dizisini ada göre birleştir; ortak adta kötümser değer (fail-safe —
 // izleme aracı kırmızıyı asla maskelemez). Çelişki uyarısı yalnız iki taraf da
 // ÖLÇÜLMÜŞ (VERİ-YOK değil) ve farklıysa.
-export function mergeLights(a, b, warnings) {
-  if (!a && !b) { if (warnings) warnings.push('ışıklar hiçbir kaynaktan okunamadı'); return null; }
-  if (!a) { if (warnings) warnings.push('PANO ışıkları okunamadı; SAGLIK ışıkları kullanıldı'); return b; }
-  if (!b) return a;
+export function mergeLights(a, b, warnings, bosluklar) {
+  if (!a && !b) {
+    if (warnings) warnings.push('ışıklar hiçbir kaynaktan okunamadı');
+    if (bosluklar) bosluklar.push('isik-kaynagi-yok');
+    return null;
+  }
+  if (!a) {
+    if (warnings) warnings.push('PANO ışıkları okunamadı; SAGLIK ışıkları kullanıldı');
+    if (bosluklar) bosluklar.push('tek-isik-kaynagi');
+    return b;
+  }
+  // SİMETRİ (K13): ters yön sessizdi. Tek kaynakla çalışmak, kötümser birleştirmenin
+  // (kırmızı maskelenmez) fiilen kapalı olması demektir — eksik kaynaktaki KIRMIZI görünmez.
+  if (!b) {
+    if (warnings) warnings.push('SAGLIK ışıkları okunamadı; PANO ışıkları kullanıldı');
+    if (bosluklar) bosluklar.push('tek-isik-kaynagi');
+    return a;
+  }
   const bMap = new Map(b.map((x) => [x.ad, x.deger]));
   const seen = new Set();
   const out = [];
@@ -292,6 +367,9 @@ export function mergeLights(a, b, warnings) {
 
 export async function buildState(root, config = {}) {
   const warnings = [];
+  // Okuma boşlukları: ışık hükmünün eksik okunduğu hâller (yukarıdaki OKUMA BÜTÜNLÜĞÜ notu).
+  // Uyarıdan AYRI tutulur çünkü her uyarı hüküm kaybettirmez; kaybettiren burada toplanır.
+  const bosluklar = [];
   const [pano, saglikTxt, ertTxt, kutuInfo] = await Promise.all([
     readIf(path.join(root, '00_pano/PANO.md')),
     readIf(path.join(root, '00_pano/SAGLIK.md')),
@@ -299,17 +377,30 @@ export async function buildState(root, config = {}) {
     findActiveBox(root, warnings),
   ]);
 
-  const mek = parseMekanik(pano, warnings);
-  const sag = parseSaglik(saglikTxt, warnings);
+  const mek = parseMekanik(pano, warnings, bosluklar);
+  const sag = parseSaglik(saglikTxt, warnings, bosluklar);
   const fresh = await computeFreshness(root, sag, warnings);
 
+  // PANO damgası ARTIK KULLANILIYOR: iki blok tek koşuda yazılır, denetim numaraları eşittir.
+  // Ayrıştıklarında dosyalardan biri eski koşudan kalmıştır (yazım yarıda kesilmiş) — ışıklar
+  // ve sayaçlar farklı koşuları anlatıyor demektir. BOŞLUK DEĞİL: kötümser birleştirme
+  // yüzünden eski blok yeni bir KIRMIZI'yı maskeleyemez; yön yalnız yanlış-kırmızıdır.
+  if (mek.runNo != null && sag.runNo != null && mek.runNo !== sag.runNo) {
+    warnings.push('PANO ve SAGLIK ayrı denetimden: #' + mek.runNo + ' / #' + sag.runNo + ' — biri eski');
+  }
+
   // Işıklar: PANO + SAGLIK birleşimi; çelişki varsa kötümser (fail-safe)
-  const lights = mergeLights(mek.lights, sag.lights, warnings);
+  const lights = mergeLights(mek.lights, sag.lights, warnings, bosluklar);
   // İzleme aracında BİLİNMEYEN ≠ VERİSİZ: sözlük-dışı bir ışık değeri (bekçi tipo/kodlama
   // hatası ya da ASCII YESIL) sessizce "ölçülmemiş" sayılıp gri görünür — hasım turu bulgusu
   // (2026-07-16). En azından uyarı yüzeyine çıkar ki fark edilsin.
   if (lights) for (const l of lights) {
-    if (l.deger !== 'VERİ-YOK' && !(l.deger in WORST)) warnings.push('tanınmayan ışık seviyesi: ' + l.ad + '=' + l.deger + ' (ölçülmemiş sayıldı — YEŞİL/SARI/KIRMIZI/VERİ-YOK bekleniyor)');
+    if (l.deger !== 'VERİ-YOK' && !(l.deger in WORST)) {
+      warnings.push('tanınmayan ışık seviyesi: ' + l.ad + '=' + l.deger + ' (ölçülmemiş sayıldı — YEŞİL/SARI/KIRMIZI/VERİ-YOK bekleniyor)');
+      // Boşluktur: skorlanmayan değer nötr sayılır, yani o ışıktaki KIRMIZI genele hiç
+      // yansımaz (sözleşmenin kendi uyarısı: ASCII `YESIL` sistemi yanlışlıkla yeşil gösterir).
+      bosluklar.push('taninmayan-isik-seviyesi');
+    }
   }
 
   // Görevler: KUTU'dan iş+sahip, PANO mekanikten kanonik durum
@@ -325,12 +416,40 @@ export async function buildState(root, config = {}) {
   // Kutular (aktif + arşiv)
   const kutular = await listBoxes(root);
 
+  // Sayaç ↔ kalem: aynı koşunun İKİ görünümü. Eskiden hiç karşılaştırılmıyordu; PANO
+  // "Kırmızı: 0" derken SAGLIK'ta KIRMIZI kalem durabiliyordu ve ekran yeşil kalıyordu
+  // (K13 bozma 1). Bu sentetik değil: ürünün kendi yazarında `arıza` satırları SAGLIK'a
+  // KIRMIZI kalem olarak düşer, sayaca girmez ve hiçbir ışığı kırmızıya çevirmez.
+  const kirmiziKalem = sag.items.filter((i) => i.level === 'KIRMIZI').length;
+  const sariKalem = sag.items.filter((i) => i.level === 'SARI').length;
+  if (mek.red != null && mek.red !== kirmiziKalem) {
+    warnings.push('PANO kırmızı sayacı ile SAGLIK kırmızı kalem sayısı uyuşmuyor: ' + mek.red + ' / ' + kirmiziKalem);
+    bosluklar.push('sayac-kalem-celiskisi');
+  }
+  if (mek.yellow != null && mek.yellow !== sariKalem) {
+    warnings.push('PANO sarı sayacı ile SAGLIK sarı kalem sayısı uyuşmuyor: ' + mek.yellow + ' / ' + sariKalem);
+    bosluklar.push('sayac-kalem-celiskisi');
+  }
+
   const stale = fresh.stale;
   const worst = worstLight(lights);
   // Hiç ÖLÇÜLMÜŞ değer yokken (hepsi VERİ-YOK/serbest) taban-iyimserlik YEŞİL göstermesin —
   // dürüst gri (soğuk-denetim B1). Tek ölçülmüş değer varsa davranış eskisiyle aynı.
   const olculmus = !!(lights && lights.some((l) => (WORST[l.deger] || 0) > 0));
-  const sistemGenel = stale ? 'KIRMIZI' : (olculmus ? worst : 'VERI-YOK');
+  // Genel hüküm dört kattan geçer; her katın yönü fail-safe:
+  //  1) damga bayat → KIRMIZI (sahibin tek ezberi; eskiden beri)
+  //  2) LİSTELENEN kırmızı kalem → KIRMIZI. Ekranda kırmızı kalem dururken rozetin yeşil
+  //     basması, kokpitin kendi gövdesiyle çelişmesiydi (K13 bozma 1'in asıl zararı).
+  //  3) hiç ölçülmüş ışık yok → VERİ-YOK grisi (soğuk-denetim B1)
+  //  4) okuma boşluğu → YEŞİL'i SARI'ya düşürür. YALNIZ yeşili: VERİ-YOK zaten "bilmiyorum",
+  //     KIRMIZI zaten en kötü; ikisini oynatmak bilgi kazandırmaz, gürültü üretir.
+  let sistemGenel;
+  if (stale) sistemGenel = 'KIRMIZI';
+  else if (kirmiziKalem > 0) sistemGenel = 'KIRMIZI';
+  else if (!olculmus) sistemGenel = 'VERI-YOK';
+  else sistemGenel = sariKalem > 0 ? worseLight(worst, 'SARI') : worst;
+  const okumaBoslugu = bosluklar.length > 0;
+  if (okumaBoslugu && sistemGenel === 'YEŞİL') sistemGenel = 'SARI';
 
   // SIRADAKİ bayatlığı (#6): sevk edilen rol koordinatörden yeni hareket ettiyse bayat.
   const koordinatorRol = config.koordinatorRol || 'koordinator';
@@ -352,6 +471,8 @@ export async function buildState(root, config = {}) {
       driftAfterRun: fresh.driftAfterRun,
       driftFiles: fresh.driftFiles.slice(0, 12),
       driftCount: fresh.driftFiles.length,
+      okumaBoslugu,
+      bosluklar: [...new Set(bosluklar)],
       sistemGenel,
     },
     yargi: {
@@ -360,6 +481,10 @@ export async function buildState(root, config = {}) {
       siradakiRol: siradakiRolAd,
       siradakiStale: siradakiDurum.stale,
       sonHareketRol: siradakiDurum.sonHareketRol,
+      // U17: "sıra sende DEĞİL" hâlinin makine-okur değeri. Yokken kokpit sahibe her hâlde
+      // "sıra sende, oturumu sen açacaksın" diyordu — sistem kendi başına çalışırken bu
+      // cümle yanlıştı ve sahibi koşunun üstüne davet ediyordu.
+      siraKimde: mek.sira,
       paralel: yargiField(pano, 'Paralel açılabilir'),
       blokaj: yargiField(pano, 'Blokaj'),
     },
@@ -381,7 +506,11 @@ export async function buildState(root, config = {}) {
       isikIpuclari: config.isikIpuclari || null,
       renkler: config.renkler || null,
     },
-    warnings,
+    // BİREBİR tekrar düşürülür: sağlıklı vault'ta ışık satırı iki dosyada AYNIdır, yani tek
+    // bir yazım hatası iki özdeş not üretir. Tekrar bilgi taşımaz, sahibin okuma notunu
+    // uzatır. Tekilleştirme SADECE aynı dizeye uygulanır — değer taşıyan notlar (sayılar,
+    // ışık adları) zaten ayrışır ve hiçbiri yutulmaz.
+    warnings: [...new Set(warnings)],
   };
 }
 

@@ -15,7 +15,11 @@ içerik serbest.** GENESIS her projede bu iskeleti aynen üretir.
   - `Son denetim: YYYY-MM-DD HH:MM (denetim #N)`
   - `Işıklar: <AD>=<değer> · <AD>=<değer> · …`  → **NAME=val çiftleri** (ad serbest, değer ciddiyet sözlüğünden)
   - `Görevler: G-NN=<durum> · …`
-  - `Kırmızı: N · Sarı: N`
+  - `Sıra: sahip | sistem | bilinmiyor` — **isteğe bağlı** (satır yoksa bugünkü davranış: sıra
+    sahiptedir). `sistem` = yapı kendi başına çalışıyor, kokpit sahibi oturum açmaya ÇAĞIRMAZ;
+    `bilinmiyor` = okunamadı, yön fail-safe (bilmediğimiz hâlde "sıra sende" denmez).
+  - `Kırmızı: N · Sarı: N` — **SAGLIK kalem sayılarıyla eşit olmak zorundadır**; ayrışırlarsa
+    kokpit okuma notu basar ve genel durumu yeşilden düşürür (aynı koşunun iki görünümü).
 - **Ciddiyet sözlüğü (sabit Türkçe):** `YEŞİL` · `SARI` · `KIRMIZI` · `VERİ-YOK` (nötr).
 - **PANO yargı bloğu (koordinatör nesri):** kalın etiketli satırlar —
   `- **Aktif kutu:** …` · `- **SIRADAKİ OTURUM:** <rol> — …` · `- **Paralel açılabilir:** …` · `- **Blokaj:** …`
@@ -72,6 +76,24 @@ Parser bu string'leri **birebir** arar; ASCII'ye çevirme, harf değiştirme:
 
 **En güvenli yol:** `tools/kokpit/test/fixtures/tekfaz/` dosyalarını **kopyalayıp içeriğini değiştir** —
 diakritikler otomatik doğru gelir, elle yazım hatası olmaz.
+
+## Okuma bütünlüğü — vaadin ölçülen hâli (K13)
+
+Bu belge en baştan *"asla sessiz maskeleme"* diyordu; kod demiyordu. 2026-08-05 ölçümü dört
+bozmada **sıfır uyarı + YEŞİL** saydı: sayaç-kalem çelişkisi · ışığa açıklama eklenmesi ·
+damga tek harf sapması · ışık satırının tamamen silinmesi. Vaat artık mekaniktir
+(`test/okuma-butunlugu.test.mjs`; 17 kasıtlı bozmanın 17'si kırmızı):
+
+- **NOT** — satır sözleşme dışı ama hüküm kaybolmadı (değerden sonra açıklama, okunmayan PANO
+  damgası, iki bloğun ayrı denetimden gelmesi): okuma notu basılır, genel duruma dokunulmaz.
+  Değerden sonra gelen serbest metin ışığı **DÜŞÜRMEZ** — kaybolan ışık, sözleşme dışı yazılmış
+  ışıktan tehlikelidir (canlı örnek: `DAVRANIŞ=VERİ-YOK (Denetçi örneklemesi …)` sessizce
+  düşüyordu ve KIRMIZI'yı da aynı sessizlikle götürebilirdi).
+- **BOŞLUK** — ışık hükmünün bir parçası kayboldu (satır yok · parça çözülemedi · ikinci kaynak
+  yok · değer sözlük dışı): okuma notu + **genel durum YEŞİL basamaz**, sahibe sebebi söyleyen
+  şerit çıkar. Boşluk yalnız yeşili düşürür; VERİ-YOK zaten "bilmiyorum", KIRMIZI zaten en kötü.
+- **Listelenen KIRMIZI kalem varken rozet yeşil olamaz** — ışıklar ve kalemler aynı koşunun iki
+  görünümüdür; biri kırmızıyken ötekinin yeşil basması kokpitin kendi gövdesiyle çelişmesiydi.
 
 ## Neden sözleşme?
 

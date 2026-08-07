@@ -853,6 +853,22 @@ if (dizinMi(panoDizini)) {
     let bekleyen = 0;
     const kuyruk = oku(join(panoDizini, 'SENDE_BEKLEYEN.md'));
     if (kuyruk !== null) bekleyen = kuyruk.split('\n').filter((s) => s.startsWith('- [ ]')).length;
+    // ── Sıra kimde? (U17) ──────────────────────────────────────────────────────────────
+    // Sahip yüzeyinin (kokpit) okuyacağı TEK makine değeri. Bu satır yokken kokpit sahibe
+    // HER hâlde "sıra sende, oturumu sen açacaksın" diyordu; yapı kendi başına çalışırken o
+    // cümle yanlıştı ve sahibi koşan işin üstüne davet ediyordu.
+    // ÜÇ DEĞER, yön fail-safe: gösterge yok → `sahip` · gösterge var, kimlik okunuyor →
+    // `sistem` · gösterge var ama okunamıyor/kimliksiz → `bilinmiyor`. Son hâlde sahibe
+    // "sıra sende" DENMEZ — bilmediğimizi söylemek, çakışan bir oturum açtırır.
+    // `existsSync` ŞART: oku() "dosya yok" ile "okunamadı"yı ayırt etmez, ikisine de null
+    // döner; ayırt etmeden yazmak bozuk göstergeyi sessizce `sahip` diye ilan ederdi.
+    const donemGostergesi = join(KOK, 'tools', 'sevk', '.donem-acik');
+    let siraKimde = 'sahip';
+    if (existsSync(donemGostergesi)) {
+      const ilkSatir = oku(donemGostergesi);
+      const donemKimlik = ilkSatir === null ? '' : ((ilkSatir.split('\n')[0] || '').split('\t')[0] || '').trim();
+      siraKimde = donemKimlik ? 'sistem' : 'bilinmiyor';
+    }
     const pano = '<!-- yazar: bekci-betigi (MEKANİK BLOK) + koordinator (YARGI BLOĞU) -->\n# PANO\n\n'
       + '## MEKANİK BLOK — yalnız bekçi yazar\n```\n'
       + 'Son denetim: ' + damga + ' (denetim #' + denetimNo + ')\n'
@@ -860,6 +876,7 @@ if (dizinMi(panoDizini)) {
       + 'Görevler: ' + gorevler + '\n'
       + 'Bekleyen sorular: —\n'
       + 'Sahipte bekleyen: ' + bekleyen + '\n'
+      + 'Sıra: ' + siraKimde + '\n'
       + (bosBacklog ? 'Durak: insan girdisi bekleniyor (D9)\n' : '')
       + 'Kırmızı: ' + (sayac.DURDURAN + sayac.KILIT) + ' · Sarı: ' + sayac.UYARI + '\n```\n\n'
       + yargi + '\n';

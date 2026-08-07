@@ -3,7 +3,7 @@
 // warnings sayısı değil (sözleşme §8/2).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { writeFileSync, rmSync, readFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { kurulum, kos, temizle } from './yardimci.mjs';
 
@@ -109,6 +109,41 @@ test('PANO: mekanik blok kokpit biçiminde, YARGI bloğu korunur, sayaç satır�
   assert.ok(blok[1].includes('Sahipte bekleyen: 1'), blok[1]);
   // YARGI bloğu koordinatörün — bekçi ezmez (F1 istisna 1)
   assert.ok(pano.includes('- **SIRADAKİ OTURUM:** koordinator — plan'), pano);
+  temizle(kok);
+});
+
+// ── Sıra kimde? (U17) ──────────────────────────────────────────────────────────────────
+// Kokpitin sahibe "sıra sende" mi yoksa "sistem kendi başına çalışıyor" mu diyeceğini
+// belirleyen TEK makine değeri. Kokpit tahmin etmez; burada yazılanı okur.
+// Üç hâlin ÜÇÜ de ölçülür: değer yazılmasaydı kokpit eskisi gibi her hâlde sahibi davet
+// ederdi — koşan işin üstüne.
+const donemGosterge = (kok, icerik) => {
+  mkdirSync(join(kok, 'tools', 'sevk'), { recursive: true });
+  writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), icerik);
+};
+const mekanikBlok = (kok) => readFileSync(join(kok, '00_pano', 'PANO.md'), 'utf8')
+  .match(/## MEKANİK BLOK[^\n]*\n```\n([\s\S]*?)\n```/)[1];
+
+test('Sıra: dönem göstergesi yokken sahiptedir (el-sürüşlü günlük döngü)', () => {
+  const kok = kurulum();
+  kos(kok);
+  assert.match(mekanikBlok(kok), /^Sıra: sahip$/m, mekanikBlok(kok));
+  temizle(kok);
+});
+
+test('Sıra: gösterge varken sistemdedir — sahip oturum açmaya davet EDİLMEZ', () => {
+  const kok = kurulum();
+  donemGosterge(kok, 'DONEM-7\tKT-001-proje-plani\tyapim\tgercek\ndamga\t2026-08-08T10:00:00Z\n');
+  kos(kok);
+  assert.match(mekanikBlok(kok), /^Sıra: sistem$/m, mekanikBlok(kok));
+  temizle(kok);
+});
+
+test('Sıra: gösterge var ama kimliksizse "bilinmiyor" — bilmediğimize "sıra sende" denmez', () => {
+  const kok = kurulum();
+  donemGosterge(kok, '\n'); // dosya var, ilk alan boş: bozuk gösterge
+  kos(kok);
+  assert.match(mekanikBlok(kok), /^Sıra: bilinmiyor$/m, mekanikBlok(kok));
   temizle(kok);
 });
 

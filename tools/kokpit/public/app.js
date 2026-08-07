@@ -78,6 +78,11 @@ function renderTopbar() {
   if (s.stale) {
     rib.hidden = false; rib.className = 'ribbon red';
     rib.innerHTML = '<b>Sağlık damgası eski.</b> ' + esc(s.staleReason || 'damga bir günden eski') + ' — damga bir günden eskiyse ışıklar yeşil görünse bile sistem kırmızı sayılır.';
+  } else if (s.okumaBoslugu) {
+    // K13: okuma boşluğu rozeti yeşilden düşürüyor; SEBEBİ de görünmeli. Sebepsiz sarı,
+    // sahibin "benden bir şey gizleniyor mu" kaygısını tetikleyen tam o boşluktur.
+    rib.hidden = false; rib.className = 'ribbon amber';
+    rib.innerHTML = '<b>Sağlık dosyası tam okunamadı.</b> Beklenen satırlardan biri eksik ya da yazımı değişmiş; ışıkların bir kısmı okunamamış olabilir — bu yüzden sistem "iyi" sayılmıyor. Sebebi aşağıda, okuma notlarında yazıyor.';
   } else if (s.driftAfterRun) {
     rib.hidden = false; rib.className = 'ribbon amber';
     rib.innerHTML = '<b>Işıklar biraz eskimiş olabilir.</b> Son kontrolden sonra ' + s.driftCount + ' dosya değişti; otomatik sağlık kontrolü henüz yeniden çalışmadı — ışıklar bir sonraki oturum kapanınca kendini günceller. Sorun değil, sadece bilgi.';
@@ -164,7 +169,21 @@ function renderPano() {
     return '<code>03_roller/' + esc(slug) + '/</code> klasöründe oturum aç, <code>devam</code> yaz';
   };
   var nb;
-  if (y.siradakiStale && y.sonHareketRol) {
+  // U17 — "sıra sende DEĞİL" hâli. Bu satır olmadan kokpit HER hâlde "sıra sende, oturumu
+  // sen açacaksın" diyordu; sistem kendi başına çalışırken o cümle yanlıştı ve sahibi koşan
+  // işin üstüne davet ediyordu. Değer panodan gelir (makine-okur), kokpit tahmin etmez.
+  // `bilinmiyor` fail-safe yöndür: bilmediğimiz hâlde sahibe "sıra sende" DENMEZ.
+  if (y.siraKimde === 'sistem') {
+    nb = '<div class="now-in"><div class="now-eyebrow">şu an · sıra sende değil</div>' +
+      '<div class="now-role">sistem kendi başına çalışıyor<span class="dot">.</span></div>' +
+      '<div class="now-desc">Ekip şu an kendi başına ilerliyor; senin bir şey açmana gerek yok. Bir karara ihtiyacı olursa durur ve sana haber verir.</div>' +
+      '</div>';
+  } else if (y.siraKimde === 'bilinmiyor') {
+    nb = '<div class="now-in stale"><div class="now-eyebrow">şu an · belirsiz</div>' +
+      '<div class="now-role">sıra kimde, okunamadı<span class="dot">.</span></div>' +
+      '<div class="now-desc">Sistemin kendi başına çalışıp çalışmadığı şu an okunamıyor. Emin olmadan yeni bir oturum açma; okuma notlarına bak.</div>' +
+      '</div>';
+  } else if (y.siradakiStale && y.sonHareketRol) {
     nb = '<div class="now-in stale"><div class="now-eyebrow">sıradaki adım · koordinatörde</div>' +
       '<div class="now-role"><span class="now-verb">son hareket:</span> ' + esc(y.sonHareketRol) + '<span class="dot">.</span></div>' +
       '<div class="now-desc">Bu rol işini bitirdi; sıra koordinatöre döndü. Panodaki "sıradaki" satırı, koordinatör bir sonrakini yazana kadar eski görünebilir.</div>' +

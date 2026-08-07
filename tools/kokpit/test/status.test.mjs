@@ -41,13 +41,25 @@ function stamp(d) {
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
 }
 
-async function tempVault({ saglikIsiklar = 'AKIŞ=YEŞİL', damga = stamp(new Date()), siradaki = 'uygulayici — iş' } = {}) {
+// SÖZLEŞMEYE UYGUN taban (K13): eski hâli PANO'yu MEKANİK BLOKSUZ yazıyordu — yani bu
+// testlerin hepsi sözleşmeyi karşılamayan bir vault ölçüyordu ve kimse fark etmemişti.
+// Okuma-bütünlüğü kapısı açıldığı gün bunu yakaladı (tek ışık kaynağı = kötümser
+// birleştirmenin fiilen kapalı olması). Blok artık AYNI ışıkları taşır; ölçülen şey yine
+// ışık mantığıdır, eksik vault değil.
+async function tempVault({ saglikIsiklar = 'AKIŞ=YEŞİL', damga = stamp(new Date()), siradaki = 'uygulayici — iş',
+                           panoIsiklar = null, sira = null } = {}) {
   const kok = await fs.mkdtemp(path.join(os.tmpdir(), 'kokpit-durum-'));
   await fs.mkdir(path.join(kok, '00_pano'), { recursive: true });
   await fs.writeFile(path.join(kok, '00_pano', 'SAGLIK.md'),
     '# SAĞLIK\nson denetim: ' + damga + ' (denetim #3)\n\n**Işıklar:** ' + saglikIsiklar + '\n');
   await fs.writeFile(path.join(kok, '00_pano', 'PANO.md'),
-    '# Pano\n- **Aktif kutu:** KT-001\n- **SIRADAKİ OTURUM:** ' + siradaki + '\n');
+    '# Pano\n\n## MEKANİK BLOK\n```\n'
+    + 'Son denetim: ' + damga + ' (denetim #3)\n'
+    + 'Işıklar: ' + (panoIsiklar || saglikIsiklar) + '\n'
+    + 'Görevler: —\n'
+    + (sira ? 'Sıra: ' + sira + '\n' : '')
+    + 'Kırmızı: 0 · Sarı: 0\n```\n\n'
+    + '- **Aktif kutu:** KT-001\n- **SIRADAKİ OTURUM:** ' + siradaki + '\n');
   return kok;
 }
 
