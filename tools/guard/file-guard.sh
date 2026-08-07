@@ -290,16 +290,21 @@ if ((j.tool_name || "") === "Bash") {
   // ---- E2 dikisleri (tasari §3) — icerik ENGELi bash katmaninda coktan kosuldu ----
   // Komut bolutleri: ; & | ` $( VE SATIRSONU ayraclarindan bolunur (hasim bulgusu: cok-satirli
   // komut satirsonuyla ucunu de atliyordu). "komut-konumu" = bir bolutun BASI.
-  const bolutler = komut.split(/[;&|`\n]|\$\(/);
+  // SUSLU VE DUZ PARANTEZ DE AYRACTIR (U10): fonksiyon govdesi ve alt-kabuk da komut-konumu
+  // acar — bolunmeseydi "f() { curl ... }; f x" satirinda ad "f()" cozulur ve curl kacardi.
+  const bolutler = komut.split(/[;&|`\n{}()]|\$\(/);
   // Bir bolutun ETKIN komut adini cikar: bastaki VAR=deger atamalarini + env/sudo/nohup/command/
   // time/exec oneklerini at; mutlak yolu son parcaya (basename) indir (hasim: /usr/bin/curl, git -C,
   // sudo curl kaciyordu). Boylece "git -C x push" -> git alt-komut cozumu, "/usr/bin/curl" -> curl.
+  // ATILAN ATAMALAR GERI DONDURULUR (U10): "C=curl" oneki atiliyordu ve DEGERINE hic
+  // bakilmiyordu; cagiran taraf artik ona da bakabilsin diye ayrica veriliyor.
   const komutAdi = (s) => {
     let t = s.trim();
+    const atamalar = (t.match(/^((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+)/) || [])[1] || "";
     t = t.replace(/^((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+)/, "");           // VAR=val onekleri
     t = t.replace(/^(?:env|sudo|nohup|command|time|exec|builtin)\s+(?:-\S+\s+)*/, ""); // sarmalayicilar
     const w = (t.match(/^(\S+)/) || [])[1] || "";
-    return { ad: w.split("/").pop(), kuyruk: t.replace(/^\S+\s*/, "") };
+    return { ad: w.split("/").pop(), kuyruk: t.replace(/^\S+\s*/, ""), atamalar };
   };
   // git global bayraklarini atlayip alt-komutu bul (git -C x / -c k=v / --git-dir= / --no-pager ...).
   const gitAlt = (kuyruk) => {
@@ -332,6 +337,22 @@ if ((j.tool_name || "") === "Bash") {
   const disa = bolutler.some((s) => {
     const c = komutAdi(s);
     if (disaAdlar.has(c.ad)) return true;
+    // COZULEMEYEN KOMUT ADI = DISA SAYILIR (U10, olculdu 2026-08-07). Degisken genislemesi
+    // KABUKTA olur, burada degil: "C=curl; $C https://x" bolutlerinde adlar "" ve "$C" cikiyor,
+    // hicbir listeye uymuyordu ve komut SESSIZCE geciyordu (fiilen olculdu: cikti yok, exit 0).
+    // Iki hat da kaciriyordu: settings icindeki Bash-curl onay deseni de komutun curl ile
+    // BASLAMASINI bekler. Yon fail-closed: adini cozemedigimiz bolut, dis dunyaya cikmiyor
+    // SAYILAMAZ. Yanlis-pozitifi dar tutmak icin yalnizca komut KONUMUNDAKI $ bakilir —
+    // "bash \"$CLAUDE_PROJECT_DIR/x.sh\"" gibi mesru kullanimda ad "bash"tir, buraya dusmez.
+    if (c.ad.startsWith("$")) return true;
+    // Atamanin DEGERI de disa-ad olabilir: "C=curl" onegi atiliyor, degeri hic okunmuyordu.
+    // BU BLOK tek tirnakli komut ikamesi icinde yasiyor. UC KISIT, ucu de bu isde olculdu:
+    //   1. APOSTROF YASAK, yorumda bile. Turkce ek apostrofu bloku ERKEN KAPATIR.
+    //   2. Backtick yasak: template literal yazilirsa bash onu komut ikamesi sanar.
+    //   3. Parantez dengesi korunur, yorumda bile: bash acilis-kapanis sayar.
+    // Ucu de sozdizimi denetiminden GECER; yalnizca calisma aninda patlar. Bu yuzden bu
+    // dosyayi degistiren her paket, dikisleri FIILEN kosturarak dogrulamak zorundadir.
+    if (c.atamalar && [...disaAdlar].some((a) => new RegExp("=(?:\\S*/)?" + a + "(?:\\s|$)").test(c.atamalar))) return true;
     if (c.ad === "git" && gitAlt(c.kuyruk) === "push") return true;
     if (c.ad === "npm" && /\bpublish\b/.test(c.kuyruk)) return true;
     return false;

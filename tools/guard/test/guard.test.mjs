@@ -658,6 +658,64 @@ test('E2 settings kablosu: dışa-giden ask kuralları şablon ayarında duruyor
   }
 });
 
+// --- U10 (2026-08-07): değişkene alınmış dışa-ad ---
+// İddia R7'de `olculmedi` girmişti. Fiilen ölçüldü ve DOĞRULANDI: `C=curl; $C https://x`
+// hiçbir çıktı üretmeden exit 0 ile geçiyordu. Sebebi, çözümleyicinin `VAR=deger` önekini
+// ATMASI ve geriye kalan `$C` adının hiçbir listeye uymamasıydı. İkinci hat da (settings
+// içindeki Bash-curl onay deseni) komutun curl ile BAŞLAMASINI beklediği için kaçırıyordu —
+// yani D-03'ün mekanik hattı bu kolda tamamen delikti.
+
+test('U10: değişkene alınmış / dolaylı dışa-ad HEPSİ SOR-DISA', () => {
+  const kok = kurulum();
+  const kacaklar = [
+    'C=curl; $C https://x',              // ölçülen asıl kaçak
+    'C=curl && $C https://x',            // ayraç && ile
+    'X=/usr/bin/curl; $X y',             // atama değeri mutlak yol
+    'G=gh; ${G} pr create',              // süslü parantezli genişleme
+    '(curl https://x)',                  // alt-kabuk
+    'f() { curl "$@"; }; f x',           // fonksiyon gövdesi
+  ];
+  for (const komut of kacaklar) {
+    const r = kos(kok, { tool_name: 'Bash', tool_input: { command: komut } });
+    assert.equal(r.status, 0, `${komut} → stderr: ${r.stderr}`);
+    assert.match(askJson(r).permissionDecisionReason, /DIŞARI çıkan/, komut);
+  }
+});
+
+test('U10 yanlış-pozitif freni: meşru komutlar SOR üretmez', () => {
+  // Fail-closed yön bedava değil: her çözülemeyen ad SOR olsaydı otonom dönem izin
+  // penceresinde boğulurdu. Yalnız komut KONUMUNDAKİ $ bakılır — değişkenli ARGÜMAN serbest.
+  const kok = kurulum();
+  for (const komut of ['ls -la', 'echo merhaba', 'git status', 'node --test a.mjs',
+                       'bash "$CLAUDE_PROJECT_DIR/tools/guard/acilis.sh"',
+                       'cat "$HOME/x.txt"']) {
+    const r = kos(kok, { tool_name: 'Bash', tool_input: { command: komut } });
+    assert.equal(r.status, 0, `${komut} → stderr: ${r.stderr}`);
+    assert.ok(!/DIŞARI çıkan/.test(r.stdout), `yanlış SOR üretti: ${komut}`);
+  }
+});
+
+test('U10: gömülü node bloğunda KAÇIŞSIZ apostrof yok — blok tek tırnakla sarılı', () => {
+  // Bu dosya düzeltilirken İKİ KEZ buna düşüldü: blok tek tırnaklı komut ikamesi içinde
+  // yaşıyor, dolayısıyla bir Türkçe ek apostrofu (settings.json'daki gibi) bloğu ERKEN
+  // KAPATIYOR ve geri kalanı bash koduna dönüşüyor. Sözdizimi denetimi (bash -n) bunu
+  // GEÇİRİR; hata yalnız çalışma anında çıkar ve "syntax error" deyip sebebini söylemez.
+  //
+  // Apostrof tümden yasak DEĞİL: bash'in kendi kaçış dizisi ('\'') bloğu kapatıp apostrofu
+  // koyup yeniden açar ve blokta o teknikle yazılmış meşru bir satır zaten var. Ölçülen şey
+  // KAÇIŞSIZ apostrof — kapı ilk yazımda bunu ayırmıyordu ve meşru satıra kırmızı bastı.
+  const src = readFileSync(GUARD, 'utf8');
+  const bas = src.indexOf("-e '");
+  const son = src.indexOf("\n')\"", bas);
+  assert.ok(bas > 0 && son > bas, 'gömülü node bloğu bulunamadı — kapı kör kalmasın');
+  const KACIS = "'\\''";
+  const kirli = src.slice(bas + 4, son).split('\n')
+    .filter((s) => s.split(KACIS).join('').includes("'"));
+  assert.deepEqual(kirli, [],
+    'gömülü blokta kaçışsız apostrof var — tek tırnaklı bloğu erken kapatır: ' +
+    kirli.map((s) => s.trim().slice(0, 60)).join(' | '));
+});
+
 // --- E2 hasım incelemesi düzeltmeleri (2026-07-27; dönem wf_1fea1dba) ---
 
 test('E2 hasım/dışa-giden: git -C push, mutlak yol, çok-satır, npm publish HEPSİ SOR-DISA', () => {

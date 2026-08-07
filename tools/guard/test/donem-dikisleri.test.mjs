@@ -443,6 +443,67 @@ test('F1-5d: /donem kutu adı verilmezse tek açık kutuyu seçer; iki kutuda DU
   assert.match(r2.stderr, /KT-902-ikinci/, 'adaylar sayılmalı');
 });
 
+// ══════════════════════════════════════════════════════════════════════════════════════════
+// U15 · sahip satırı — kabuk ayrıştırmasına açık tek giriş
+// ══════════════════════════════════════════════════════════════════════════════════════════
+// İddia R7'de "çapası ürün ağacında bulunamadı" diye `olculmedi` girmişti. Ölçüldü ve
+// DOĞRULANDI: çapa tools/ altında değil, `.claude/skills/donem/SKILL.md`'de. Beceri
+// `$ARGUMENTS`'ı METİN olarak yerine koyar ve satırı bash ayrıştırır; tırnaksızken kelime
+// bölmesi, glob ve `;` ile komut zinciri açıktı. Betiğin kutu/tür/sınıf beyaz listeleri bunu
+// kapatmaz — onlar ancak betik KOŞARSA korur, oysa zincir betiğe hiç gelmeden koşabilirdi.
+
+test('U15: --sahip-satiri ilan edilen üç argümanı böler (kullanım kırılmadı)', () => {
+  const kok = kurulum({ donem: null });
+  const r = kos(kok, 'donem-ac.sh', ['--sahip-satiri', `${KUTU_ADI} yapim tatbikat`]);
+  assert.equal(r.status, 0, r.stderr);
+  const alanlar = readFileSync(GOSTERGE(kok), 'utf8').split('\n')[0].split('\t');
+  assert.equal(alanlar[1], KUTU_ADI, 'kutu argümanı bölünmedi');
+  assert.equal(alanlar[3], 'tatbikat', 'sınıf argümanı bölünmedi');
+});
+
+test('U15: boş sahip satırı, argümansız çağrıyla BİREBİR aynı davranır', () => {
+  // `/donem` (argümansız) en sık kullanım. Yeni kip onu değiştirmemeli: `set -- $HAM` boş
+  // dizede $# = 0 bırakır, yani betik hiç argüman almamış gibi devam eder. Sabit bir çıktıya
+  // değil, ARGÜMANSIZ ÇAĞRININ KENDİSİNE karşı ölçülüyor — fixture'ın E5 şartları değişse
+  // bile bu eşitlik iddiası ayakta kalır.
+  const kok = kurulum({ donem: null });
+  const bos = kos(kok, 'donem-ac.sh', ['--sahip-satiri', '']);
+  const yok = kos(kok, 'donem-ac.sh', []);
+  assert.equal(bos.status, yok.status, 'boş sahip satırı argümansız çağrıdan farklı bitti');
+  assert.equal(bos.stdout, yok.stdout, 'sahip yüzeyi ayrıştı');
+  assert.equal(bos.stderr, yok.stderr, 'hata yüzeyi ayrıştı');
+});
+
+test('U15: --sahip-satiri "kapat" kapatma dalına düşer', () => {
+  const kok = kurulum({ donem: null });
+  kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  const r = kos(kok, 'donem-ac.sh', ['--sahip-satiri', 'kapat']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /DÖNEM KAPANDI/);
+});
+
+test('U15 KIRMIZIYA DÖNÜYOR: kabuk metakarakteri taşıyan satır töreni DURDURUR', () => {
+  const kok = kurulum({ donem: null });
+  for (const kotu of ['kapat; ls', '*', `${KUTU_ADI} && whoami`, '$(id)', '`id`',
+                      'a|b', 'a>b', `${KUTU_ADI}\nyapim`, 'a$HOME']) {
+    const r = kos(kok, 'donem-ac.sh', ['--sahip-satiri', kotu]);
+    assert.equal(r.status, 1, `izinsiz karakter töreni durdurmadı: ${JSON.stringify(kotu)}`);
+    assert.match(r.stderr, /izinsiz karakter/, JSON.stringify(kotu));
+  }
+  assert.ok(!existsSync(GOSTERGE(kok)), 'reddedilen satır dönem AÇMAMALI (fail-closed)');
+});
+
+test('U15: /donem becerisi argümanı tek tırnakla TEK parça geçirir', () => {
+  // Çapa beceri dosyasının kendisinde: betik ne kadar sıkı olursa olsun, çağıran satır
+  // tırnaksızsa delik açık kalır. Bu assert onu ölçen tek yerdir.
+  const satir = readFileSync(join(KOK_REPO, '.claude', 'skills', 'donem', 'SKILL.md'), 'utf8')
+    .split('\n').find((l) => l.includes('donem-ac.sh'));
+  assert.ok(satir, '/donem becerisinde tören satırı yok');
+  assert.match(satir, /--sahip-satiri '\$ARGUMENTS'/,
+    'argüman tek tırnaklı tek parça geçmiyor — kabuk bölmesine ve komut zincirine açık (U15)');
+  assert.ok(!/donem-ac\.sh"?\s+\$ARGUMENTS/.test(satir), 'çıplak $ARGUMENTS kalmış');
+});
+
 test('F1-5e: gösterge DÖRT alan (kip yok); eski beş alanlı gösterge geri-uyumla okunur', () => {
   const kok = kurulum({ donem: null });
   const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);

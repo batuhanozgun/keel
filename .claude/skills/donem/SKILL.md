@@ -4,7 +4,7 @@ description: Otonom dönem açılış töreni (E4 · K3 tetiği). Yalnız insan 
 disable-model-invocation: true
 ---
 
-!`bash "${CLAUDE_PROJECT_DIR:-.}/tools/sevk/donem-ac.sh" $ARGUMENTS`
+!`bash "${CLAUDE_PROJECT_DIR:-.}/tools/sevk/donem-ac.sh" --sahip-satiri '$ARGUMENTS'`
 
 # Dönem töreni — otonom kip
 

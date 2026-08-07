@@ -38,6 +38,33 @@ CAPA="$DIZIN/.donem-capa"
 # shellcheck source=/dev/null
 . "$DIZIN/ortak.sh"
 
+# ── 0 · SAHİP SATIRI (U15) ────────────────────────────────────────────────────────────────
+# Töreni açan tek meşru yol /donem becerisidir ve o beceri `$ARGUMENTS`'ı METİN OLARAK yerine
+# koyar; satırı bundan sonra bash ayrıştırır. Argüman TIRNAKSIZ geçtiği sürece sahibin yazdığı
+# her şey kelime bölmesine, glob genişlemesine ve `;` ile komut zincirine açıktı. Aşağıdaki
+# kutu/tür/sınıf beyaz listeleri bu deliği KAPATMAZ: onlar ancak betik koşarsa korur, oysa
+# zincir betiğe hiç gelmeden başka bir komut çalıştırabilirdi.
+#
+# Beceri artık satırı tek tırnak içinde TEK argüman olarak veriyor (--sahip-satiri) ve bölme
+# işi buraya, test edilebilir yere alındı. Doğrudan çağrı biçimi (donem-ac.sh <kutu> <tür>
+# <sınıf>) DEĞİŞMEDİ — testler ve iç çağrılar onu kullanmaya devam eder.
+#
+# GLOB KORUMASI BEYAZ LİSTEDEDİR, ayrı bir `set -f` YOKTUR ve bu bilinçlidir: izinli küme
+# `*` `?` `[` taşımadığı için glob karakteri bölmeye hiç ulaşamaz. Konsaydı hiçbir kipte iş
+# yapmazdı — ölçülemeyen bir güvence, sonraki okura "koruma var" diye görünen süstür.
+# İzinli küme kutu adının kendi kuralıyla (aşağıda: A-Z a-z 0-9 . _ -) bilerek aynı; tür ve
+# sınıf zaten kapalı sözlüklerden seçiliyor.
+if [ "${1:-}" = "--sahip-satiri" ]; then
+  HAM="${2:-}"
+  case "$HAM" in
+    *[!A-Za-z0-9\ ._-]*)
+      hata "argümanda izinsiz karakter var (izinli: A-Z a-z 0-9 boşluk . _ -). Kullanım: /donem [kutu] [yapim|kurulum|kapanis] [gercek|tatbikat] · kapatmak için /donem kapat" ;;
+  esac
+  # Tırnaksız: BURADA kelime bölmesi İSTENEN davranış — üç argüman böyle ayrılır ve içerik
+  # bir satır yukarıda kapalı kümeye indirgenmiştir.
+  set -- $HAM
+fi
+
 # ── kapat ─────────────────────────────────────────────────────────────────────────────────
 if [ "${1:-}" = "kapat" ]; then
   if [ ! -e "$GOSTERGE" ]; then printf 'DÖNEM YOK: kapatılacak açık dönem bulunmadı.\n'; exit 0; fi
