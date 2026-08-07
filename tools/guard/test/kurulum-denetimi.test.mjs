@@ -77,7 +77,28 @@ function tarifKur(kok, { adimlar = true, kontrat = true, indeks = true, gdurum =
   }
 }
 
-function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', liste = true, skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, kanon = true, kabukSahip = 'koordinator', capa = '0123456789abcdef0123456789abcdef01234567\n',
+// SAHTE BEKÇİ ÜRETİCİSİ (U5/U6 kapıları, K16 · 2026-08-07). Eskiden `exit 0` yazan tek satırlık
+// bir kabuktu: kategorileri İLAN ediyor, hiçbirini ÜRETMİYOR ve bozuk ağaçta bile 0 dönüyordu —
+// yani fixture'ın kendisi, U5/U6'nın tarif ettiği "ilan var, davranış yok" kusurunun canlı
+// örneğiydi ve kapılar doğduğu an onu yakaladı. Artık üretici çekirdeğin SÖZLEŞMESİNİ taklit
+// ediyor: bozuk ağaçta DURDURAN + makine satırı + çıkış 1; sağlam ağaçta ilan ettiği her
+// kategoriyi basıp 0. Fixture kapının deseninden değil, sözleşmeden besleniyor.
+const bekciSahte = (kategoriler) => [
+  '#!/bin/bash',
+  '# kategoriler: ' + kategoriler,
+  'K="${CLAUDE_PROJECT_DIR:-.}"',
+  'if [ ! -f "$K/02_kanon/EL_KITABI.md" ]; then',
+  "  printf 'DURDURAN [şema] kok-zorunlu: bozuk ağaç\\n'",
+  "  printf 'BEKCI v1 durduran=1 kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'",
+  '  exit 1',
+  'fi',
+  ...kategoriler.split(' ').filter(Boolean).map((k) => `printf 'BİLGİ [${k}] kapsam: tarandı\\n'`),
+  "printf 'BEKCI v1 durduran=0 kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'",
+  'exit 0',
+].join('\n') + '\n';
+const BEKCI_SAHTE = bekciSahte('tavan şema koruma-hattı bağ-varlık tazelik');
+
+function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = BEKCI_SAHTE, liste = true, skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, kanon = true, kabukSahip = 'koordinator', capa = '0123456789abcdef0123456789abcdef01234567\n',
                   korunanYollar = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null, tarif = {}, altAjan = true, kadroAjan = true, otonom = true,
                   kabuk = null } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
@@ -367,12 +388,50 @@ test('6b: hiç alt-ajan dosyası yoksa → KIRMIZI (yokluk körlüğü yok)', ()
 });
 
 test('TAM kadranda bekçi ilanında kategori eksikse → KIRMIZI; KÜÇÜK kadranda aynı bekçi YEŞİL', () => {
-  const darBekci = '#!/bin/bash\n# kategoriler: tavan şema\nexit 0\n';
+  const darBekci = bekciSahte('tavan şema');
   const tam = kos(kurulum({ bekci: darBekci }));
   assert.equal(tam.status, 2);
   assert.match(tam.stdout, /zorunlu kategori eksik: koruma-hattı/);
   const kucuk = kos(kurulum({ bekci: darBekci, ek: EK_TAM.replace('**TAM RİTÜEL**', '**KÜÇÜK** (tek kişilik)') }));
   assert.equal(kucuk.status, 0, kucuk.stdout);
+});
+
+test('U6: bekçi bozuk ağaçta 0 dönüyorsa → KIRMIZI (fail-closed beyan düzeyinde kalamaz)', () => {
+  // Doğuş: kapı yalnız varlık ve `bash -n` ölçüyordu; bekçinin FİİLEN kırmızı basabildiği hiç
+  // koşturulmuyordu. Sözdizimi geçerli ama hiçbir şey yapmayan bir bekçi kapıdan geçerdi.
+  const uyuyan = ["#!/bin/bash", "# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik",
+    "printf 'BİLGİ [tavan] x\\n'", "printf 'BİLGİ [şema] x\\n'", "printf 'BİLGİ [koruma-hattı] x\\n'",
+    "printf 'BİLGİ [bağ-varlık] x\\n'", "printf 'BİLGİ [tazelik] x\\n'",
+    "printf 'BEKCI v1 durduran=0 kilit=0 uyari=0 bilgi=5 ariza=0 kadran=tam pencere=isletim\\n'",
+    "exit 0"].join('\n') + '\n';
+  const r = kos(kurulum({ bekci: uyuyan }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /BOZUK bir ağaçta bile 0 döndü/);
+});
+
+test('U6: bekçi kırmızı verir ama MAKİNE SATIRI basmazsa → KIRMIZI (tüketici onu okuyamaz)', () => {
+  const satirsiz = ["#!/bin/bash", "# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik",
+    "printf 'BİLGİ [tavan] x\\n'", "printf 'BİLGİ [şema] x\\n'", "printf 'BİLGİ [koruma-hattı] x\\n'",
+    "printf 'BİLGİ [bağ-varlık] x\\n'", "printf 'BİLGİ [tazelik] x\\n'",
+    "exit 1"].join('\n') + '\n';
+  const r = kos(kurulum({ bekci: satirsiz }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /MAKİNE SATIRI basmadı/);
+});
+
+test('U5: ilan edilen kategorinin KODDA karşılığı yoksa → KIRMIZI (ilan tartılır)', () => {
+  // Beş kategori ilan edip hiçbirini üretmeyen bekçi, U5'in tam olarak tarif ettiği kusurdur.
+  // Fail-closed davranışı DOĞRU olsa bile ilan karşılıksızsa kapı geçirmez.
+  const ilanci = ["#!/bin/bash", "# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik",
+    'K="${CLAUDE_PROJECT_DIR:-.}"',
+    'if [ ! -f "$K/02_kanon/EL_KITABI.md" ]; then',
+    "  printf 'BEKCI v1 durduran=1 kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'",
+    "  exit 1", "fi",
+    "printf 'BEKCI v1 durduran=0 kilit=0 uyari=0 bilgi=0 ariza=0 kadran=tam pencere=isletim\\n'",
+    "exit 0"].join('\n') + '\n';
+  const r = kos(kurulum({ bekci: ilanci }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /kategorisinin KODDA karşılığı yok/);
 });
 
 test('bekçide ilan satırı hiç yok → KIRMIZI', () => {
@@ -427,7 +486,7 @@ test('_arsiv içindeki «alan» muaf: arşivlenmiş taslak çekilmeyi kilitlemez
 });
 
 test('kadran çapalı okunur: KÜÇÜK gerekçesinde "TAM RİTÜEL gerekmiyor" geçse de kucuk okunur', () => {
-  const darBekci = '#!/bin/bash\n# kategoriler: tavan şema\nexit 0\n';
+  const darBekci = bekciSahte('tavan şema');
   const ek = EK_TAM.replace('**TAM RİTÜEL**', '**KÜÇÜK** (tek kişilik; TAM RİTÜEL gerekmiyor)');
   const r = kos(kurulum({ ek, bekci: darBekci }));
   assert.equal(r.status, 0, r.stdout);

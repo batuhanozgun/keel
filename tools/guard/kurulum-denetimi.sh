@@ -412,6 +412,43 @@ else
       if printf '%s' "$KAT_SATIR" | grep -qF "$k"; then :; else kirmizi "bekçi ilanında zorunlu kategori eksik: $k (kadran: $KADRAN)"; fi
     done
     gecti "bekçi kategori ilanı denetlendi ($KADRAN)"
+    # U5 (K16, 2026-08-07): İLANIN KOD KARŞILIĞI TARTILIYOR. Buraya kadar yalnız `# kategoriler:`
+    # satırı greplenıyordu — beş kategori ilan edip hiçbirini üretmeyen bir bekçi kapıdan geçerdi
+    # ve betiğin kendi yorumu bu sınırı beyan ediyordu. Artık her ilan edilen kategorinin bekçi
+    # ailesinin İÇİNDE, İLAN SATIRI DIŞINDA bir karşılığı olmak zorunda. Ölçü dar ve bilinçli:
+    # "kod bu kategoriyi üretebiliyor mu" — ne yaptığı değil, var olup olmadığı.
+    for k in $GEREKLI; do
+      if grep -rl --include='*.mjs' --include='*.sh' -e "$k" "$KOK/tools/bekci" 2>/dev/null \
+         | while IFS= read -r f; do grep -v '^# kategoriler:' "$f" | grep -qF "$k" && echo VAR; done | grep -q VAR; then :
+      else kirmizi "bekçi ilanındaki '$k' kategorisinin KODDA karşılığı yok — ilan tartılmadan geçemez (U5)"; fi
+    done
+  fi
+
+  # 5b · U6 (K16, 2026-08-07): BEKÇİ FİİLEN KOŞUYOR VE FAIL-CLOSED MU.
+  # Buraya kadar yalnız varlık ve `bash -n` ölçülüyordu; bekçinin FİİLEN kırmızı basabildiği
+  # hiç koşturulmuyordu, yani fail-closed öz-testi beyan düzeyinde kalıyordu. Sözdizimi geçerli
+  # ama hiçbir şey yapmayan (ya da node'u bulamayan) bir bekçi bu kapıdan geçerdi.
+  # PROB AĞACI: geçici, BOŞ bir kök + `.kurulum-tamam` (işletim penceresi; kurulum penceresinde
+  # çekirdek her bulguyu BİLGİ'ye düşürür ve kırmızı hiç doğmaz). Bozuk ağaçta bekçi ya
+  # DURDURAN ya ARIZA vermek ZORUNDA. Ölçüldü: gerçek çekirdek burada çıkış 2 + makine satırı
+  # veriyor ve prob ağacına HİÇBİR dosya yazmıyor — denetim yan etkisiz.
+  PROB="$(mktemp -d 2>/dev/null || true)"
+  if [ -z "$PROB" ] || [ ! -d "$PROB" ]; then
+    kirmizi "bekçi öz-testi için geçici kök açılamadı — fail-closed davranışı ÖLÇÜLEMEDİ"
+  else
+    : > "$PROB/.kurulum-tamam"
+    PROB_CIKTI=""; PROB_KOD=0
+    PROB_CIKTI="$(CLAUDE_PROJECT_DIR="$PROB" bash "$BEKCI" 2>&1)" || PROB_KOD=$?
+    rm -rf "$PROB"
+    if [ "$PROB_KOD" -eq 0 ]; then
+      kirmizi "bekçi BOZUK bir ağaçta bile 0 döndü — fail-closed değil, sessiz yeşil basıyor (U6)"
+    elif printf '%s' "$PROB_CIKTI" | grep -q 'node bulunamadı'; then
+      kirmizi "bekçi hiç koşamıyor: node bulunamadı — denetim beyan düzeyinde kalır (U6)"
+    elif printf '%s\n' "$PROB_CIKTI" | tail -n1 | grep -qE '^BEKCI v1 durduran=[0-9]+ '; then
+      gecti "bekçi fiilen koştu ve bozuk ağaçta fail-closed davrandı (çıkış $PROB_KOD)"
+    else
+      kirmizi "bekçi kırmızı verdi ama MAKİNE SATIRI basmadı — tüketiciler onu okuyamaz (U6)"
+    fi
   fi
 fi
 
