@@ -1,13 +1,16 @@
-// Kategori `şema` (21 tablo satırı): kök kümeleri · GENESIS artığı · pano/kutu/rol şeması ·
-// sahip kuyruğu · kapanış bloğu · porcelain · zarf günlüğü · duruş/risk · dış göz brifingi ·
-// kanal · watchdog · ölçüt-diff · kapanış-dışı EL_KITABI · EL_KITABI bütünlüğü · arşiv gözleri ·
-// boş-backlog · kadran tanıkları.
+// Kategori `şema` (22 tablo satırı): kök kümeleri · GENESIS artığı · pano/kutu/rol şeması ·
+// kadro bütünlüğü · sahip kuyruğu · kapanış bloğu · porcelain · zarf günlüğü · duruş/risk ·
+// dış göz brifingi · kanal · watchdog · ölçüt-diff · kapanış-dışı EL_KITABI · EL_KITABI
+// bütünlüğü · arşiv gözleri · boş-backlog · kadran tanıkları.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, readFileSync, appendFileSync, rmSync, mkdirSync, chmodSync, mkdtempSync } from 'node:fs';
+import { writeFileSync, readFileSync, appendFileSync, rmSync, mkdirSync, chmodSync, mkdtempSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { kurulum, kos, temizle, commitEt, EK_TAM, KUTU_METNI } from './yardimci.mjs';
+
+const KOK_REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 test('kök zorunlu küme: eksik dizin → DURDURAN (whitelist eksiği görmezdi — §5③)', () => {
   const kok = kurulum();
@@ -169,6 +172,75 @@ test('rol evi: ROL.md/DURUM.md eksik ya da biçimsiz → UYARI', () => {
   assert.ok(/UYARI \[şema\] rol-evi: koordinator\/ROL\.md \(sözleşme\) yok/.test(r.stdout), r.stdout);
   assert.ok(/UYARI \[şema\] rol-evi: disgoz\/DURUM\.md ilk başlık/.test(r.stdout), r.stdout);
   temizle(kok);
+});
+
+// ── kadro bütünlüğü (U16) ────────────────────────────────────────────────────────────────
+// Ölçülen VAAT: kadrodaki her rolün alt-ajan koltuğu ve töreni vardır, sözleşmesiz koltuk
+// yoktur. Kural yeni değil — kurulum kapısı onu zaten ölçüyor; YENİ olan, kurulumdan SONRA
+// da ölçülmesi. Kurulum kapısı hiçbir kancada değildir ve kendi başına koşmaz (G4.5).
+
+test('kadro bütünlüğü: rolün alt-ajan koltuğu yoksa UYARI (sevk o görevi sevk edemez)', () => {
+  const kok = kurulum();
+  rmSync(join(kok, '.claude', 'agents', 'koordinator.md'));
+  const r = kos(kok);
+  assert.ok(/UYARI \[şema\] kadro-butunlugu: kadro rolünün alt-ajan koltuğu yok: \.claude\/agents\/koordinator\.md/.test(r.stdout), r.stdout);
+  temizle(kok);
+});
+
+test('kadro bütünlüğü: rolün töreni yoksa UYARI (sahip o rolün oturumunu açamaz)', () => {
+  const kok = kurulum();
+  rmSync(join(kok, '.claude', 'skills', 'rol-disgoz'), { recursive: true });
+  const r = kos(kok);
+  assert.ok(/UYARI \[şema\] kadro-butunlugu: rol töreni yok: \.claude\/skills\/rol-disgoz\/SKILL\.md/.test(r.stdout), r.stdout);
+  temizle(kok);
+});
+
+test('kadro bütünlüğü: SÖZLEŞMESİZ koltuk UYARI — en sessiz hâl, sevk ona görev sevk eder', () => {
+  const kok = kurulum();
+  writeFileSync(join(kok, '.claude', 'agents', 'hayaletrol.md'), '---\nname: hayaletrol\ntools: Read\n---\n');
+  const r = kos(kok);
+  assert.ok(/UYARI \[şema\] kadro-butunlugu: sözleşmesiz alt-ajan koltuğu: \.claude\/agents\/hayaletrol\.md/.test(r.stdout), r.stdout);
+  temizle(kok);
+});
+
+test('kadro bütünlüğü: yarım rol ÜÇ bulgu birden verir (kurulumdan sonra eklenen rol)', () => {
+  // U16'nın doğuş vakası: ajan kadroya rol ekler, üç dosyanın üçünü de kurmayı unutur.
+  const kok = kurulum();
+  mkdirSync(join(kok, '03_roller', 'yenirol'), { recursive: true });
+  writeFileSync(join(kok, '03_roller', 'yenirol', 'ROL.md'), '# ROL — Yeni\nMod: **tam**\n');
+  writeFileSync(join(kok, '03_roller', 'yenirol', 'DURUM.md'), '# DURUM — Yeni\nHenüz oturum açılmadı\n');
+  const r = kos(kok);
+  assert.ok(/kadro-butunlugu: kadro rolünün alt-ajan koltuğu yok: \.claude\/agents\/yenirol\.md/.test(r.stdout), r.stdout);
+  assert.ok(/kadro-butunlugu: rol töreni yok: \.claude\/skills\/rol-yenirol\/SKILL\.md/.test(r.stdout), r.stdout);
+  temizle(kok);
+});
+
+test('kadro bütünlüğü: TEMİZ kurulumda susar — rezerve koltuklar rol evi ARAMAZ (yanlış-pozitif freni)', () => {
+  // Fren olmadan kapı ilk gün kırmızı basar ve ilk düzeltme "kapıyı sustur" olur.
+  const kok = kurulum();
+  const r = kos(kok);
+  assert.ok(!/kadro-butunlugu/.test(r.stdout), 'temiz kurulumda konuşmamalı: ' + r.stdout);
+  // Frenin gerçekten iş yaptığının çapası: rezerve üçlünün 03_roller karşılığı fixture'da YOK.
+  // Ters yön onları muaf tutmasaydı bu kurulum üç sözleşmesiz-koltuk bulgusu verirdi.
+  for (const s of ['dogrulayici', 'catal-denetcisi', 'kurulum-denetcisi']) {
+    assert.ok(!existsSync(join(kok, '03_roller', s)), s + ' rol evi fixture\'da olmamalı (muafiyetin ön koşulu)');
+  }
+  temizle(kok);
+});
+
+test('kadro bütünlüğü: rezerve koltuk listesi ÜÇ EVDE de aynı (drift mekanik kapalı)', () => {
+  // Aynı olguyu üç dosyada yazmak drift kapısıdır; kapıyı test tutuyor. Biri değişirse
+  // ötekiler kırmızıya döner ve değiştiren üçünü birden görmek zorunda kalır.
+  const oku = (rel) => readFileSync(join(KOK_REPO, rel), 'utf8');
+  const cekirdek = oku('tools/bekci/cekirdek.mjs')
+    .match(/const SABIT_KOLTUKLAR = \[([^\]]*)\]/)[1].match(/'([a-z-]+)'/g).map((s) => s.slice(1, -1));
+  const guard = oku('tools/guard/file-guard.sh')
+    .match(/const SABIT_KOLTUKLAR = \[([^\]]*)\]/)[1].match(/"([a-z-]+)"/g).map((s) => s.slice(1, -1));
+  const kapi = oku('tools/guard/kurulum-denetimi.sh')
+    .match(/^SABIT_KOLTUK_ADLARI="([^"]*)"/m)[1].trim().split(/\s+/);
+  assert.deepEqual(cekirdek, guard, 'bekçi ile file-guard rezerve listesi ayrıştı');
+  assert.deepEqual(cekirdek, kapi, 'bekçi ile kurulum kapısı rezerve listesi ayrıştı');
+  assert.deepEqual(cekirdek, ['dogrulayici', 'catal-denetcisi', 'kurulum-denetcisi']);
 });
 
 test('kadran tanıkları: ayar ile EL_KITABI ayrışırsa DURDURAN (tek tanık, tanık değildir)', () => {

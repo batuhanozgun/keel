@@ -310,6 +310,42 @@ if (conf) {
     }
   });
 
+  // KADRO BÜTÜNLÜĞÜ (U16, 2026-08-07) — kurulum kapısının ölçtüğü kural, İŞLETİM kipinde de.
+  // NEDEN BU GÖZ VAR: `tools/guard/kurulum-denetimi.sh` bu üç şartı zaten ölçüyor (rol başına
+  // alt-ajan koltuğu · rol başına tören · fazla koltuk yasağı) — AMA G4.5'in kendi cümlesiyle
+  // "kapı hiçbir kancada değildir, kendi başına koşmaz": kural yalnız KURULUM penceresinde,
+  // bir kez ölçülüyordu. Kurulumdan SONRA kadroya rol eklemenin ölçülen hiçbir yolu yoktu;
+  // yarım kalan rolü gören göz yoktu. "Her güvence için sor: hangi kipte hiç koşmuyor?" —
+  // cevabı buydu. İki kapı artık eş (K3 emsali: kapı her kutuda, satır tek kutudaydı).
+  // EN SESSİZİ ÜÇÜNCÜSÜ: sözleşmesiz bir koltuk dosyası duruyorsa sevk `ajanVar()` ile onu VAR
+  // sayıp o role görev sevk eder — denetlenemeyen koltuk iş yapar.
+  // CİDDİYET BEYANLI: kardeşi `rol-evi` gibi UYARI. Kurulum kapısında KIRMIZI olması ÇEKİLMEYİ
+  // kilitlemek içindir; işletimde dönemi durdurmak orantısız olur (durduran sınıfı sayılıdır —
+  // OTONOM_DONEM §1). Sertleştirme ayrı bir karardır; ölçülmemişlik ise arızaydı ve kapandı.
+  goz('şema', 'kadro-butunlugu', () => {
+    const roller = (dizin(join(KOK, '03_roller')) || [])
+      .filter((ad) => ad !== '.DS_Store' && dizinMi(join(KOK, '03_roller', ad)));
+    for (const ad of roller) {
+      if (!dosyaMi(join(KOK, '.claude', 'agents', ad + '.md'))) {
+        bulgu(dusur('UYARI'), 'şema', 'kadro-butunlugu', 'kadro rolünün alt-ajan koltuğu yok: .claude/agents/' + ad + '.md — sevk bu rolün görevini sevk edemez');
+      }
+      if (!dosyaMi(join(KOK, '.claude', 'skills', 'rol-' + ad, 'SKILL.md'))) {
+        bulgu(dusur('UYARI'), 'şema', 'kadro-butunlugu', 'rol töreni yok: .claude/skills/rol-' + ad + '/SKILL.md — sahip bu rolün oturumunu açamaz');
+      }
+    }
+    // Ters yön. Şablonun üç SABİT koltuğu kadro slug'ı DEĞİLDİR (G3b: rezerve adlar) ve rol evi
+    // aramaz. Liste burada da yazılı; ÜÇ EVİN eşliğini ayrı bir test ölçer (drift mekanik kapalı).
+    const SABIT_KOLTUKLAR = ['dogrulayici', 'catal-denetcisi', 'kurulum-denetcisi'];
+    for (const dosya of dizin(join(KOK, '.claude', 'agents')) || []) {
+      if (!dosya.endsWith('.md')) continue;
+      const ad = dosya.slice(0, -3);
+      if (SABIT_KOLTUKLAR.includes(ad)) continue;
+      if (!dizinMi(join(KOK, '03_roller', ad))) {
+        bulgu(dusur('UYARI'), 'şema', 'kadro-butunlugu', 'sözleşmesiz alt-ajan koltuğu: .claude/agents/' + dosya + ' (03_roller/' + ad + '/ yok) — sevk dosya varlığına bakıp bu koltuğa görev sevk eder');
+      }
+    }
+  });
+
   goz('şema', 'sahip-kuyrugu', () => {
     // Kuyruk şeması (BEKCI_TARIFI md.18/2): ilk başlık '# SENDE BEKLEYEN', her '- [' satırı
     // '- [ ]'/'- [x]' + YYYY-AA-GG + ' · ' taşır.

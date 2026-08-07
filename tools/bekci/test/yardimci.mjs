@@ -158,6 +158,16 @@ export function kurulum(opts = {}) {
   yaz('02_kanon/kilitli/K-001-ornek.md', '# K-001 — örnek kilitli karar\nhüküm satırı\n');
   yaz('02_kanon/golden/README.md', 'Donmuş örnek-çıktılar (golden) burada yaşar.\n');
 
+  // KADRO KOLTUKLARI VE TÖRENLERİ (U16, 2026-08-07): fixture bunları TAŞIMIYORDU ve bu, U16'nın
+  // kendi kanıtıydı — kadro↔koltuk↔tören karşılığı kurulum penceresinden sonra hiçbir yerde
+  // ölçülmediği için "kurulu kutu gerçeğini yansıtan" fixture bile onları unutmuştu.
+  for (const ad of ['koordinator', 'disgoz', 'dogrulayici', 'catal-denetcisi', 'kurulum-denetcisi']) {
+    yaz('.claude/agents/' + ad + '.md', '---\nname: ' + ad + '\ntools: Read, Grep, Glob\n---\n# fixture koltuğu\n');
+  }
+  for (const ad of ['koordinator', 'disgoz']) {
+    yaz('.claude/skills/rol-' + ad + '/SKILL.md', '---\nname: rol-' + ad + '\ndisable-model-invocation: true\n---\n# fixture töreni\n');
+  }
+
   yaz('03_roller/koordinator/ROL.md', '# ROL — Koordinatör\nMod: **tam**\n');
   yaz('03_roller/koordinator/DURUM.md', '# DURUM — Koordinatör\nHenüz oturum açılmadı\n');
   yaz('03_roller/disgoz/ROL.md', '# ROL — Dış göz\nMod: **yazamaz**\n');

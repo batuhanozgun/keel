@@ -162,6 +162,7 @@ beşincidir; `TAM` yazan göz KÜÇÜK kadranda hiç koşmaz.
 | `00_pano` izinli küme dışı dosya | UYARI | BİLGİ | her |
 | kutu dizini `KT-` öneksiz | UYARI | BİLGİ | her |
 | rol evinde `ROL.md`/`DURUM.md` eksik ya da biçimsiz | UYARI | BİLGİ | her |
+| kadro bütünlüğü: rolün alt-ajan koltuğu / töreni yok · sözleşmesiz koltuk | UYARI | BİLGİ | her |
 | sahip kuyruğu: PANO sayacı yazımı | (yazar, bulgu üretmez) | yazar | her |
 | sahip kuyruğu: kuyruk şeması bozuk | UYARI | BİLGİ | her |
 | sahip kuyruğu: kapanış bloğu yok/biçimsiz | UYARI | denetlenmez | her |
