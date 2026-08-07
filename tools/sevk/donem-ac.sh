@@ -104,6 +104,32 @@ fi
 # orada arıyordu; kanca ise dosyanın TAMAMINDA arıyordu, yani blok dışına konan bir İZİN satırı
 # iki denetimden de görünmeden kancayı eziyordu (aynı bulgunun ikinci yüzü).
 KUTU_MD="$KOK/01_kutular/$KUTU/KUTU.md"
+
+# ── 2b · AÇILIŞ MÜHRÜ: mühürsüz kutuya dönem açılmaz (K3 / U9, 2026-08-07) ────────────────
+# DOĞUŞ — ölçülmüş kusur: EL_KITABI "mühürsüz eşik = süreç ihlali → KIRMIZI rapor" der ve G5
+# töreni "KUTU.md'deki **Açılış mührü:** satırına ad + tarih damgala" diye tarif eder. İkisi de
+# YALNIZ DÜZYAZIYDI: `git grep -l "Açılış mührü" -- tools/` → 0 satır, yani mührü okuyan tek bir
+# betik yoktu. Dahası damgalanacak satır HİÇBİR KALIPTA YOKTU — tören var olmayan bir satıra
+# damga bastırıyordu. Sonuç: sahibin mührü olmadan dönem açılıyordu ve bunu gören göz yoktu.
+#
+# NEDEN BURADA: bu betik dönemin TEK açılış kapısıdır ve fail-closed'dır. Mühür bir ÖN KOŞULDUR,
+# İZİN/BÜTÇE ayrıştırmasından ÖNCE sorulur: mühürsüz bir kutunun izin satırının doğru olması
+# hiçbir şey ifade etmez. "Ölçemedim" ile "mühürlü" AYNI ŞEY DEĞİLDİR — satır yoksa da KIRMIZI.
+MUHUR="$(sed -n 's/^\*\*Açılış mührü:\*\*[[:space:]]*//p' "$KUTU_MD" 2>/dev/null | head -n1 | sed 's/[[:space:]]*$//')"
+if [ -z "$MUHUR" ]; then
+  hata "kutuda «**Açılış mührü:**» satırı yok (01_kutular/$KUTU/KUTU.md) — mühür ölçülemeden dönem açılmaz (fail-closed). Kutunun başına «**Açılış mührü:** bekliyor» satırını ekle ve sahibe mührü sor."
+fi
+case "$MUHUR" in
+  bekliyor|bekliyor\ *|*«*)
+    hata "kutu MÜHÜRSÜZ (açılış mührü: $MUHUR) — mührü GENESIS değil SAHİP verir; mühür gelmeden ekip başlamaz. Mühür gelince satırı «ad · YYYY-AA-GG» yap." ;;
+esac
+# Damga biçimi ad + tarihtir. Tarihsiz damga "ne zaman mühürlendi" sorusunu cevaplamaz; biçimsiz
+# damga sessizce geçerse kapı fiilen "satır dolu mu"ya iner ve mührü ölçmez.
+case "$MUHUR" in
+  *[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*) : ;;
+  *) hata "açılış mühründe YYYY-AA-GG tarihi yok (okunan: $MUHUR) — mühür ad ve tarihle damgalanır (ör. «Batu · 2026-08-07»)" ;;
+esac
+
 DURUS="$(awk '/^##[[:space:]]/{ic=0} /^##[[:space:]]*Duruş sözleşmesi/{ic=1;next} ic' "$KUTU_MD" 2>/dev/null || true)"
 [ -n "$DURUS" ] || hata "kutunun duruş sözleşmesi bloğu yok ya da boş (## Duruş sözleşmesi · 01_kutular/$KUTU/KUTU.md) — izin ve bütçe okunamadan dönem açılmaz (fail-closed)"
 

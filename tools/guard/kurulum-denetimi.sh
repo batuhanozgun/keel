@@ -742,6 +742,18 @@ else
       kirmizi "ilk kutu kabuğunda duruş sözleşmesi satırı eksik/boş (blok İÇİNDE aranır): $S"
     fi
   done
+  # (v-a) AÇILIŞ MÜHRÜ SATIRI (K3 / U9, 2026-08-07). Kabuğun sahibe bakan yüzeyi bu satırdır ve
+  #       artık MAKİNE-OKURDUR: `donem-ac.sh` onu okur ve mühürsüz kutuya dönem AÇMAZ. Kapı burada
+  #       satırın VAR OLDUĞUNU ölçer, DEĞERİNİ değil — mührü GENESIS vermez, sahip verir; kurulum
+  #       bittiğinde satırın `bekliyor` olması MEŞRUDUR (G5: mühür gelmezse ısrar edilmez, kalem
+  #       sahibin kuyruğuna düşer). Satır YOKSA kusur kurulumdadır: kutu ilerde dönem açamaz ve
+  #       sebebi kurulumda aranmaz. Doğuş: bu satır 2026-08-07'ye kadar hiçbir kalıpta yoktu,
+  #       yani G5 var olmayan bir satıra damga bastırıyordu ve mührü okuyan betik de yoktu.
+  if grep -qE '^\*\*Açılış mührü:\*\*[[:space:]]*[^[:space:]]' "$KABUK"; then
+    gecti "ilk kutu kabuğu: açılış mührü satırı yerinde (değeri sahibin işi)"
+  else
+    kirmizi "ilk kutu kabuğunda «**Açılış mührü:**» satırı yok/boş — mühür mekaniği evsiz kalır ve donem-ac.sh bu kutuya dönem açamaz (00_genesis/ILK_KUTU_KALIBI.md)"
+  fi
   # (vi) LİSTE'nin DEĞERİ. Bu satır İKİ freni birden taşıyor (şişme çapasının ertelenmesi +
   #      görev tavanının kadroya bağlanması) ve sevk yalnız TEK dizeyi tanır. Kapı "dolu mu"
   #      diye bakarsa, değer değiştiğinde kabuk sessizce sıradan kutuya döner ve plan doğar

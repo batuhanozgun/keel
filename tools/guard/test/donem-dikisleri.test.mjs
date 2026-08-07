@@ -45,9 +45,14 @@ function kararAlaniMetni() {
 }
 
 function kutuMetni({ gorevler = [{ id: 'G-01', is: 'iş', sahip: 'uretici', durum: 'kapalı', kanit: '00_pano/PANO.md' }],
-                     butce = '3', izin = 'yok' } = {}) {
-  const l = ['# ' + KUTU_ADI + ' — dikiş kutusu', '', '## Görevler',
-             '| Görev | İş | Sahip | Durum | Kanıt |', '|---|---|---|---|---|'];
+                     butce = '3', izin = 'yok', muhur = 'Deneme Sahip · 2026-08-01' } = {}) {
+  // AÇILIŞ MÜHRÜ (K3, 2026-08-07): dönemin ön koşulu. Fixture MÜHÜRLÜ doğar — aksi hâlde
+  // taban zaten kırmızı olurdu ve mühür bozmalarının ölçüsü kalmazdı. `muhur: null` satırı
+  // hiç doğurmaz (satır-yok dalı), boş dize ya da 'bekliyor' mühürsüz kutuyu kurar.
+  const l = ['# ' + KUTU_ADI + ' — dikiş kutusu', ''];
+  if (muhur !== null) l.push('**Açılış mührü:** ' + muhur, '');
+  l.push('## Görevler',
+             '| Görev | İş | Sahip | Durum | Kanıt |', '|---|---|---|---|---|');
   for (const k of gorevler) l.push(`| ${k.id} | ${k.is} | ${k.sahip} | ${k.durum} | ${k.kanit} |`);
   l.push('', '## Duruş sözleşmesi',
     'BİTİŞ HÂLİ: ekranda iki satır görünür',

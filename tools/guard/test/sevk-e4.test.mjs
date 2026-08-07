@@ -44,8 +44,13 @@ const KUTU_ADI = 'KT-900-e4';
 function kutuMetni({ gorevler = [
   { id: 'G-01', is: 'ilk iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t.mjs' },
   { id: 'G-02', is: 'ikinci iş', sahip: 'uretici', durum: 'açık', kanit: 'test: t.mjs' },
-], onkosul = { 'G-01': 'yok', 'G-02': 'G-01' }, risk = {}, butce = '3', durus = true, riskBloku = true, izin = 'yok' } = {}) {
-  const l = ['# ' + KUTU_ADI + ' — tatbikat kutusu', '', '## Görevler', '| Görev | İş | Sahip | Durum | Kanıt |', '|---|---|---|---|---|'];
+], onkosul = { 'G-01': 'yok', 'G-02': 'G-01' }, risk = {}, butce = '3', durus = true, riskBloku = true, izin = 'yok',
+   muhur = 'Deneme Sahip · 2026-08-01' } = {}) {
+  // AÇILIŞ MÜHRÜ (K3, 2026-08-07): dönemin ön koşulu; fixture mühürlü doğar ki mühür
+  // bozmalarının ölçüsü olsun. `muhur: null` satırı hiç doğurmaz.
+  const l = ['# ' + KUTU_ADI + ' — tatbikat kutusu', ''];
+  if (muhur !== null) l.push('**Açılış mührü:** ' + muhur, '');
+  l.push('## Görevler', '| Görev | İş | Sahip | Durum | Kanıt |', '|---|---|---|---|---|');
   for (const k of gorevler) l.push(`| ${k.id} | ${k.is} | ${k.sahip} | ${k.durum} | ${k.kanit} |`);
   if (durus) {
     l.push('', '## Duruş sözleşmesi',
@@ -166,6 +171,61 @@ test('donem-ac: kapılanma eksikse dönem HİÇ açılmaz (kalkansız motor yok)
     assert.match(r.stderr, /kapılanma eksik/);
     assert.ok(!existsSync(GOSTERGE(kok)), 'gösterge yazılmamalı');
   }
+});
+
+// ── AÇILIŞ MÜHRÜ (K3 / U9, 2026-08-07) ───────────────────────────────────────────────────
+// DOĞUŞ: EL_KITABI "mühürsüz eşik = süreç ihlali" der, G5 töreni "**Açılış mührü:** satırına
+// ad + tarih damgala" der — ama o satır HİÇBİR KALIPTA YOKTU ve mührü okuyan tek bir betik
+// bile yoktu (`git grep -l "Açılış mührü" -- tools/` → 0). Yani sahibin mührü olmadan dönem
+// açılıyordu. Aşağıdaki dört bozma, kapının ölmediğinin kanıtıdır; sonuncusu ters yönü tutar.
+
+test('donem-ac: MÜHÜRSÜZ kutuya dönem AÇILMAZ (mühür bekliyor)', () => {
+  const kok = kurulum({ kutu: kutuMetni({ muhur: 'bekliyor' }) });
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(r.status, 1, 'mühürsüz kutuda tören geçmemeli');
+  assert.match(r.stderr, /kutu MÜHÜRSÜZ/);
+  assert.ok(!existsSync(GOSTERGE(kok)), 'gösterge yazılmamalı');
+});
+
+test('donem-ac: mühür SATIRI YOKSA da açılmaz — ölçemedim ≠ mühürlü (fail-closed)', () => {
+  // En sinsi kip: satırı silmek. Kapı "satır dolu mu" diye sorsaydı, silmek onu susturur ve
+  // mühürsüz kutu sessizce açılırdı — tam da 2026-08-07 öncesinin hâli.
+  const kok = kurulum({ kutu: kutuMetni({ muhur: null }) });
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /Açılış mührü.*satırı yok/);
+  assert.ok(!existsSync(GOSTERGE(kok)));
+});
+
+test('donem-ac: doldurulmamış yer tutucu mühür sayılmaz', () => {
+  const kok = kurulum({ kutu: kutuMetni({ muhur: '«SAHİP» · «TARİH»' }) });
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /kutu MÜHÜRSÜZ/);
+});
+
+test('donem-ac: TARİHSİZ damga mühür sayılmaz (biçim ölçülür, doluluk değil)', () => {
+  // Biçim ölçülmezse kapı fiilen "satır dolu mu"ya iner: 'evet' yazan bir satır mühür olurdu.
+  const kok = kurulum({ kutu: kutuMetni({ muhur: 'Batu onayladi' }) });
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /tarihi yok/);
+  assert.ok(!existsSync(GOSTERGE(kok)));
+});
+
+test('donem-ac: TERS YÖN — mühürlü kutu açılır (aşırı sıkı kapı da kusurdur)', () => {
+  const kok = kurulum({ kutu: kutuMetni({ muhur: 'Batu · 2026-08-07' }) });
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /DÖNEM AÇIK/);
+});
+
+test('donem-ac: mühür ön koşuldur — mühürsüz kutuda İZİN satırı doğru olsa da açılmaz', () => {
+  // Sıra hükmü: mühürsüz bir kutunun izin satırının doğru olması hiçbir şey ifade etmez.
+  const kok = kurulum({ kutu: kutuMetni({ muhur: 'bekliyor', izin: 'kutu-ciktilari' }) });
+  const r = kos(kok, 'donem-ac.sh', [KUTU_ADI, 'yapim', 'tatbikat']);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /kutu MÜHÜRSÜZ/);
 });
 
 test('donem-ac: sahibin karar alanı boşsa dönem açılmaz (D-25 ③ ön koşulu)', () => {

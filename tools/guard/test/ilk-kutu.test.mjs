@@ -380,12 +380,33 @@ const gunluk = (kok) => {
   return existsSync(y) ? readFileSync(y, 'utf8').split('\n').filter(Boolean).map((s) => JSON.parse(s)) : [];
 };
 
-test('DÖNEM AÇILIYOR: kabuk /donem töreninin önünde engel değil', () => {
-  // Sıra 5'in kendi payı: kabuk, tören ve motorun okuduğu her şemayı taşıyor. Sıra 6-7'ye ait
-  // ön koşullar (KARAR_ALANI · OTONOM_DONEM · dış göz koltuğu) burada elle kondu — ölçülen şey
-  // "kabuk dönem açmaya engel değil", "taze kurulumdan dönem açılıyor" DEĞİL (o F3-2'dir).
+test('KABUK MÜHÜRSÜZ DOĞAR: /donem töreni tam da mühürde durur (K3, 2026-08-07)', () => {
+  // SÖZLEŞME DEĞİŞTİ. Eskiden bu test "kabuk tören önünde engel değil" diyordu ve kabuk hiçbir
+  // şeye takılmadan dönem açıyordu — mühür yalnız düzyazıda yaşadığı için. K3 mührü mekanik
+  // yaptı: GENESIS'in ürettiği kabuk MÜHÜRSÜZ doğar (mührü GENESIS vermez, sahip verir), yani
+  // tören onun önünde ARTIK BİLEREK durur. Ölçülen şey: durduran şey MÜHÜR, başka bir yapısal
+  // eksik değil — kabuk tören ve motorun okuduğu her şemayı taşımaya devam ediyor.
   const kok = sevkFixture();
   rmSync(join(kok, 'tools', 'sevk', '.donem-acik'));
+  const r = spawnSync('bash', [join(kok, 'tools', 'sevk', 'donem-ac.sh'), KABUK_AD, 'yapim', 'tatbikat'],
+    { encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: kok } });
+  assert.equal(r.status, 1, `mühürsüz kabukta tören açtı:\n${r.stdout}\n${r.stderr}`);
+  assert.match(r.stderr, /kutu MÜHÜRSÜZ/, `durduran şey mühür değil:\n${r.stderr}`);
+});
+
+test('DÖNEM AÇILIYOR: mühür damgalanınca kabuk töreni geçiriyor (kabuk şemayı taşıyor)', () => {
+  // Testin ASIL niyeti buydu ve korunuyor: sıra 5'in payı, kabuğun tören ve motorun okuduğu her
+  // şemayı taşıması. Sıra 6-7'ye ait ön koşullar (KARAR_ALANI · OTONOM_DONEM · dış göz koltuğu)
+  // burada elle kondu — ölçülen "kabuk şemayı taşıyor", "taze kurulumdan dönem açılıyor" DEĞİL.
+  // Mühür damgası sahibin işidir; burada onun yerine geçiyoruz, tören kabuğu bundan sonra
+  // hiçbir yerde takılmamalı. Bu satır aynı zamanda mühür kapısının aşırı sıkı OLMADIĞININ
+  // kanıtıdır: meşru bir damga geçer.
+  const kok = sevkFixture();
+  rmSync(join(kok, 'tools', 'sevk', '.donem-acik'));
+  const y = join(kok, '01_kutular', KABUK_AD, 'KUTU.md');
+  const muhurlu = readFileSync(y, 'utf8').replace(/^\*\*Açılış mührü:\*\*.*$/m, '**Açılış mührü:** Deneme Sahip · 2026-08-07');
+  assert.match(muhurlu, /\*\*Açılış mührü:\*\* Deneme Sahip/, 'mühür damgası kabuğa inmedi — test kendi arızası');
+  writeFileSync(y, muhurlu);
   const r = spawnSync('bash', [join(kok, 'tools', 'sevk', 'donem-ac.sh'), KABUK_AD, 'yapim', 'tatbikat'],
     { encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: kok } });
   assert.match(r.stdout, /DÖNEM AÇIK/, `tören açmadı:\n${r.stdout}\n${r.stderr}`);

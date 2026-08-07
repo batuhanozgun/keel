@@ -78,7 +78,8 @@ function tarifKur(kok, { adimlar = true, kontrat = true, indeks = true, gdurum =
 }
 
 function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\n# kategoriler: tavan şema koruma-hattı bağ-varlık tazelik\nexit 0\n', liste = true, skillIlk = '---', skillKilit = true, slug = 'denetci', acikAlan = false, rolmd = true, durum = true, pano = true, kutu = true, kanon = true, kabukSahip = 'koordinator', capa = '0123456789abcdef0123456789abcdef01234567\n',
-                  korunanYollar = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null, tarif = {}, altAjan = true, kadroAjan = true, otonom = true } = {}) {
+                  korunanYollar = true, disgoz = {}, ortam = true, gitKaydi = true, uzak = null, tarif = {}, altAjan = true, kadroAjan = true, otonom = true,
+                  kabuk = null } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kurden-test-'));
   // Kurulu bir KEEL projesi her zaman bir git deposudur (G0.1 klasör hazırlığı bunu garanti
   // eder; tarih çapası, koruma-hattı ve geri-alma güvencesi buna dayanır). Fixture bunu
@@ -138,7 +139,8 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = '#!/bin/bash\
   }
   if (kutu) {
     mkdirSync(join(kok, '01_kutular', KABUK_AD), { recursive: true });
-    writeFileSync(join(kok, '01_kutular', KABUK_AD, 'KUTU.md'), kabukMetni(kabukSahip));
+    // `kabuk` verilirse kabuk metni OLDUĞU GİBİ yazılır — mühür satırını silen bozma bunu kullanır.
+    writeFileSync(join(kok, '01_kutular', KABUK_AD, 'KUTU.md'), kabuk ?? kabukMetni(kabukSahip));
     // Kabuğun G-01 sahibinin kadroda karşılığı olmalı (kapı bunu arar).
     mkdirSync(join(kok, '03_roller', kabukSahip), { recursive: true });
     writeFileSync(join(kok, '03_roller', kabukSahip, 'ROL.md'), '# ROL — Koordinatör\nMod: **tam**.\n');
@@ -222,6 +224,23 @@ test('tam kurulum: YEŞİL, exit 0', () => {
   const r = kos(kurulum());
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /SONUÇ: YEŞİL/);
+});
+
+test('ilk kutu kabuğunda açılış mührü satırı yoksa → KIRMIZI exit 2 (K3)', () => {
+  // Mühür mekaniğinin evi bu satırdır: donem-ac.sh onu okur ve mühürsüz kutuya dönem açmaz.
+  // Satır kurulumda doğmazsa kutu ilerde duvara çarpar ve sebebi kurulumda aranmaz.
+  const r = kos(kurulum({ kabuk: kabukMetni().replace(/^\*\*Açılış mührü:\*\*.*$/m, '') }));
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /Açılış mührü.*satırı yok/);
+});
+
+test('ilk kutu kabuğunda mühür satırı BEKLİYOR iken kapı geçirir (mührü sahip verir)', () => {
+  // Ters yön: GENESIS mühür vermez. Kurulum bittiğinde `bekliyor` MEŞRUDUR — kapı burada
+  // satırın varlığını ölçer, değerini değil. Değeri ölçseydi kurulum sahibin mührüne
+  // rehin olurdu ve G5'in "ısrar etme" hükmüyle çelişirdi.
+  const r = kos(kurulum());
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /açılış mührü satırı yerinde/);
 });
 
 test('EL_KITABI eksik başlık (Üslup hükmü silinmiş) → KIRMIZI exit 2', () => {
