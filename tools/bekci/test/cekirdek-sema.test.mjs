@@ -494,6 +494,20 @@ test('KÜÇÜK kadran: TAM gözleri hiç koşmaz ve kapalı oldukları İLAN edi
   temizle(kok);
 });
 
+test('boş-backlog durağı TERS YÖN: aktif kutu VARKEN durak satırı basılmaz (yanlış-pozitif freni)', () => {
+  // U8 (2026-08-07) bu dalın kanıtını istedi. D9 der ki "kutu bitince sistem DURUR ve sahibe
+  // sıradaki dilim sorulur" — yani durak, işin BİTTİĞİNİN işaretidir. Ters yön hiç ölçülmemişti:
+  // durak açık kutuda da basılsaydı sahip her sabah "iş bitti" sanırdı ve bunu gören göz olmazdı.
+  const kok = kurulum();
+  const r = kos(kok);
+  assert.ok(!/bos-backlog/.test(r.stdout), 'açık kutu varken durak bulgusu doğmamalı: ' + r.stdout);
+  const pano = readFileSync(join(kok, '00_pano', 'PANO.md'), 'utf8');
+  assert.ok(!pano.includes('Durak:'), 'açık kutu varken PANO durak satırı taşımamalı:\n' + pano);
+  const saglik = readFileSync(join(kok, '00_pano', 'SAGLIK.md'), 'utf8');
+  assert.ok(!saglik.includes('AKIŞ=VERİ-YOK'), 'açık kutu varken AKIŞ VERİ-YOK olmamalı: ' + saglik);
+  temizle(kok);
+});
+
 test('boş-backlog durağı: aktif kutu yoksa BİLGİ + AKIŞ=VERİ-YOK + pano durak satırı (D9)', () => {
   // AKIŞ değeri sözlük İÇİNDEN (hasım #6): BEKLEME kokpitte 'tanınmayan ışık' uyarısı üretiyordu
   // ve o alarm tipo yakalamak için var — kasıtlı sözlük-dışı değer alarmı normalleştirir.
