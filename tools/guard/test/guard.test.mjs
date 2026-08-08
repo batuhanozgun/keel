@@ -970,3 +970,81 @@ test('U59 TEK EV (file-guard ucu): tanım dosyası YOKSA yazma fail-closed ENGEL
   assert.equal(r.status, 2, 'tanım okunamazken yazma serbest bırakılamaz');
   assert.match(r.stderr, /yazım-kalıbı tanımı okunamadı/);
 });
+
+// ── U62 · U61 · U66 · MCP kanalı korumanın İÇİNDE (K25 Öbek 2) ─────────────────────────
+// MCP dalı eskiden yol denetiminden ÖNCE `GEC` deyip çıkıyordu: aynı hedefe Edit exit 2
+// alırken mcp__…__write_file exit 0 alıyordu, ve otonom dönemde `İZİN: mcp` çapası kural evini
+// açıyordu — oysa ENGEL-IZIN metni "kural evi HİÇBİR ZAMAN önceden verilemez" diyor.
+const mcpYaz = (kok, yol) => ({ tool_name: 'mcp__fs__write_file', tool_input: { path: join(kok, yol), content: 'x' } });
+
+test('U62: el-sürüşlü MCP çağrısı [SERT] yolu anıyorsa SORULUR (eskiden sessizce geçiyordu)', () => {
+  const kok = kurulum();
+  const r = kos(kok, mcpYaz(kok, 'tools/guard/file-guard.sh'));
+  assert.equal(r.status, 0);
+  assert.match(askJson(r).permissionDecisionReason, /korumalı bir yolu/, r.stdout);
+  // TERS YÖN: korunmayan yol serbest kalır — dikiş her MCP çağrısını sormaya çevirmedi.
+  const t = kos(kok, mcpYaz(kok, '01_kutular/a.md'));
+  assert.equal(t.status, 0);
+  assert.equal(t.stdout.trim(), '', 'korunmayan yolda MCP soru üretmemeli');
+});
+
+test('U62: otonom dönemde İZİN mcp, [SERT] ve kural evini AÇAMAZ (izin sözlüğü yol iznine dönüşmez)', () => {
+  const kok = kurulum();
+  donemAc(kok, { izin: 'mcp' });
+  for (const [yol, sinif] of [['tools/guard/file-guard.sh', 'kafes'], ['00_genesis/x.md', 'kural-evi']]) {
+    const r = kos(kok, mcpYaz(kok, yol));
+    assert.equal(r.status, 2, yol + ' için ENGEL-IZIN bekleniyordu');
+    assert.match(r.stderr, new RegExp('sınıf: ' + sinif), r.stderr);
+  }
+  // Aynı çapayla korunmayan yol SERBEST: izin gerçekten çalışıyor, kapı her şeyi kesmiyor.
+  const s = kos(kok, mcpYaz(kok, '01_kutular/a.md'));
+  assert.equal(s.status, 0);
+  assert.equal(askJson(s).permissionDecision, 'allow');
+});
+
+test('U62: kuyruk dikişi MCP yolunda da geçerli — dönem kendi eliyle sahibin kuyruğuna yazamaz', () => {
+  const kok = kurulum();
+  donemAc(kok, { izin: 'mcp' });
+  const r = kos(kok, mcpYaz(kok, '00_pano/SENDE_BEKLEYEN.md'));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /sahibin kuyruğuna/);
+});
+
+// node-yok DEGRADE dalı bu makinede DOĞRUDAN üretilemez: kanca node'u PATH'te bulamazsa bilinen
+// MUTLAK adaylarda arar ve geliştirme makinesinde onlardan biri her zaman vardır. Ölçülen şey
+// zaten o keşif değil, keşif başarısızken koşan `case` dalıdır — bu yüzden kancanın bir KOPYASI
+// üzerinde aday listesi boşaltılıp dal fiilen koşturulur. Kopya başka hiçbir yerde değişmez.
+function nodesizKanca(kok) {
+  const hedef = join(kok, 'tools', 'guard', 'file-guard-nodesiz.sh');
+  const kaynak = readFileSync(GUARD, 'utf8')
+    .replace(/for aday in [^\n]*; do/, 'for aday in /hic-olmayan-node; do');
+  writeFileSync(hedef, kaynak);
+  return hedef;
+}
+
+test('U61: node YOKKEN mcp fail-CLOSED (kural evi kalıbı "her kanalda fail-closed" diyor)', () => {
+  const kok = kurulum();
+  const kanca = nodesizKanca(kok);
+  // PATH dar ama GERÇEK: `bash` ve `date` gibi temel araçlar bulunur, `node` bulunmaz
+  // (node bu makinede /opt/homebrew altında ve mutlak aday listesi yukarıda boşaltıldı).
+  const kosNodesiz = (girdi) => spawnSync('/bin/bash', [kanca], {
+    input: JSON.stringify(girdi), encoding: 'utf8',
+    env: { PATH: '/usr/bin:/bin', CLAUDE_PROJECT_DIR: kok, LC_ALL: 'C.UTF-8' },
+  });
+  const r = kosNodesiz(mcpYaz(kok, '01_kutular/a.md'));
+  assert.equal(r.status, 2, 'node yokken MCP serbest geçmemeli');
+  assert.match(r.stderr, /node bulunamadı/);
+  // TERS YÖN: kabuk komutu pre-E2 tabanında SERBEST kalır — bu değişiklik onu kesmedi.
+  const k = kosNodesiz({ tool_name: 'Bash', tool_input: { command: 'ls -la' } });
+  assert.equal(k.status, 0, 'node yokken sıradan kabuk komutu serbest kalmalı (pre-E2 tabanı)');
+});
+
+test('U66: fail sınıfını ajanın YAZDIĞI bayt seçemez (içeriğinde mcp öneki geçen Write)', () => {
+  const kok = kurulum();
+  // Süzgeç bozuk: yazma sınıfı fail-CLOSED olmalı. İçerikte `"mcp__` geçmesi sınıfı
+  // "komut"a çeviriyordu ve yazma fail-OPEN geçiyordu (ölçüldü).
+  writeFileSync(join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'), '#!/bin/bash\nexit 1\n');
+  const r = kos(kok, { tool_name: 'Write', tool_input: { file_path: join(kok, '01_kutular/a.md'), content: 'ornek: "mcp__x__send" aracı' } });
+  assert.equal(r.status, 2, 'içeriğine mcp öneki yazan Write fail-closed olmalı');
+  assert.match(r.stderr, /içerik süzgeci koşamadı/);
+});

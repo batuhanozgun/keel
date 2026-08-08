@@ -222,9 +222,9 @@ TEK betik) · `nabiz.sh` (uzaktan cevap; dönem kapısının dışında) · biç
   bloğunun tanımlı alanlarından kurulur; serbest metin eklenmez. Her gönderim önce içerik
   süzgecinden geçer; süzgeç red verirse gövde GİTMEZ (sansürlü sabit-şablon alarm gider).
 - **E2 mekaniği:** `tools/guard/icerik-suzgeci.sh` (+işaret listesi) yazım-öncesi keser —
-  Edit/Write/Bash-yazımı ve MCP içeriği (her kanalda fail-closed). MCP · git-obje · dışa-giden
-  komut sınıfları el-sürüşlü kullanımda SORULUR, dönemde §2 İZİN listesine bakılır (worktree
-  bağlamında git-obje her hâlde ENGEL); worktree'de koruma haritası aynen kurulur.
+  Edit/Write/Bash-yazımı ve MCP içeriği (her kanalda fail-closed, node yokken de). git-obje ·
+  dışa-giden el-sürüşlü SORULUR; MCP yalnız korumalı yol anarsa. Dönemde §2 İZİN listesine
+  bakılır ama **izin YOL hükmünü ezemez**; worktree'de git-obje hep ENGEL, harita aynen kurulur.
 
 ## 8 · Aynı-model uyarısı
 

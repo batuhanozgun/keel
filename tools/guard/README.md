@@ -58,6 +58,13 @@ kapısı sessiz söner). Hepsi metin-eşleşmelidir, kusursuz değildir; bilinen
   env/sudo/nohup öneklerini ve git global bayraklarını atar, mutlak yolu son parçaya indirir
   → `git -C x push`, `/usr/bin/curl`, `sudo scp` yakalanır (hasım bulgusu). + **MCP dikişi**:
   dönem-AÇIK iken `mcp__*` araç çağrısı (kutu dışına iş çıkaran, dosya izi bırakmayan kanal).
+- **MCP yol dikişi (U62)**: `mcp__*` çağrısının `tool_input`'undaki **her dize** korunan-yollar
+  kaydına karşı taranır; anılan yol varsa SORULUR ve sınıf YOLA göre verilir (`kafes` ·
+  `kural-evi` · `kutu-ciktilari` · `korumali-yol`). Böylece `İZİN: mcp` bir YOL iznine
+  dönüşemez — ölçülmüştü: MCP yazması `tools/guard/` ve `02_kanon/KARAR_ALANI.md` hedeflerine
+  geçiyordu, aynı hedefe Edit exit 2 alırken. Alan ADINA değil DEĞERE bakılır (MCP araçlarının
+  alan adları standart değil); metin-eş sınırı Bash yazım dikişiyle aynıdır, o yüzden [SERT]
+  için de ENGEL değil SORU verilir. Kuyruk dikişi (`SENDE_BEKLEYEN`) bu yolda da geçerlidir.
 - **Hat 3 — worktree**: hedef `.claude/worktrees/<ajan>/` altında VE orada gerçek worktree
   varsa (`<ajan>/.git` dosyası) kurallar worktree SANAL köküne göre değerlendirilir (koruma
   haritası worktree'de aynen; iş alanları serbest — E0 çarpışma bulgusunun çözümü). Gerçek

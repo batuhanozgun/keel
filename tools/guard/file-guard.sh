@@ -81,13 +81,18 @@ YK="$ROOT/tools/guard/yazim-kalibi.txt"
 
 SUZGEC="$ROOT/tools/guard/icerik-suzgeci.sh"
 SUZGEC_KIP=""
+# U66 · SINIF AJANIN YAZDIGI BAYTTAN TURETILMEZ. Eskiden bu iki `case` ham JSON metninde
+# `"mcp__` alt-dizesini ariyordu; JSON'da kacisli tirnak (\"mcp__) icinde de bulunuyordu, yani
+# icerigi `"mcp__x"` gecen bir Write kendi fail sinifini "komut" yapip suzgec dustugunde
+# fail-OPEN geciyordu (olculdu). Sinif artik `tool_name` ANAHTARINDAN okunur; supheli her
+# durumda YAZMA (fail-closed) varsayilir.
 case "$INPUT" in
-  *'"mcp__'*) SUZGEC_KIP="--mcp-json" ;;
+  *'"tool_name":"mcp__'*|*'"tool_name": "mcp__'*) SUZGEC_KIP="--mcp-json" ;;
   *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*|*'"Bash"'*|*'"tool_name": "Bash"'*) SUZGEC_KIP="--arac-json" ;;
 esac
 if [ -n "$SUZGEC_KIP" ]; then
   case "$INPUT" in
-    *'"tool_name":"Bash"'*|*'"tool_name": "Bash"'*|*'"mcp__'*) YAZMA_SINIFI=0 ;;
+    *'"tool_name":"Bash"'*|*'"tool_name": "Bash"'*|*'"tool_name":"mcp__'*|*'"tool_name": "mcp__'*) YAZMA_SINIFI=0 ;;
     *) YAZMA_SINIFI=1 ;;
   esac
   # U39 · DÜŞEN KATMAN KENDİ DÜŞTÜĞÜNÜ SÖYLER. Komut sınıfının süzgeç düştüğünde serbest
@@ -154,8 +159,12 @@ if [ -z "$NODE_BIN" ]; then
   # koruma damgasına/işaretine dokunan Bash fail-closed (pre-E2 davranışı); diğer Bash + mcp
   # fail-open (node olmadan dikişler değerlendirilemez, taban pre-E2 = komut serbest).
   case "$INPUT" in
-    *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*)
-      engel "node bulunamadı — kanca karar veremiyor; GÜVENLİ taraf: yalnız BU YAZMA işlemi engellendi (okuma ve komutlar serbest). Çözüm: node kur (kokpit de istiyor). Bakım: tools/guard/README.md" ;;
+    # U61 · MCP de YAZMA sinifidir. Kural evi kalibi "MCP icerigi (her kanalda fail-closed)"
+    # diye ILAN ediyordu; olculdu, node yokken mcp__* cagrilari `*) exit 0` daline dusup
+    # fail-OPEN geciyordu. MCP disa-giden ve dosya yazabilen bir kanaldir; "komut serbest"
+    # tabani (pre-E2) onu KAPSAMAZ — o taban kabuk komutlari icin verilmisti.
+    *'"Edit"'*|*'"MultiEdit"'*|*'"Write"'*|*'"NotebookEdit"'*|*'"tool_name":"mcp__'*|*'"tool_name": "mcp__'*)
+      engel "node bulunamadı — kanca karar veremiyor; GÜVENLİ taraf: yalnız BU YAZMA/MCP işlemi engellendi (okuma ve kabuk komutları serbest). Çözüm: node kur (kokpit de istiyor). Bakım: tools/guard/README.md" ;;
     *'.aktif-rol'*|*'.kurulum'*|*'.taban-ref'*|*'.donem-acik'*|*'.dur'*)
       engel "node bulunamadı — koruma damgası/işaretine dokunan komut güvenli tarafta engellendi (fail-closed; pre-E2 damga koruması). Çözüm: node kur." ;;
     *) exit 0 ;;
@@ -241,14 +250,18 @@ const izinKarari = (sinif, sorKodu, detay) => {
   process.exit(0);
 };
 
+const MCP_MI = String(j.tool_name || "").startsWith("mcp__");
 // MCP dikisi (E2 Hat-2; E0 §9.1 kor-kanal bulgusu): donem-ACIK iken mcp__* cagrisi sahibe
-// SORULUR — kutu disina is cikarabilen, dosya izi birakmayan kanal donemde sahip kapisindadir
-// (bassiz donemde ask = red + iz; guvence artik harnessin degil bizim). El-suruslu kullanimda
-// (donem yok) MCP serbesttir — bugunku davranis degismez.
-if (String(j.tool_name || "").startsWith("mcp__")) {
-  if (donemAcik) izinKarari("mcp", "SOR-MCP", String(j.tool_name));
-  console.log("GEC"); process.exit(0);
-}
+// SORULUR — kutu disina is cikarabilen, dosya izi birakmayan kanal donemde sahip kapisindadir.
+// U62 (2026-08-08): bu dal ESKIDEN BURADA `GEC` deyip CIKIYORDU, yani MCP cagrisi korunan-yol
+// hukumlerini HIC gormuyordu. Olculdu: `mcp__fs__write_file` ile `tools/guard/file-guard.sh`
+// ([SERT]) hedefine el-suruslu oturumda cikis 0; donem-acik + `IZIN: mcp` capasiyla
+// `02_kanon/KARAR_ALANI.md` hedefine acik "allow" — oysa bu betigin kendi ENGEL-IZIN metni
+// kural evi HICBIR ZAMAN onceden verilemez diyor ve korunan-yollar.txt [SERT] oturum icinde
+// ASLA degistirilmez" diyor. Ayni hedefe Edit cikis 2 aliyordu: kapi araca gore ayrisiyordu.
+// SIRA DEGISTI: once yol hukmu, sonra sinif izni. Yol hukmu asagida (kurallar okunduktan
+// sonra) verilir; `mcp` sinif sorusu ONDAN SONRA gelir, boylece IZIN mcp bir yol iznine
+// donusemez.
 
 // KUYRUK DİKİŞİ (E3 hasim bulgusu; YALNIZ donem-ACIK): otonom donemde hicbir rol sahibin
 // kuyruguna (00_pano/SENDE_BEKLEYEN.md) YAZAMAZ. Gerekcesi OTONOM_DONEM §6.1: "cevap yalniz
@@ -276,6 +289,44 @@ for (const satirHam of readFileSync(process.env.GUARD_LIST, "utf8").split("\n"))
   kurallar.push({ bolum, yol: satir });
 }
 if (kurallar.length === 0) { console.log("HATA\tkorunan-yollar.txt bos — koruma tanimsiz"); process.exit(0); }
+
+// ── U62 · MCP YOL HUKMU (kurallar okunduktan sonra, sinif izninden ONCE) ─────────────────
+if (MCP_MI) {
+  // tool_inputtaki TUM dize degerleri toplanir (--mcp-json ile ayni yurutec mantigi): MCP
+  // araclarinin alan adlari standart degildir (path · file_path · uri · source · destination…),
+  // bu yuzden ALAN ADINA degil DEGERE bakilir. Metin-es sezgi, Bash yazim dikisiyle AYNI
+  // sinirdadir ve ayni gerekcesi vardir: hedef/kaynak metinden ayrilamaz, bu yuzden [SERT]
+  // icin bile ENGEL degil SOR verilir — goldenden OKUYAN mesru bir MCP araci yanlis-ENGEL
+  // yememeli. Fazla eslesme yalniz bir soru penceresidir; az eslesme koruma deligidir.
+  const dizeler = [];
+  const yur = (d) => {
+    if (typeof d === "string") { if (d) dizeler.push(d); return; }
+    if (Array.isArray(d)) { d.forEach(yur); return; }
+    if (d && typeof d === "object") { for (const k of Object.keys(d)) yur(d[k]); }
+  };
+  yur(ti);
+  const metin = dizeler.join("\n").replace(/\\/g, "/");
+  // Kuyruk dikisi MCP yolunda da gecerli (E3): donemin kendi eliyle sahibin kuyruguna
+  // yazilamaz — Edit yolunda ENGEL, MCP yolunda serbestti.
+  if (donemAcik && /(^|\/)00_pano\/SENDE_BEKLEYEN\.md/.test(metin)) {
+    console.log("ENGEL-KUYRUK\t00_pano/SENDE_BEKLEYEN.md"); process.exit(0);
+  }
+  const anilanlar = kurallar.filter((k) => metin.includes(k.yol.replace(/\/$/, "")));
+  if (anilanlar.length) {
+    const anilanSert = anilanlar.find((k) => k.bolum === "[SERT]");
+    const anilanKuralEvi = anilanlar.find((k) => KURAL_EVI.includes(k.yol));
+    const anilanKutu = anilanlar.find((k) => KUTU_CIKTILARI.includes(k.yol));
+    const secilen = anilanSert || anilanKuralEvi || anilanKutu || anilanlar[0];
+    // SINIF YOLA GORE (Bash yazim dikisinin emsali): `kafes` ve `kural-evi` izin sozlugunde
+    // YOKTUR, yani `IZIN: mcp` onlari ONCEDEN SERBEST BIRAKAMAZ. Deligin ozu buydu.
+    const sinif = anilanSert ? "kafes" : (anilanKuralEvi ? "kural-evi"
+                : (anilanKutu ? "kutu-ciktilari" : "korumali-yol"));
+    izinKarari(sinif, "SOR-MCP-YOL", secilen.yol);
+  }
+  // Yol hukmu yoksa sinif sorusu: donemde `mcp` sinifi sahip kapisindadir.
+  if (donemAcik) izinKarari("mcp", "SOR-MCP", String(j.tool_name));
+  console.log("GEC"); process.exit(0);
+}
 
 // Damga-dikisi (Faz 2, tek belgeli istisna — plan karari 2): rol damgasina (.aktif-rol)
 // dokunan Bash komutu sahibe SORULUR (damga git-izsiz, bekci goremez). Baska hicbir
@@ -706,6 +757,11 @@ case "$DURUM" in
     ;;
   SOR-MCP)
     GEREKCE="Otonom dönem AÇIKKEN MCP araç çağrısı ($DETAY) sahip kapısındadır: kutu dışına iş çıkarabilen, dosya izi bırakmayan kanal (E2 dikişi; başsız dönemde bu soru red + iz olur)." \
+      "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
+    exit 0
+    ;;
+  SOR-MCP-YOL)
+    GEREKCE="Bu MCP çağrısının girdisi korumalı bir yolu ($DETAY) anıyor — MCP kanalı da bu koruma haritasına tabidir (U62). Hedef mi kaynak mı metinden ayrılamadığı için ENGEL değil SORU: okuma meşru olabilir. Yazmak gerekiyorsa meşru yol yazma araçlarıdır (Edit/Write) ve orada aynı yol [SERT] ise değişiklik sahip kararı + tören ister." \
       "$NODE_BIN" -e 'console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:process.env.GEREKCE}}))'
     exit 0
     ;;
