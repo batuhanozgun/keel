@@ -176,3 +176,30 @@ test('kurulum penceresi: pencere=kurulum ilan edilir; göz BİLGİye düşer; ka
   assert.equal(r2.rc, 1);
   temizle(kok2);
 });
+
+test('K24: ayar okunamayınca kapsam izi "tarandı" DEMEZ (sahte-yeşilin en ucuz biçimi)', () => {
+  // Kapsam izi `if (conf)` bloğunun DIŞINDAydı: bekci.conf okunamayınca 28 gözün hiçbiri
+  // koşmuyor ama sahip yüzeyi dört kategori için "tarandı" diyordu. Arıza satırı ayrıca
+  // düşüyordu — o satır bu cümleyi YALANLAMIYOR, yanında duruyordu.
+  const kok = kurulum();
+  rmSync(join(kok, 'tools', 'bekci', 'bekci.conf'));
+  const r = kos(kok);
+  assert.equal(r.rc, 2);
+  assert.ok(!/kapsam: tarandı/.test(r.stdout),
+    'gözler hiç koşmadan "tarandı" basıldı: ' + r.stdout);
+  for (const kat of ['tavan', 'şema', 'koruma-hattı', 'bağ-varlık']) {
+    assert.ok(r.stdout.includes('[' + kat + '] kapsam: TARANMADI'),
+      kat + ' kategorisi taranmadığını SÖYLEMİYOR: ' + r.stdout);
+  }
+  temizle(kok);
+});
+
+test('K24 TERS YÖN: ayar yerindeyken kapsam izi yine "tarandı" der (yanlış-pozitif kapısı)', () => {
+  const kok = kurulum();
+  const r = kos(kok);
+  for (const kat of ['tavan', 'şema', 'koruma-hattı', 'bağ-varlık']) {
+    assert.ok(r.stdout.includes('[' + kat + '] kapsam: tarandı'),
+      kat + ' taranmış olmasına rağmen izi yok: ' + r.stdout);
+  }
+  temizle(kok);
+});

@@ -824,7 +824,15 @@ if (conf) {
 }
 
 // ── kapsama izi: her kategori için tek BİLGİ (SAGLIK'ta görünür kapsam — saha emsali) ──
-for (const kat of ['tavan', 'şema', 'koruma-hattı', 'bağ-varlık']) bulgu('BILGI', kat, 'kapsam', 'tarandı');
+// KAPSAM İZİ ANCAK GÖZLER KOŞTUYSA "tarandı" DER (K24). Bu döngü `if (conf)` bloğunun
+// DIŞINDAYDI: ayar okunamadığında 28 gözün HİÇBİRİ koşmuyor ama sahip yüzeyi dört kategori
+// için "tarandı" diyordu. Arıza satırı ayrıca düşüyordu — ama "tarandı" cümlesi onun YANINDA
+// duruyordu ve kapsama bakan göz taranmış sanıyordu; bu evin en pahalı sınıfı olan sahte-yeşil.
+// Bir satır aşağıdaki kardeşi (`kadran === 'tam' && conf`) doğru yazılmıştı: aynı nefeste biri
+// korunmuş, öteki atlanmış. "Ölçemedim" ile "ölçtüm, temiz" ayrı ad alır (Kök 1).
+for (const kat of ['tavan', 'şema', 'koruma-hattı', 'bağ-varlık']) {
+  bulgu('BILGI', kat, 'kapsam', conf ? 'tarandı' : 'TARANMADI (ayar okunamadı — gözler hiç koşmadı)');
+}
 if (kadran === 'tam' && conf) bulgu('BILGI', 'golden-tazelik', 'kapsam', 'tarandı');
 
 // ── sayaçlar ─────────────────────────────────────────────────────────────────
