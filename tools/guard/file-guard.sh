@@ -52,7 +52,13 @@ case "$INPUT" in
       # E5 kanal betikleri: ön-eleme listesi dikiş kapsamının ÜST-kümesi olmak zorundadır —
       # buraya eklenmezse aşağıdaki kanal dikişi HİÇ koşmaz (yaşanmış: dikiş yazıldı, gate
       # elemişti; sessiz delik). "Az eşleşme koruma deliğidir" kuralının canlı örneği.
-      *haber.sh*|*nabiz.sh*) : ;;
+      # ÖNEKLER, TAM AD DEĞİL (U34): `haber.sh` yazınca `X=haber; bash …/$X.sh` bu kapıdan
+      # SESSİZCE eleniyordu — dikiş hiç koşmuyordu. Gate dikişin ÜST-kümesi olmak zorunda;
+      # fazla eşleşme yalnız gereksiz node çalıştırmasıdır, az eşleşme koruma deliğidir.
+      *haber*|*nabiz*|*sevk*) : ;;
+      # `security` (U36): Keychain parola okuma hiçbir katmanda yakalanmıyordu — gate'te de
+      # yoktu, yani dikiş yazılsa bile koşmazdı. Aynı sessiz delik sınıfı.
+      *security*) : ;;
       *git*|*curl*|*wget*|*ssh*|*scp*|*sftp*|*rsync*|*mail*|*sendmail*|*gh*|*npm*) : ;;
       *'>'*|*'<<'*|*tee*|*cp*|*mv*|*dd*|*sed*|*install*|*truncate*) : ;;
       *) exit 0 ;;
@@ -278,15 +284,6 @@ if ((j.tool_name || "") === "Bash") {
   // (donem icinde modelin freni sessizce silmesini engeller; el-suruslu oturumda da sorulur —
   // dosya zaten yalnizca donem baglaminda anlamlidir).
   if (komut.includes(".dur")) izinKarari("donem", "SOR-DONEM", "tools/sevk/.dur");
-  // Kanal-dikisi (E5): haber.sh ve nabiz.sh disa POSTA gonderir. Mesru cagiranlari yalnizca
-  // kancalardir (donem-ac · sevk · SubagentStop kapisi · launchd) ve kanca sureci arac
-  // katmanindan GECMEZ — yani bu dikis onlari hic gormez, hicbir mesru yolu kesmez.
-  // Bir AJANIN bu betikleri cagirmasi ise "modelin yazdigi metni disari cikarma" yolunu acardi:
-  // serbest-metin yasagi tam da bu yuzden arayuze gomulu (haber.sh icinde govde argumani YOKTUR).
-  // Yol yine de kapatilir — E2 Hat-2 disa-giden fiillerinin kardesi.
-  if (komut.includes("haber.sh") || komut.includes("nabiz.sh")) {
-    console.log("ENGEL-KANAL\ttools/sevk/haber.sh"); process.exit(0);
-  }
   // ---- E2 dikisleri (tasari §3) — icerik ENGELi bash katmaninda coktan kosuldu ----
   // Komut bolutleri: ; & | ` $( VE SATIRSONU ayraclarindan bolunur (hasim bulgusu: cok-satirli
   // komut satirsonuyla ucunu de atliyordu). "komut-konumu" = bir bolutun BASI.
@@ -321,6 +318,57 @@ if ((j.tool_name || "") === "Bash") {
     }
     return tok[i] || "";
   };
+  // ---- Kanal-dikisi (E5; U34+U35 ile yeniden yazildi, K23 Obek 2) --------------------------
+  // NE KORUR: haber.sh ve nabiz.sh disa POSTA gonderir. Mesru cagiranlari yalnizca kancalardir
+  // (donem-ac · sevk · SubagentStop kapisi · launchd) ve kanca sureci arac katmanindan GECMEZ —
+  // bu dikis onlari hic gormez. Bir AJANIN bu betikleri CALISTIRMASI ise "modelin yazdigi metni
+  // disari cikarma" yolunu acardi.
+  //
+  // ESKI HALI CIPLAK ALT-DIZEYDI (`komut.includes("haber.sh")`) ve AYNI kusur iki yonde birden
+  // kanadi — OLCULDU 2026-08-08:
+  //   · `X=haber; bash tools/sevk/$X.sh` → rc=0, CALISTIRMA KACTI
+  //   · `grep -rn haber.sh tools/` ve `cat tools/sevk/haber.sh` → rc=2, OKUMA KESILDI
+  // U10 kapanisinda yazilan uc hat (bolut ayirma · komutAdi cozumu · cozulemeyen ad guvenli
+  // tarafa) bu dikise HIC uygulanmamisti. Ayrim artik metinde degil KONUMDA: bir betigin ADI
+  // gecmesi okumadir, KOMUT KONUMUNDA ya da bir yorumlayicinin HEDEFI olmasi calistirmadir.
+  //
+  // ILAN EDILMIS SINIR: metin-es bir dikis, her seyi degiskene saklayan bir cagriyi goremez.
+  // Bu yuzden ucuncu kural var — yorumlayiciya verilen hedef COZULEMIYORSA ve komut kanal
+  // bolgesini aniyorsa, kanitlanamayan cagri KANAL sayilir (fail-closed). Kalan bosluk:
+  // kanal bolgesini hic anmayan, tamamen degiskenlesmis bir cagri. Bilinen ve ilan edilmis.
+  const kanalAdlar = new Set(["haber.sh", "nabiz.sh"]);
+  // TIRNAK SOYULUR ama LITERAL TIRNAK YAZILMAZ: bu blok kabukta tek-tirnakla sarilidir ve
+  // icine konan bir apostrof dizeyi erkenden kapatir (betik-hijyeni kapisinin tam olcugu sey).
+  const kanalHedef = (t) => kanalAdlar.has(String(t).replace(/^[\u0022\u0027]|[\u0022\u0027]$/g, "").split("/").pop());
+  const kanalBolgesi = /haber|nabiz|sevk/.test(komut);
+  const yorumlayici = /^(bash|sh|zsh|dash|ksh|source)$/;
+  const kanal = bolutler.some((s) => {
+    const c = komutAdi(s);
+    if (kanalHedef(c.ad)) return true;                       // ./haber.sh · tools/sevk/haber.sh
+    if (c.ad === "." || yorumlayici.test(c.ad)) {
+      const tok = c.kuyruk.split(/\s+/).filter(Boolean);
+      if (tok.some(kanalHedef)) return true;                 // bash tools/sevk/haber.sh
+      if (kanalBolgesi && tok.some((t) => /[$`]/.test(t))) return true;   // cozulemeyen hedef
+    }
+    return false;
+  });
+  if (kanal) { console.log("ENGEL-KANAL\ttools/sevk/haber.sh"); process.exit(0); }
+
+  // ---- Parola-dikisi (U36, K23 Obek 2) ----------------------------------------------------
+  // OLCULDU: `security find-generic-password … -w` hicbir katmanda yakalanmiyordu (rc=0); tek
+  // koruma 00_genesis altindaki DUZYAZIYDI ve duzyazi kapi degildir. `-w` parolayi DUZ METIN
+  // basar; ajanin baglamina giren bir parola, kanalin kendisini ajana acmakla ayni siniftir —
+  // o yuzden ayni sertlikte (ENGEL) kapanir. Kapsam DAR: yalniz parola BASAN cagri kesilir,
+  // `security list-keychains` ya da `-w`siz arama serbest kalir.
+  const parolaOkuma = bolutler.some((s) => {
+    const c = komutAdi(s);
+    if (c.ad !== "security") return false;
+    const tok = c.kuyruk.split(/\s+/).filter(Boolean);
+    if (!/^find-(generic|internet)-password$/.test(tok[0] || "")) return false;
+    return tok.some((t) => t === "-w" || /^-\w*w\w*$/.test(t));
+  });
+  if (parolaOkuma) { console.log("ENGEL-PAROLA"); process.exit(0); }
+
   // Git-obje dikisi (YALNIZ donem-ACIK; E0 kalem-5: worktree ortak nesne deposu — add bile sizdirir):
   if (donemAcik) {
     const gitObje = bolutler.some((s) => { const c = komutAdi(s); return c.ad === "git" && /^(add|commit|stash)$/.test(gitAlt(c.kuyruk)); });
@@ -582,6 +630,10 @@ case "$DURUM" in
     ;;
   ENGEL-KANAL)
     printf 'file-guard ENGEL: haber kanalı ajan eliyle çağrılamaz (%s).\nBu betikler sahibin adına DIŞARI posta gönderir; meşru çağıranları yalnız kancalardır (/donem töreni · sevk · SubagentStop kapısı · launchd watchdog) ve onlar araç katmanından geçmez.\nSerbest metnin dışarı çıkmaması bu tasarımın çekirdek güvencesidir: gövde yalnız tanımlı alanlardan kurulur ve gönderim öncesi içerik süzgecinden geçer (OTONOM_DONEM §7 · §12).\n' "$DETAY" >&2
+    exit 2
+    ;;
+  ENGEL-PAROLA)
+    printf 'file-guard ENGEL: Keychain parolası ajan eliyle OKUNAMAZ.\n`security find-*-password … -w` parolayı düz metin basar; okunan parola modelin bağlamına girer ve oradan günlüğe, zarfa, hatta dışarı gidebilir — kanalın kendisini ajana açmakla aynı sınıftır.\nMeşru okuyucular kanca süreçleridir (haber.sh · nabiz.sh) ve onlar araç katmanından geçmez.\nParolaya gerçekten ihtiyaç varsa sahibine söyle; sen okuma.\nKapsam dar: `-w` taşımayan `security` çağrıları serbesttir.\n' >&2
     exit 2
     ;;
   SOR-DONEM)

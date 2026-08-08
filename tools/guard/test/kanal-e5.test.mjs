@@ -759,3 +759,70 @@ test('haber/U38: sansürlü şablon da SÜZGEÇTEN geçer — gönderilen metin 
   assert.ok(!r3.stdout.includes(kart), 'süzgecin KENDİ çıktısındaki değer de sızmamalı');
   assert.match(r3.stdout, /bilinmeyen-sinif/, 'kapalı alfabeye uymayan sınıf adı düşürülür');
 });
+
+// ═════════════════════════════════════════════════════════════════════════════════════════
+// K23 · ÖBEK 2 — guard dikişi ailesi (U34 U35 U36). U34 ile U35 AYNI kusurun iki yüzüdür:
+// dikiş komutu ÇIPLAK ALT-DİZE ile sınıflandırıyordu, bu yüzden hem ÇALIŞTIRMAYI kaçırıyor
+// (değişkene bölünmüş çağrı) hem de OKUMAYI kesiyordu (grep/cat). ÖLÇÜLDÜ 2026-08-08:
+// `X=haber; bash tools/sevk/$X.sh` → rc=0 (geçti) · `grep -rn haber.sh tools/` → rc=2 (engel).
+// U10'un kapanışında yazılan üç hat (bölüt ayırma · komut adı çözümü · çözülemeyen ad güvenli
+// tarafa) bu dikişe HİÇ uygulanmamıştı — kökenin ta kendisi: ders kardeş hatta taşınmamış.
+// ═════════════════════════════════════════════════════════════════════════════════════════
+const guard = (komut, kok = KOK_REPO) => spawnSync('bash', [join(KOK_REPO, 'tools', 'guard', 'file-guard.sh')], {
+  encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: kok },
+  input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: komut } }),
+});
+
+test('file-guard/U34: kanal dikişi ÇALIŞTIRMAYI yakalar — değişkene bölünmüş çağrı kaçmaz', () => {
+  for (const k of [
+    'bash tools/sevk/haber.sh --olay alarm',
+    './tools/sevk/haber.sh --olay alarm',
+    'sh ./tools/sevk/nabiz.sh',
+    'X=haber; bash tools/sevk/$X.sh --olay alarm',
+    'Y=tools/sevk; X=haber; bash $Y/$X.sh',
+    'echo x && bash tools/sevk/haber.sh --olay donem-bitti',
+    'D=/Users/x/tools/sevk; bash "$D/haber.sh"',
+  ]) {
+    const r = guard(k);
+    assert.equal(r.status, 2, 'engellenmeli: ' + k);
+    assert.match(r.stderr, /kanalı ajan eliyle çağrılamaz/, k);
+  }
+});
+
+test('file-guard/U35: dikiş OKUMAYI kesmez — salt-okunur komut serbesttir', () => {
+  for (const k of [
+    'grep -rn haber.sh tools/',
+    'cat tools/sevk/haber.sh',
+    'git log --oneline -5 -- tools/sevk/nabiz.sh',
+    'ls -la tools/sevk/haber.sh',
+    'wc -l tools/sevk/nabiz.sh tools/sevk/haber.sh',
+    'head -n 20 tools/sevk/haber.sh',
+  ]) {
+    const r = guard(k);
+    assert.equal(r.status, 0, 'serbest kalmalı: ' + k + '\n' + r.stderr);
+    assert.equal(r.stdout, '', 'okuma için karar da üretilmez: ' + k);
+  }
+  // Sıradan komutlar da serbest kalmayı sürdürür (dikişin kapsamı genişlemedi).
+  for (const k of ['ls -la', 'git status', 'grep -rn haber docs/']) {
+    assert.equal(guard(k).status, 0, 'serbest kalmalı: ' + k);
+  }
+});
+
+test('file-guard/U36: Keychain parola OKUMA komutu serbest bırakılmaz', () => {
+  // ÖLÇÜLDÜ: `security find-generic-password … -w` hiçbir katmanda yakalanmıyordu (rc=0) ve
+  // tek koruma 00_genesis altındaki DÜZYAZIydı. Parolayı ajanın bağlamına almak, kanalın
+  // kendisini ajana açmakla aynı sınıftır — kanal dikişiyle aynı sertlikte kapanır.
+  for (const k of [
+    'security find-generic-password -s keel-haber -a x@y.z -w',
+    'security find-internet-password -s imap.x -w',
+    'P=$(security find-generic-password -s keel-haber -a x -w); echo ok',
+  ]) {
+    const r = guard(k);
+    assert.equal(r.status, 2, 'engellenmeli: ' + k);
+    assert.match(r.stderr, /parola/i, k);
+  }
+  // Parola OKUMAYAN security çağrıları serbest (kapsam dar tutulur, geniş değil).
+  for (const k of ['security list-keychains', 'security find-generic-password -s keel-haber -a x']) {
+    assert.equal(guard(k).status, 0, 'serbest kalmalı: ' + k);
+  }
+});
