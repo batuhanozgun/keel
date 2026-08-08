@@ -105,6 +105,36 @@ donem_oku() {
 # karşılığı o kurulumda hiçbir zaman üretilemiyordu. Yerini alan şey daha sert: aşağıdaki üç
 # ölçüm bu makinede, bu an koşuyor (dosya varlığı değil, işin CANLILIĞI).
 
+# Metin tavanı — TEK EV (U29 · U30 · U31, K23 Öbek 1). Üç ayrı yerde üç kopyası vardı ve
+# üçü de AYNI üç kusuru taşıyordu. ÖLÇÜLDÜ 2026-08-08:
+#   · İlan "1500 bayt"tı ama `${#M}` KARAKTER sayar: 1800 Türkçe karakterlik metin 3300 B'dır
+#     ve tavan onu 1800 sanardı — ilan edilen birimle ölçülen birim aynı değildi.
+#   · `cut -c1-1500` çıktısı o metinde 2751 B verdi: ilan edilen tavanın neredeyse iki katı.
+#   · `cut -c` SATIR BAŞINA keser. Üç satırlık 2702 karakterlik gövde `cut -c1-1500`ten HİÇ
+#     KESİLMEDEN geçti — ve etiket sahibe "1202 karakter kesildi" dedi. Kesilmemiş bir metne
+#     "kesildi" demek, sahip yüzeyinde düpedüz yalandır.
+# Buradaki sözleşme: birim BAYTtır ve ilan edilen birimle ölçülür · kesme çok satırlıda da
+# uygulanır · etiket ancak GERÇEKTEN kesildiğinde basılır ve ÖLÇÜLEN miktarı söyler.
+# Etiketin kendi baytları tavana SAYILMAZ: tavan yükün sınırıdır, uyarının değil.
+kirp_bayt() { # $1: metin · $2: tavan (bayt) — çıktı stdout
+  local M="${1:-}" TAVAN="${2:-1500}" HAM KESIK N i=0
+  HAM="$(printf '%s' "$M" | wc -c | tr -d ' ')"
+  case "$TAVAN" in ''|*[!0-9]*) TAVAN=1500 ;; esac
+  if [ "$HAM" -le "$TAVAN" ]; then printf '%s' "$M"; return 0; fi
+  KESIK="$(printf '%s' "$M" | head -c "$TAVAN")"
+  # ÇOK BAYTLI KARAKTER İKİYE BÖLÜNMEZ: bayt sınırında kesmek son karakteri yarım bırakır ve
+  # sahibin ekranında bozuk bayt olarak görünür. En çok 3 bayt soyulur — UTF-8'in kendi üst
+  # sınırı budur, döngü bu yüzden SAYILI: iconv yoksa da sonsuza dönmez (fail-bounded).
+  while [ "$i" -lt 3 ] && [ -n "$KESIK" ] \
+        && ! printf '%s' "$KESIK" | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1; do
+    N="$(printf '%s' "$KESIK" | wc -c | tr -d ' ')"
+    KESIK="$(printf '%s' "$KESIK" | head -c $(( N - 1 )))"
+    i=$(( i + 1 ))
+  done
+  N="$(printf '%s' "$KESIK" | wc -c | tr -d ' ')"
+  printf '%s… [%s bayt kesildi]' "$KESIK" "$(( HAM - N ))"
+}
+
 # launchd işinin YÜKLÜ olup olmadığı. Kendi fonksiyonunda, çünkü bu dal testte HİÇ koşmuyordu:
 # "hangi kipte hiç koşmuyor" sorusunun bu evdeki cevabı buydu — yüklü bir işin arkasındaki
 # nabız/damga kuyruğunun tamamı ölçümsüzdü (U26 tam orada yaşıyordu).

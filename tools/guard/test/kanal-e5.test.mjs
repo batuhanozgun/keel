@@ -144,7 +144,10 @@ test('haber: alan tavanı aşılırsa KESİLDİĞİ yazılır (sessiz kırpma yo
   const r = haber(kok, ['--olay', 'alarm', '--cins', 'kanal', '--donem', 'K1', '--kutu', 'KT-900',
                         '--detay', 'x'.repeat(2000), '--prova']);
   assert.equal(r.status, 0);
-  assert.match(r.stdout, /karakter kesildi/);
+  // BİRİM KARAKTERDEN BAYTA DÖNDÜ (U29, K23): tavan "1500 bayt" diye ilan ediliyordu ama
+  // karakter sayılıyordu — ilan edilen birimle ölçülen birim aynı değildi. Etiketin birimi
+  // de artık ölçülen birimdir; "karakter kesildi" demek ölçmediğin şeyi söylemekti.
+  assert.match(r.stdout, /\[\d+ bayt kesildi\]/);
 });
 
 // ── 4 · Kanal yoklaması (fail-closed) ─────────────────────────────────────────────────────
@@ -614,4 +617,145 @@ test('nabız/U49: ölçülemeyen sessizlik durumu SESSİZ geçmez (üçüncü h�
   // ölçen tek mekanik iz, haber.sh'ın program-kusuru bulgusunun DÜŞMEMİŞ olmasıdır.
   assert.ok(!gunluk(kok).some((j) => j.cins === 'haber-cagrisi-gecersiz'),
     'alarm cinsi haber.sh beyaz listesinde yok — posta izsiz düşüyor');
+});
+
+// ═════════════════════════════════════════════════════════════════════════════════════════
+// K23 · ÖBEK 1 — tavan/kırpma ailesi (U29 U30 U31 U38). Aynı kusurun ÜÇ kopyası + süzgeç
+// sonrası yeniden sızdırma. ÖLÇÜLDÜ 2026-08-08 (köken turu): ilan "1500 bayt" ama `${#M}`
+// KARAKTER sayıyor (1800 Türkçe karakter = 3300 B, tavan onu 1800 sanıyor) · `cut -c1-1500`
+// çıktısı 2751 B veriyor · üç satırlık 2702 karakterlik gövde HİÇ kesilmeden geçiyor ve
+// etiket "1202 karakter kesildi" diyor. Kesilmemiş metne "kesildi" demek düz yalandır.
+// ═════════════════════════════════════════════════════════════════════════════════════════
+const bayt = (s) => Buffer.byteLength(s, 'utf8');
+
+test('ortak/U29: kırpma BAYT sayar, çok satırda keser, karakteri ikiye BÖLMEZ', () => {
+  const kok = kurulum();
+  // ÇIKTI BAYT OLARAK ALINIR, dize olarak DEĞİL. Node stdout'u utf8 çözerken yarım kalmış bir
+  // baytı U+FFFD'ye çevirir ve o karakter 3 bayta genişler: bayt ölçen bir testi dize üstünden
+  // yapmak, ölçtüğünü sandığın şeyi ölçmemektir (ilk yazımda 2 bayt kaydı, ölçüldü).
+  const kirpHam = (metin, tavan) => spawnSync('bash', ['-c',
+    '. "$1/tools/sevk/ortak.sh"; kirp_bayt "$(cat)" "$2"', '_', kok, String(tavan)],
+    { input: Buffer.from(metin, 'utf8') }).stdout;
+  const kirp = (metin, tavan) => kirpHam(metin, tavan).toString('utf8');
+
+  // (a) Tavanın ALTINDA hiçbir şey olmaz — etiket de basılmaz.
+  const kisa = 'kısa metin';
+  assert.equal(kirp(kisa, 1500), kisa, 'tavan altındaki metne dokunulmaz');
+
+  // (b) ÇOK SATIRLI gövde artık gerçekten kesilir (eski cut -c her satırı ayrı kesiyordu).
+  const cok = ['a'.repeat(900), 'b'.repeat(900), 'c'.repeat(900)].join('\n');
+  const r = kirp(cok, 1500);
+  assert.ok(bayt(r) < bayt(cok), 'çok satırlı gövde KESİLMELİ');
+  assert.match(r, /\[\d+ bayt kesildi\]/, 'kesinti ADIYLA ve MİKTARIYLA söylenir');
+
+  // (c) Etiketin söylediği sayı ÖLÇÜLEN sayıdır — uydurma değil.
+  const es = r.match(/\[(\d+) bayt kesildi\]/);
+  const govde = r.slice(0, r.indexOf('… ['));
+  assert.equal(Number(es[1]), bayt(cok) - bayt(govde), 'etiket ölçülen kesintiyi söylemeli');
+
+  // (c2) ETİKETİN BİRİMİ DE ÖLÇÜLÜR — ve ASCII'de değil, ÇOK BAYTLIDA. Kusurun kendisi
+  // birimdi: `${#M}` karakter sayardı ve ASCII'de karakter=bayt olduğu için tek-baytlı bir
+  // test bu hatayı HİÇ göremezdi (kasıtlı bozmada ölçüldü: bozma yeşil kalmıştı).
+  const turkceUzun = 'ğüşiöç'.repeat(400);                 // 2400 karakter = 4400 bayt
+  const ham = kirpHam(turkceUzun, 1500);
+  const etiketYeri = ham.indexOf(Buffer.from('… [', 'utf8'));
+  assert.ok(etiketYeri > 0, 'çok baytlı metin de kesildiğini söylemeli');
+  const esT = ham.subarray(etiketYeri).toString('utf8').match(/\[(\d+) bayt kesildi\]/);
+  assert.ok(esT, 'etiket okunabilmeli');
+  assert.equal(Number(esT[1]), bayt(turkceUzun) - etiketYeri,
+    'etiket BAYT sayar; karakter sayarsa bu sayı tutmaz');
+  // Karakter sayan bir kırpma burada ~1500 karakter (=~2750 bayt) keserdi; bayt sayan ~2900.
+  assert.ok(Number(esT[1]) > 2800, 'kesinti gerçek BAYT boyutundan hesaplanmalı: ' + esT[1]);
+
+  // (d) ÇOK BAYTLI karakter ikiye BÖLÜNMEZ: bayt sınırında kesmek satırı bozar.
+  for (const tavan of [101, 102, 103, 104, 105]) {
+    const turkce = 'ğüşiöçĞÜŞİÖÇ'.repeat(40);
+    const k = kirp(turkce, tavan);
+    const govdeK = k.slice(0, k.indexOf('… ['));
+    assert.ok(bayt(govdeK) <= tavan, `tavan ${tavan}: gövde tavanı aşmamalı (${bayt(govdeK)})`);
+    assert.ok(!govdeK.includes('�'), `tavan ${tavan}: karakter ikiye bölünmüş`);
+  }
+});
+
+test('haber/U29-U30: alan ve gövde tavanları TEK EVDEN geçer; yalancı etiket yok', () => {
+  const kok = kurulum();
+  // Tek satır, tavanın ALTINDA ama karakter sayısı yüksek: eski kod burada "kesildi" derdi.
+  const r = haber(kok, ['--olay', 'alarm', '--cins', 'kanal', '--donem', 'K1', '--kutu', 'KT-900',
+                        '--detay', 'kısa ve temiz bir ayrıntı', '--prova']);
+  assert.equal(r.status, 0);
+  assert.doesNotMatch(r.stdout, /kesildi/, 'kesilmemiş metne "kesildi" denmez');
+
+  // Gerçekten büyük alan kesilir ve KESİLDİĞİNİ söyler.
+  const b = haber(kok, ['--olay', 'alarm', '--cins', 'kanal', '--donem', 'K1', '--kutu', 'KT-900',
+                        '--detay', 'x'.repeat(4000), '--prova']);
+  assert.match(b.stdout, /\[\d+ bayt kesildi\]/);
+
+  // GÖVDE TAVANI FİİLEN ULAŞILABİLİR OLMALI. Kasıtlı bozma bunu ortaya çıkardı: alan tavanı
+  // (1500 B) kırpılan alanlara uygulandığı için üç blok toplasa 4.5 KB eder ve 8 KB gövde
+  // tavanı O YOLDAN HİÇ ateşlenmez. Tavana giden gerçek yol KIRPILMAYAN alanlardır — `--kutu`
+  // kırpma listesinde değildir ve hem konuya hem gövdeye tavansız giriyordu (U50 buradan çıktı).
+  const devKutu = 'K'.repeat(20000);
+  const c = haber(kok, ['--olay', 'donem-bitti', '--donem', 'D'.repeat(20000), '--kutu', devKutu,
+                        '--blok1', 'a', '--blok2', 'b', '--blok3', 'c', '--prova']);
+  assert.equal(c.status, 0);
+  const govde = c.stdout.slice(c.stdout.indexOf('\n\n') + 2);
+  assert.ok(bayt(govde) <= 8192 + 60, 'gövde 8 KB tavanına FİİLEN inmeli, ölçülen: ' + bayt(govde));
+  assert.match(govde, /\[\d+ bayt kesildi\]/, 'gövde kesintisi de söylenir');
+
+  // U50 · KONU (Subject) tavansızdı. RFC 5322 başlık satırına 998 bayt sınırı koyar; aşan
+  // Subject'i sunucular öngörülemez biçimde kırpar ya da iletiyi reddeder.
+  const konu = c.stdout.split('\n').find((l) => l.startsWith('Subject: '));
+  assert.ok(konu, 'Subject satırı olmalı');
+  assert.ok(bayt(konu) < 998, 'Subject RFC sınırının altında kalmalı, ölçülen: ' + bayt(konu));
+  assert.match(konu, /\[\d+ bayt kesildi\]/, 'konu kesintisi de sessiz değildir');
+});
+
+test('sevk/U31: SABAH.md sessizce kırpılmaz — kesinti sahibe SÖYLENİR', () => {
+  const kok = kurulum();
+  const sabah = join(kok, '00_pano', 'SABAH.md');
+  const uzun = Array.from({ length: 60 }, (_, i) => 'kayıt ' + i + ': ' + 'z'.repeat(200)).join('\n');
+  spawnSync('bash', ['-c',
+    '. "$1/tools/sevk/ortak.sh"; DIZIN="$1/tools/sevk"; KOK="$1"; ' +
+    'DONEM_KUTU=KT-900; DONEM_ID=K1; . /dev/stdin', '_', kok],
+    { encoding: 'utf8', input: 'kapanis_yuzeyi_test() { :; }' });
+  // Yüzeyi doğrudan sevk.sh üzerinden kurmak dönem gerektirir; burada TAVAN kapısının kendisi
+  // ölçülür: aynı tek ev, aynı etiket sözleşmesi. Sessiz kırpma bu evde ARTIK YOK.
+  const r = spawnSync('bash', ['-c',
+    '. "$1/tools/sevk/ortak.sh"; kirp_bayt "$(cat)" 4096 > "$2"', '_', kok, sabah],
+    { encoding: 'utf8', input: uzun });
+  assert.equal(r.status, 0);
+  const yazilan = readFileSync(sabah, 'utf8');
+  assert.ok(bayt(yazilan) <= 4096 + 40, 'tavan uygulanmalı');
+  assert.match(yazilan, /\[\d+ bayt kesildi\]/, 'SABAH.md sessizce kırpılmaz');
+  // Kaynak taraması: sessiz `cut -c` kalıbı sevk.sh'tan KALKMIŞ olmalı (üçüncü kopya).
+  const s = readFileSync(join(KOK_REPO, 'tools', 'sevk', 'sevk.sh'), 'utf8');
+  assert.ok(!/cut -c1-\d+ > "\$KOK\/00_pano\/SABAH\.md"/.test(s), 'sessiz kırpma kopyası duruyor');
+});
+
+test('haber/U38: sansürlü şablon da SÜZGEÇTEN geçer — gönderilen metin taranmış metindir', () => {
+  const kok = kurulum();
+  const kart = luhnKart();
+  // Sır KUTU ADINDA: eski kod onu süzgeçten SONRA yeniden konuya koyuyordu.
+  const r = haber(kok, ['--olay', 'alarm', '--cins', 'kirmizi', '--donem', 'K1',
+                        '--kutu', 'KT-' + kart, '--detay', 'sıradan ayrıntı', '--prova']);
+  assert.equal(r.status, 3, 'süzgeç redi 3 ile bildirilir');
+  assert.ok(!r.stdout.includes(kart), 'DEĞER sansürlü şablona SIZMAMALI (Subject dâhil)');
+  assert.ok(!r.stderr.includes(kart));
+  // Dönem kimliğinde de aynı yol: iki alan da şablona elle geri konuyordu.
+  const b = haber(kok, ['--olay', 'alarm', '--cins', 'kirmizi', '--donem', 'D-' + kart,
+                        '--kutu', 'KT-900', '--detay', 'sıradan ayrıntı', '--prova']);
+  assert.equal(b.status, 3);
+  assert.ok(!b.stdout.includes(kart), 'dönem kimliğindeki değer de sızmamalı');
+
+  // SON ÇARE METNİ SINIF ADINI TAŞIR ve o metin bir daha TARANMAZ. "Sınıf adı değer taşıyamaz"
+  // varsayım olarak bırakılmadı, kapalı alfabeyle MEKANİK yapıldı — kasıtlı bozma bu dalın
+  // testsiz olduğunu gösterdi. Süzgeç sahtelenip sınıf alanına bir değer konur:
+  const c = kurulum();
+  writeFileSync(join(c, 'tools', 'guard', 'icerik-suzgeci.sh'),
+    '#!/bin/bash\nprintf \'eslesme\\t%s\\n\' "kart-' + kart + '"\nexit 3\n');
+  const r3 = haber(c, ['--olay', 'alarm', '--cins', 'kirmizi', '--donem', 'K1',
+                       '--kutu', 'KT-900', '--detay', 'sıradan', '--prova']);
+  assert.equal(r3.status, 3);
+  assert.ok(!r3.stdout.includes(kart), 'süzgecin KENDİ çıktısındaki değer de sızmamalı');
+  assert.match(r3.stdout, /bilinmeyen-sinif/, 'kapalı alfabeye uymayan sınıf adı düşürülür');
 });

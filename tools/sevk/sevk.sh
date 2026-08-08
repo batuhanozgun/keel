@@ -49,11 +49,17 @@ kapanis_yuzeyi() { # $1: 3. blok yedeği (bloklar hiç üretilemediyse)
   # SABAH.md — YERİNDE yeniden yazılır (append DEĞİL), tavanlı. Gerekçe: D-21'in kapanış bloğu
   # bir SOHBET yüzeyidir; gözetimsiz gecenin sonunda sohbet yoktur. Yüzey dosya olmak zorunda,
   # ama şişme dedektörü kendi yüzeyinde de geçerli (PANO disiplini).
+  # TAVAN TEK EVDEN (ortak.sh:kirp_bayt — U31, tavan ailesinin ÜÇÜNCÜ kopyası). Buradaki
+  # `cut -c1-4096` üç kusurun en sessiziydi: karakter sayıyordu, SATIR BAŞINA kesiyordu (yani
+  # çok satırlı bir sabah yüzeyini fiilen hiç kesmiyordu) ve kestiğinde bunu SÖYLEMİYORDU.
+  # Sahibin gecesini okuduğu tek dosyanın sessizce kırpılması, "sessiz kırpma yasak" kuralının
+  # panelde tutulup SAYFA düzeyinde tutulmaması demekti.
   if [ -d "$KOK/00_pano" ]; then
-    {
+    SABAH_METNI="$(
       printf '# SABAH — %s · %s · %s\n\n' "${DONEM_KUTU:-?}" "${DONEM_ID:-?}" "$(date '+%Y-%m-%d %H:%M')"
       printf '## GECE NE OLDU\n%s\n\n## SENDE BEKLEYEN\n%s\n\n## ŞİMDİ NE YAPIYOR\n%s\n' "$B1" "$B2" "$B3"
-    } 2>/dev/null | cut -c1-4096 > "$KOK/00_pano/SABAH.md" 2>/dev/null || true
+    )" 2>/dev/null || SABAH_METNI=""
+    kirp_bayt "$SABAH_METNI" 4096 > "$KOK/00_pano/SABAH.md" 2>/dev/null || true
   fi
 
   if command -v haber_at >/dev/null 2>&1; then

@@ -30,6 +30,12 @@ KOK="${CLAUDE_PROJECT_DIR:-$(cd "$DIZIN/../.." && pwd)}"
 
 ALAN_TAVAN=1500      # alan başına bayt
 GOVDE_TAVAN=8192     # gövde toplamı
+# KONU TAVANI (U50, K23 Öbek 1'de koşuda bulundu): Subject'in HİÇ tavanı yoktu. Kırpılan
+# alanlar listesi elle tutuluyor ve `A_KUTU` orada DEĞİL — kutu adı hem konuya hem gövdeye
+# tavansız giriyordu. RFC 5322 bir başlık satırına 998 bayt sınırı koyar; sınırı aşan Subject'i
+# sunucular ÖNGÖRÜLEMEZ biçimde kırpar ya da iletiyi reddeder, yani sessiz kayıp tam da sahibin
+# haber alması gereken yerde doğar. 500 bayt: etiketiyle birlikte 998'in çok altında kalır.
+KONU_TAVAN=500
 DONEM_GONDERIM_TAVANI=10
 
 hata() { printf 'haber: %s\n' "$1" >&2; exit "${2:-1}"; }
@@ -42,6 +48,10 @@ if [ -r "$DIZIN/ortak.sh" ]; then
   kanal_oku "$KOK" >/dev/null 2>&1 || true
 fi
 DUR_KONU_METNI="${KANAL_DUR_KONU:-KEEL DUR}"
+# Kırpma artık ortak kitaplıktan gelir (tek ev, U29/U30/U31). Kitaplık yoksa SESSİZ GEÇİLMEZ:
+# tavansız bir gövde, boğulma freninin (§4) dayandığı sınırın yok olması demektir.
+command -v kirp_bayt >/dev/null 2>&1 \
+  || hata "ortak kitaplık yok/eksik (tools/sevk/ortak.sh) — metin tavanı uygulanamaz"
 
 # ── 1 · Argümanlar (yalnız adlandırılmış; serbest gövde YOK) ──────────────────────────────
 OLAY=""; A_DONEM=""; A_KUTU=""; A_TUR=""; A_SINIF=""; A_UYKU=""
@@ -137,14 +147,10 @@ if [ -n "$A_KOD" ]; then
 fi
 
 # Alan tavanı: kesilen alan KESİLDİĞİNİ söyler (sessiz kırpma, sahip yüzeyinde yalandır).
-kirp() {
-  local M="$1"
-  if [ "${#M}" -gt "$ALAN_TAVAN" ]; then
-    printf '%s… [%s karakter kesildi]' "$(printf '%s' "$M" | cut -c1-"$ALAN_TAVAN")" "$(( ${#M} - ALAN_TAVAN ))"
-  else
-    printf '%s' "$M"
-  fi
-}
+# GÖVDE ortak.sh'ta — TEK EV (U29/U30/U31). Buradaki kopya üç kusurluydu: karakter sayıyordu,
+# `cut -c` her satırı ayrı kesiyordu (çok satırlıda fiilen hiç kesmiyordu) ve kesilmemiş metne
+# "kesildi" diyordu. Üç ayrı yama dördüncü kopyayı davet ederdi.
+kirp() { kirp_bayt "${1:-}" "$ALAN_TAVAN"; }
 # Güvenli dolaylı atama (bash 3.2): `eval "$AD=\$V"` değeri TEK SÖZCÜK olarak atar; içeriği
 # yeniden ayrıştırmaz. `eval "$AD=$V"` yazmak alan içeriğini koda çevirirdi.
 for D in A_BLOK1 A_BLOK2 A_BLOK3 A_CEVIRI A_ETKI A_BEKLETIR A_DETAY A_UYKU A_SECENEKLER; do
@@ -189,33 +195,52 @@ case "$OLAY" in
       "$A_DONEM" "$SIMDI" "$A_CINS" "${A_DETAY:-(ayrıntı yok)}")"
     ;;
 esac
-if [ "${#GOVDE}" -gt "$GOVDE_TAVAN" ]; then
-  GOVDE="$(printf '%s' "$GOVDE" | cut -c1-"$GOVDE_TAVAN")
-[gövde tavanı aşıldı, kesildi]"
-fi
+GOVDE="$(kirp_bayt "$GOVDE" "$GOVDE_TAVAN")"
+KONU="$(kirp_bayt "$KONU" "$KONU_TAVAN")"
 
 # ── 3 · Gönderim-öncesi ZORUNLU süzgeç (fail-closed) ──────────────────────────────────────
 # Süzgeç KOŞAMAZSA da temiz sayılmaz: "tarayamadım" ile "temiz" aynı şey değildir.
+# U38 · SÜZGEÇ TASLAĞA DEĞİL, GÖNDERİLEN METNE UYGULANIR. Sansürlü şablon `$A_KUTU` ve
+# `$A_DONEM` değerlerini süzgecin ARDINDAN yeniden konuya ve gövdeye koyuyordu — oysa taranan
+# metin tam da onları içeriyordu. Sır kutu adındaysa "gönderim durduruldu" postası onu AYNEN
+# dışarı taşıyordu (provada ölçüldü: kartlı değer Subject'te çıktı). Güvence artık metnin
+# kendisine değil GÖNDERİLENE bağlı: hangi taslak kazanırsa kazansın, giden metin taranmıştır.
 SUZGEC="$KOK/tools/guard/icerik-suzgeci.sh"
-SANSUR=0; SUZGEC_SINIF=""
-if [ -r "$SUZGEC" ]; then
-  SUZ_CIKTI="$(printf '%s\n%s\n' "$KONU" "$GOVDE" | CLAUDE_PROJECT_DIR="$KOK" bash "$SUZGEC" --metin 2>/dev/null)"
-  SUZ_KOD=$?
-else
-  SUZ_CIKTI=""; SUZ_KOD=90
-fi
-if [ "$SUZ_KOD" -ne 0 ]; then
-  SANSUR=1
-  if [ "$SUZ_KOD" -eq 3 ]; then
-    SUZGEC_SINIF="$(printf '%s' "$SUZ_CIKTI" | head -n1 | cut -f2)"
-    [ -n "$SUZGEC_SINIF" ] || SUZGEC_SINIF="bilinmeyen-sinif"
-  else
-    SUZGEC_SINIF="süzgeç koşamadı (kod $SUZ_KOD)"
+SANSUR=0; SUZGEC_SINIF=""; SUZ_SINIF=""
+suzgecten_gecir() { # $1 konu · $2 gövde → 0 temiz · 3 eşleşme · 90 koşamadı; sınıf SUZ_SINIF'te
+  local CIKTI KOD=0
+  SUZ_SINIF=""
+  [ -r "$SUZGEC" ] || { SUZ_SINIF="süzgeç koşamadı (kod 90)"; return 90; }
+  CIKTI="$(printf '%s\n%s\n' "$1" "$2" | CLAUDE_PROJECT_DIR="$KOK" bash "$SUZGEC" --metin 2>/dev/null)" || KOD=$?
+  [ "$KOD" -eq 0 ] && return 0
+  if [ "$KOD" -eq 3 ]; then
+    SUZ_SINIF="$(printf '%s' "$CIKTI" | head -n1 | cut -f2)"
+    # SINIF ADI KAPALI ALFABEDEDİR: aşağıdaki sabit metin sınıf adını taşır ve o metin bir
+    # daha taranmaz. "Sınıf adı değer taşıyamaz" varsayım olarak bırakılmaz, MEKANİK olur.
+    # ALFABEDE RAKAM YOK ve uzunluk sınırlı: rakam serbest bırakıldığında bir kart numarası
+    # "sınıf adı" kılığında bu kapıdan geçiyordu (testte ölçüldü). Sınıf adları `kart` `tckn`
+    # `iban` gibi küçük harfli sözcüklerdir; rakam taşıyan bir sınıf adı YOKTUR.
+    case "$SUZ_SINIF" in ''|*[!a-z-]*) SUZ_SINIF="bilinmeyen-sinif" ;; esac
+    [ "${#SUZ_SINIF}" -le 24 ] || SUZ_SINIF="bilinmeyen-sinif"
+    return 3
   fi
+  SUZ_SINIF="süzgeç koşamadı (kod $KOD)"
+  return 90
+}
+if ! suzgecten_gecir "$KONU" "$GOVDE"; then
+  SANSUR=1; SUZGEC_SINIF="$SUZ_SINIF"
   # SABİT ŞABLON: eşleşen değer bir yana, ÖZGÜN METNİN KENDİSİ de taşınmaz.
   KONU="KEEL · $A_KUTU · gönderim durduruldu"
   GOVDE="$(printf 'Dönem: %s\nZaman: %s\n\nGönderilecek metin önleme süzgecinde DURDU (%s).\nİçerik taşınmadı; bu ileti sabit şablondur.\nOlay: %s\n\nBilgisayara bak: 00_pano/zarf-gunlugu.jsonl\n' \
     "$A_DONEM" "$SIMDI" "$SUZGEC_SINIF" "$OLAY")"
+  # İKİNCİ TARAMA: sansürlü şablonun kendisi de İKİ DEĞİŞKEN taşır (kutu adı · dönem kimliği).
+  # Sır oradaysa ilk şablon onu dışarı çıkarırdı. Takılırsa hiçbir değişken taşımayan metne
+  # düşülür; o metindeki iki alan (zaman damgası · kapalı alfabeli sınıf adı) değer taşıyamaz.
+  if ! suzgecten_gecir "$KONU" "$GOVDE"; then
+    KONU="KEEL · gönderim durduruldu"
+    GOVDE="$(printf 'Zaman: %s\n\nGönderilecek metin önleme süzgecinde DURDU (%s).\nKUTU ADI ve DÖNEM KİMLİĞİ de süzgeçten geçemedi; bu iletide hiçbir değer taşınmıyor.\n\nBilgisayara bak: 00_pano/zarf-gunlugu.jsonl\n' \
+      "$SIMDI" "$SUZGEC_SINIF")"
+  fi
 fi
 
 # ── 4 · Boğulma freni: dönem başına tavan + olay tekilleştirmesi ───────────────────────────
