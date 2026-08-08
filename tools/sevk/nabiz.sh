@@ -56,7 +56,12 @@ for (const l of ham.split("\n")) {
   if (!j || typeof j !== "object" || !j.kod) process.exit(1);
   if (j.durum !== "acik") continue;
   const t = Date.parse(j.ts || "");
-  const yasSaat = Number.isFinite(t) ? Math.floor((Date.now() - t) / 3600000) : 9999;
+  // U48 · SENTINEL YOK. Burada eskiden 9999 basiliyordu ve o sayi kabuk tarafinda GERCEK bir
+  // yas olcumuyle AYNI karsilastirmaya giriyordu: -ge OMUR_SAAT => "omru doldu" => canli kod
+  // DUSURULUYOR ve sahibe "cevap suren doldu" postasi gidiyordu. Yani "damgani okuyamadim",
+  // sahibin telefondan cevap verme hakkini GERI ALINAMAZ bicimde yok ediyordu. Olculemeyen
+  // yas artik BOS dizedir; bos dize hicbir esige girmez. Bu dosyadaki U26 ikizidir.
+  const yasSaat = Number.isFinite(t) ? Math.floor((Date.now() - t) / 3600000) : "";
   const sec = Array.isArray(j.secenekler) ? j.secenekler : [];
   const gor = Array.isArray(j.gorulen) ? j.gorulen : [];
   // KİMLİK ÇAPASIZ SATIR DÖKÜLMEZ (fail-closed): msgid yoksa arama boş dizeyle koşardı.
@@ -203,12 +208,23 @@ cevap_hatti() {
     [ -n "$KOD" ] || continue
     # Sayısal alanlar DOĞRULANIR: kayan bir sütun aritmetik genişletmede kabuğu öldürüyordu
     # (genişletme hatası non-interaktif kabukta ölümcül) ve tur izsiz sona eriyordu.
-    case "$YAS_SAAT" in ''|*[!0-9]*) YAS_SAAT=9999 ;; esac
+    case "$YAS_SAAT" in ''|*[!0-9]*) YAS_SAAT="" ;; esac
     case "$BICIMSIZ" in ''|*[!0-9]*) BICIMSIZ=0 ;; esac
+    # U48 · ÖLÇÜLEMEYEN YAŞ HİÇBİR EŞİĞE GİRMEZ, ama sessiz de kalmaz. Kod DÜŞMEZ ve arama
+    # sürer: sahip telefondan hâlâ cevaplayabilir. İz KOD BAŞINA BİR kez düşer — her tur
+    # tekrarlayan bulgu günlüğü boğar ve boğulan günlük kör eder (DUR izinin emsali).
+    if [ -z "$YAS_SAAT" ]; then
+      if [ "$ALARM" != "yas-olculemedi" ]; then
+        J_tip=bulgu J_donem="$C_DONEM" J_kutu="$C_KUTU" J_catal="$CATAL" J_cins=cevap-yasi-olculemedi \
+          J_detay="capa satirindaki ts cozulemedi — kod DUSURULMEDI, omur olcumu atlandi" \
+          json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
+        cevap_capa_yaz "$KOD" alarm yas-olculemedi
+      fi
+    fi
     # (a) Ömrü dolan kod: düşer + sahibe TEK bilgi. Geç gelen cevabın sessizce yutulması,
     #     sahibin "cevapladım" sanmasıyla yapının "cevap yok" bilmesi arasında sessiz bir
     #     çatlak açardı.
-    if [ "$YAS_SAAT" -ge "${KANAL_CEVAP_OMUR_SAAT:-72}" ]; then
+    if [ -n "$YAS_SAAT" ] && [ "$YAS_SAAT" -ge "${KANAL_CEVAP_OMUR_SAAT:-72}" ]; then
       cevap_capa_yaz "$KOD" durum suresi-doldu
       CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins cevap-okunamadi --sayacsiz \
         --anahtar "omur-$CATAL" --kutu "$C_KUTU" --donem "$C_DONEM" \
@@ -216,7 +232,7 @@ cevap_hatti() {
       continue
     fi
     # (b) Eşiği aşan cevapsız çatal (P4.4) — kod başına BİR kez, sayaç dosyasına DOKUNMADAN.
-    if [ "$YAS_SAAT" -ge "${KANAL_CEVAP_ESIK_SAAT:-24}" ] && [ "$ALARM" != "gitti" ]; then
+    if [ -n "$YAS_SAAT" ] && [ "$YAS_SAAT" -ge "${KANAL_CEVAP_ESIK_SAAT:-24}" ] && [ "$ALARM" != "gitti" ]; then
       # Anahtarda KOD YOK (sır): tekilleştirme çatal kimliğiyle yeter ve `.haber-durum`a
       # sır dizesi sızmaz. İşaretleme yalnız posta GİTTİYSE yapılır — gitmeyen alarmı "gitti"
       # yazmak P4.4 yükseltmesini kalıcı olarak susturuyordu (hasım bulgusu).
@@ -462,6 +478,23 @@ YAS_DK="$(printf '%s' "$OLCUM" | cut -f2)"
 KAYIT="$(printf '%s' "$OLCUM" | cut -f3)"
 
 case "$DURUM" in
+  # U49 · ÜÇÜNCÜ HÂL BAĞLANDI. `OKUNAMADI` doğru üretiliyordu — sentinel bir sayı değil, adı
+  # olan ayrı bir hâl — ama HİÇBİR tüketicisi yoktu: bu `case` yalnız iki sessizlik hâlini
+  # tanıyordu, üçüncüsü sessizce düşüyordu. Yani "yapı sustu mu, ÖLÇEMEDİM" ile "her şey
+  # yolunda" aynı çıktıyı veriyordu. U26'nın dersinin ikinci yarısı budur: üçüncü hâli ÜRETMEK
+  # yetmez, BAĞLAMAK gerekir — bağlanmamış hâl, hiç üretilmemiş hâlle aynı körlüğü verir.
+  # Watchdog'un tek işi sessizliği bildirmektir; onu ölçemediğini bildirmemek, tam da var oluş
+  # sebebinde kör olmaktır.
+  OKUNAMADI)
+    J_tip=alarm J_donem="$DONEM_ID" J_kutu="$DONEM_KUTU" J_cins=nabiz-olculemedi J_durum="$DURUM" \
+      J_sebep="ne gunlukte bu donemin kaydi var ne gostergede cozulebilir acilis damgasi" \
+      json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
+    CLAUDE_PROJECT_DIR="$KOK" haber_at --olay alarm --cins olculemedi --anahtar "$DURUM" \
+      --donem "$DONEM_ID" --kutu "$DONEM_KUTU" \
+      --detay "Yapının susup susmadığını ÖLÇEMİYORUM: bu dönemin günlüğünde kayıt yok ve dönem göstergesinde okunabilir bir açılış damgası da yok.
+Dönem: $DONEM_ID · kutu: $DONEM_KUTU
+Bu, 'her şey yolunda' DEMEK DEĞİLDİR — sessizlik alarmı bu dönemde çalışmıyor. Bak: 00_pano/zarf-gunlugu.jsonl" || true
+    ;;
   SESSIZ_A|SESSIZ_B)
     if [ "$DURUM" = "SESSIZ_B" ]; then
       DETAY="Dönem AÇIK görünüyor ama açılıştan bu yana HİÇ nabız gelmemiş: sevk daha ilk adımda ölmüş olabilir (kablo-söküm cinsi).
@@ -488,36 +521,98 @@ esac
 # DURDURMAKTIR — sahtecilik en kötü ihtimalle gecenin işini iptal ettirir; veri sızdırmaz,
 # karar bastırmaz, dışarı bir şey göndertmez. Fail-safe yönü doğru olduğu için jeton
 # varsayılan kapalıdır (kanal.conf · DUR_JETON).
-if [ ! -e "$DIZIN/.dur" ] && [ -n "${KANAL_IMAP_SUNUCU:-}" ] && [ -n "${KANAL_HESAP:-}" ]; then
+#
+# U27 · ÜÇ ONARIM (K11). Ortak kökeni: bir kanalın kendi ölçüm aracının yan etkisini hesaba
+# katmaması — ve aynı dersin kardeş hatta taşınmaması.
+#  (a) ARAMA ARTIK OKUNDU-BAYRAĞINA BAĞLI DEĞİL. `UNSEEN` ile daraltılan bir arama KENDİNİ KÖR
+#      EDER: bu dosyanın kendi başlığında ölçülmüş olarak yazılı (§0) — curl BODY.PEEK
+#      üretemiyor, yani çektiğimiz her ileti \Seen işaretleniyor. Bir tur içinde çekim yarıda
+#      kalırsa (ağ tökezlemesi) ileti bir daha HİÇ bulunmaz ve sahibin freni sessizce ölür.
+#      Aynı ders cevap hattında ZATEN yazılıydı ("geçici bir ağ arızası geçerli bir kodu ASLA
+#      düşürmemeli", cevap_ara içinde) — kardeş hatta taşınmamıştı. Tekilleştirme UNSEEN'in
+#      işi değil: `.dur` dosyasıdır ve o yalnız sahibin eliyle kalkar.
+#  (b) YERİNE ZAMAN SINIRI KONDU. "Bu koşuyu durdur" diyen bir posta, koşu başlamadan önce
+#      yazılmış olamaz. Sınır dönemin AÇILIŞ DAMGASIDIR. `SINCE` bir GÜN çözünürlüğündedir ve
+#      INTERNALDATE'e bakar; kaba ön-eleme olarak bir gün geriden verilir, HÜKMÜ iletinin kendi
+#      `Date` başlığı verir. O başlık zaten çekiliyordu ve `.dur` satırına yazılıyordu ama
+#      HİÇ OKUNMUYORDU — yazılıp okunmayan iz, `gorulen` alanının kardeşi.
+#  (c) ÇÖZÜLEMEYEN/EKSİK `Date` KABUL EDİLİR. Bu kanalın yönü fail-safe'tir: kaçırılan DUR
+#      sahibin frenini elinden alır, fazladan DUR yalnız gecenin işini iptal ettirir.
+#      Belirsizlikte pahalı olan taraf KAÇIRMAKTIR — ölçüm koşamazsa da posta elenmez.
+DUR_IZ="$DIZIN/.dur-imap-eksik"
+if [ ! -e "$DIZIN/.dur" ]; then
+ if [ -z "${KANAL_IMAP_SUNUCU:-}" ] || [ -z "${KANAL_HESAP:-}" ]; then
+  # SESSİZ ATLAMA KALKTI (U27): IMAP ucu doldurulmamışsa uzaktan DUR fiilen YOKTUR. Bunu
+  # kimsenin bilmemesi, sahibin VAR SANDIĞI bir frenle geceye girmesi demektir. Dönem başına
+  # BİR iz düşer — 15 dakikada bir tekrarlayan bulgu günlüğü boğar ve boğulan günlük kör eder.
+  if [ "$(head -n1 "$DUR_IZ" 2>/dev/null || true)" != "$DONEM_ID" ]; then
+    printf '%s\n' "$DONEM_ID" > "$DUR_IZ" 2>/dev/null || true
+    DUR_EKSIK=""
+    [ -n "${KANAL_IMAP_SUNUCU:-}" ] || DUR_EKSIK="$DUR_EKSIK IMAP_SUNUCU"
+    [ -n "${KANAL_HESAP:-}" ] || DUR_EKSIK="$DUR_EKSIK HESAP"
+    J_tip=bulgu J_donem="$DONEM_ID" J_kutu="$DONEM_KUTU" J_cins=uzaktan-dur-kapali \
+      J_detay="kanal.conf eksik —$DUR_EKSIK ⇒ uzaktan DUR bu donemde calismiyor" \
+      json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
+  fi
+ else
   IMAP_PAROLA="$(security find-generic-password -s "${KANAL_KEYCHAIN_SERVIS:-keel-haber}" -a "$KANAL_HESAP" -w 2>/dev/null)" || IMAP_PAROLA=""
   if [ -n "$IMAP_PAROLA" ]; then
     ARANAN="${KANAL_DUR_KONU:-KEEL DUR}"
     [ -n "${KANAL_DUR_JETON:-}" ] && ARANAN="$ARANAN $KANAL_DUR_JETON"
+    # Pencere: <ISO sınır> <TAB> <IMAP SINCE tarihi>. Damga çözülemezse 24 saatlik pencere —
+    # sınırsız bırakmak, aylar önceki bir postanın bu geceyi durdurmasına izin verirdi.
+    DUR_PENCERE="$(N_DAMGA="${DONEM_DAMGA:-}" "$NODE_BIN" -e '
+const AY=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+let t=Date.parse(process.env.N_DAMGA||"");
+if(!Number.isFinite(t))t=Date.now()-24*3600000;
+const g=new Date(t-24*3600000);
+console.log(new Date(t).toISOString()+"\t"+String(g.getUTCDate()).padStart(2,"0")+"-"+AY[g.getUTCMonth()]+"-"+g.getUTCFullYear());
+' 2>/dev/null || true)"
+    DUR_SINIR="$(printf '%s' "$DUR_PENCERE" | cut -f1)"
+    DUR_SINCE="$(printf '%s' "$DUR_PENCERE" | cut -f2)"
     # UID SEARCH — düz SEARCH DEĞİL (F1-5g hasım turunda ölçülen GERÇEK ARIZA, 2026-07-30):
     # RFC 3501de düz `SEARCH` mesaj SIRA NUMARASI döndürür, UID döndüren `UID SEARCH`tir.
-    # Aşağıdaki satır dönen sayıyı `;UID=` olarak veriyordu ve curl `UID FETCH` üretiyordu;
-    # gerçek bir gelen kutusunda ikisi aynı değildir ⇒ uzaktan DUR muhtemelen HİÇ ateşlenmiyordu.
     # Değişken adının UIDLER olması hatayı altı pakettir görünmez kılmış. Canlı IMAP hiç
-    # koşulmadığı için hiçbir test bunu göremezdi (E5in kendi ilan ettiği sınırın faturası).
+    # koşulmadığı için hiçbir test bunu göremezdi; bu paketle sahte taşıyıcı o boşluğu kapattı.
     # Arama yalnız KONU eşleştirir ve hiçbir gövde indirilmez — DUR hattının sözü korunur.
-    UIDLER="$(printf 'url = "imaps://%s:%s/INBOX"\nuser = "%s:%s"\nrequest = "UID SEARCH UNSEEN HEADER Subject \\"%s\\""\nmax-time = 20\nsilent\nshow-error\n' \
-      "$KANAL_IMAP_SUNUCU" "${KANAL_IMAP_PORT:-993}" "$KANAL_HESAP" "$IMAP_PAROLA" "$ARANAN" \
+    DUR_ARAMA="UID SEARCH"
+    [ -n "$DUR_SINCE" ] && DUR_ARAMA="$DUR_ARAMA SINCE $DUR_SINCE"
+    UIDLER="$(printf 'url = "imaps://%s:%s/INBOX"\nuser = "%s:%s"\nrequest = "%s HEADER Subject \\"%s\\""\nmax-time = 20\nsilent\nshow-error\n' \
+      "$KANAL_IMAP_SUNUCU" "${KANAL_IMAP_PORT:-993}" "$KANAL_HESAP" "$IMAP_PAROLA" "$DUR_ARAMA" "$ARANAN" \
       | curl -K - 2>/dev/null | tr -d '\r' | sed -n 's/^\* SEARCH //p' | head -n1)"
     for U in ${UIDLER:-}; do
       case "$U" in ''|*[!0-9]*) continue ;; esac
-      # Yalnız From ve Date başlıkları çekilir (BODY.PEEK ile okundu işaretlenmez de).
+      # Yalnız From ve Date başlıkları çekilir. İLAN EDİLMİŞ SINIR (§0'da ölçülü): curl
+      # BODY.PEEK üretemez ⇒ bu çekim iletiyi \Seen işaretler. Arama bu yüzden okundu
+      # bayrağına DAYANAMAZ — dayandığı sürece kanal kendini kör ediyordu.
       BASLIK="$(printf 'url = "imaps://%s:%s/INBOX;UID=%s;SECTION=HEADER.FIELDS%%20(FROM%%20DATE)"\nuser = "%s:%s"\nmax-time = 20\nsilent\nshow-error\n' \
         "$KANAL_IMAP_SUNUCU" "${KANAL_IMAP_PORT:-993}" "$U" "$KANAL_HESAP" "$IMAP_PAROLA" \
         | curl -K - 2>/dev/null | tr -d '\r')"
+      [ -n "$BASLIK" ] || continue
+      POSTA_TARIH="$(printf '%s' "$BASLIK" | sed -n 's/^[Dd]ate: //p' | head -n1)"
+      # TARİH HÜKMÜ. Node koşamazsa çıktı boş kalır ve posta ELENMEZ (c maddesi: belirsizlikte
+      # kaçırmak pahalı olandır). Eleme sessiz değildir — günlüğe iz düşer.
+      DUR_HUKUM=""
+      if [ -n "$DUR_SINIR" ] && [ -n "$POSTA_TARIH" ]; then
+        DUR_HUKUM="$(N_T="$POSTA_TARIH" N_S="$DUR_SINIR" "$NODE_BIN" -e '
+const t=Date.parse(process.env.N_T||""),s=Date.parse(process.env.N_S||"");
+console.log(Number.isFinite(t)&&Number.isFinite(s)&&t<s?"ESKI":"TAZE")
+' 2>/dev/null || true)"
+      fi
+      if [ "$DUR_HUKUM" = "ESKI" ]; then
+        J_tip=bulgu J_donem="$DONEM_ID" J_kutu="$DONEM_KUTU" J_cins=dur-postasi-eski \
+          J_detay="uid $U · donem acilisindan ($DUR_SINIR) eski bir DUR postasi atlandi" \
+          json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
+        continue
+      fi
       # Zarf adresi BİREBİR (hasım bulgusu): alt-dize denetimi görünen ada yazılmış bir
       # adresle geçilebiliyordu — «From: "sahip@ornek.com" <saldirgan@kotu.com>».
       DUR_GONDEREN="$(printf '%s' "$BASLIK" | "$NODE_BIN" --input-type=module -e "$CEVAP_JS_ADRES" 2>/dev/null || true)"
       case "$DUR_GONDEREN" in
         "$(printf '%s' "$KANAL_ALICI" | tr 'A-Z' 'a-z')")
-          POSTA_TARIH="$(printf '%s' "$BASLIK" | sed -n 's/^[Dd]ate: //p' | head -n1)"
           printf 'uzaktan · posta · %s\n' "${POSTA_TARIH:-tarih okunamadı}" > "$DIZIN/.dur"
           J_tip=dur-alindi J_donem="$DONEM_ID" J_kutu="$DONEM_KUTU" J_kaynak="posta" \
-            J_sebep="uzaktan DUR postasi alindi (konu esleşti, gonderen dogrulandi)" \
+            J_sebep="uzaktan DUR postasi alindi (konu esleşti, tarih penceresi ve gonderen dogrulandi)" \
             json_kur 2>/dev/null | gunluge_yaz "$KOK" >/dev/null 2>&1 || true
           break
           ;;
@@ -525,6 +620,7 @@ if [ ! -e "$DIZIN/.dur" ] && [ -n "${KANAL_IMAP_SUNUCU:-}" ] && [ -n "${KANAL_HE
     done
     unset IMAP_PAROLA
   fi
+ fi
 fi
 
 exit 0

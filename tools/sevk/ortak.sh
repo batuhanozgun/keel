@@ -104,23 +104,55 @@ donem_oku() {
 # "baştan mühürlü kapı" DEĞİL, tam tersiydi: şart her kurulumda gerçek dönemi kilitliyordu ve
 # karşılığı o kurulumda hiçbir zaman üretilemiyordu. Yerini alan şey daha sert: aşağıdaki üç
 # ölçüm bu makinede, bu an koşuyor (dosya varlığı değil, işin CANLILIĞI).
+
+# launchd işinin YÜKLÜ olup olmadığı. Kendi fonksiyonunda, çünkü bu dal testte HİÇ koşmuyordu:
+# "hangi kipte hiç koşmuyor" sorusunun bu evdeki cevabı buydu — yüklü bir işin arkasındaki
+# nabız/damga kuyruğunun tamamı ölçümsüzdü (U26 tam orada yaşıyordu).
+watchdog_isi_yuklu() { # $1: launchd etiketi
+  launchctl print "gui/$(id -u)/${1:-}" >/dev/null 2>&1
+}
+
+# Nabız damgasının yaşı (dakika). ÜÇ AYRI SONUÇ — "ölçemedim" ile "ölçtüm, kötü" AYNI ŞEY
+# DEĞİLDİR (U26). Eskiden bu hesap `node`u ÇIPLAK çağırıp hatasını `|| echo 999` ile yutuyordu:
+# launchd/GUI oturumunun dar PATH'inde node bulunamıyor, 999 bir "yaş" sanılıyor ve gerçek kutu
+# dönemi `watchdog-nabzi-BAYAT(999dk)` diye ENGELLENİYORDU — oysa watchdog dipdiri koşuyordu.
+# Sahip yanlış yere bakar, asıl arıza görünmez. Kardeşi U46'dır (kokpit okuyamadığına YEŞİL
+# diyordu); yönü ters, sınıfı aynı: OKUYAMAMAYI BİR ÖLÇÜM DEĞERİNE ÇEVİRMEK.
+# Dönüş: 0 = yaş stdoutta · 2 = ÖLÇÜLEMEDİ (node yok / koşmadı) · 3 = damga çözülemedi
+nabiz_yasi_dk() { # $1: damga dosyası
+  local DOSYA="${1:-}" HAM YAS RC=0
+  [ -s "$DOSYA" ] || return 3
+  HAM="$(head -n1 "$DOSYA" 2>/dev/null || true)"
+  [ -n "$HAM" ] || return 3
+  node_bul || return 2
+  YAS="$(N_D="$HAM" "$NODE_BIN" -e 'const t=Date.parse(process.env.N_D||"");if(!Number.isFinite(t))process.exit(3);console.log(Math.floor((Date.now()-t)/60000))' 2>/dev/null)" || RC=$?
+  [ "$RC" = "3" ] && return 3
+  [ "$RC" = "0" ] || return 2
+  case "$YAS" in ''|-|*[!0-9-]*) return 2 ;; esac
+  printf '%s' "$YAS"
+}
+
 gercek_kutu_eksikleri() { # $1: sevk dizini
-  local D="${1:-$ORTAK_DIZIN}" E="" ETIKET="" YAS=""
+  local D="${1:-$ORTAK_DIZIN}" E="" ETIKET="" YAS="" YRC=0
   if [ ! -s "$D/watchdog-kurulu" ]; then
     E="$E watchdog-kaydi(tools/sevk/watchdog-kurulu)"
   else
     ETIKET="$(sed -n 's/^etiket=//p' "$D/watchdog-kurulu" 2>/dev/null | head -n1)"
     if [ -z "$ETIKET" ]; then
       E="$E watchdog-kaydinda-etiket-yok"
-    elif ! launchctl print "gui/$(id -u)/$ETIKET" >/dev/null 2>&1; then
+    elif ! watchdog_isi_yuklu "$ETIKET"; then
       E="$E watchdog-isi-YUKLU-DEGIL($ETIKET)"
     elif [ ! -s "$D/.nabiz-son" ]; then
       E="$E watchdog-hic-kosmamis"
     else
-      YAS="$(N_D="$(head -n1 "$D/.nabiz-son" 2>/dev/null)" node -e 'const t=Date.parse(process.env.N_D||"");console.log(Number.isFinite(t)?Math.floor((Date.now()-t)/60000):999)' 2>/dev/null || echo 999)"
-      case "$YAS" in
-        ''|*[!0-9]*) E="$E watchdog-damgasi-okunmuyor" ;;
-        *) [ "$YAS" -le 20 ] || E="$E watchdog-nabzi-BAYAT(${YAS}dk)" ;;
+      YAS="$(nabiz_yasi_dk "$D/.nabiz-son")" || YRC=$?
+      # ÜÇ EKSİK ADI, ÜÇ AYRI SEBEP. Hepsi dönemi engeller (kalkansız motor yok) ama sahibi
+      # AYRI yere gönderir: bayat nabız watchdog'a, ölçülemeyen nabız node kurulumuna,
+      # okunmayan damga dosyanın kendisine bakılmasını söyler.
+      case "$YRC" in
+        0) [ "$YAS" -le 20 ] || E="$E watchdog-nabzi-BAYAT(${YAS}dk)" ;;
+        2) E="$E watchdog-nabzi-OLCULEMEDI(node-bulunamadi)" ;;
+        *) E="$E watchdog-damgasi-okunmuyor" ;;
       esac
     fi
   fi

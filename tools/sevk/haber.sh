@@ -51,33 +51,54 @@ A_CINS=""; A_DETAY=""; A_ANAHTAR=""
 A_KOD=""; A_SECENEKLER=""
 PROVA=0; SAYACSIZ=0
 
+# DEĞERLİ SEÇENEKLER — TEK LİSTE. Testler bu satırdan okur (çapa): elle tutulan bir kopya
+# bayatlar ve yeni bir seçenek testsiz doğardı. Bayraklar (`--prova` · `--sayacsiz`) burada YOK.
+DEGERLI_SECENEKLER='--olay --donem --kutu --tur --sinif --uyku --blok1 --blok2 --blok3 --catal --ceviri --etki --bekletir --cins --detay --anahtar --kod --secenekler'
+
 while [ $# -gt 0 ]; do
-  case "$1" in
-    --olay) OLAY="${2:-}"; shift 2 ;;
-    --donem) A_DONEM="${2:-}"; shift 2 ;;
-    --kutu) A_KUTU="${2:-}"; shift 2 ;;
-    --tur) A_TUR="${2:-}"; shift 2 ;;
-    --sinif) A_SINIF="${2:-}"; shift 2 ;;
-    --uyku) A_UYKU="${2:-}"; shift 2 ;;
-    --blok1) A_BLOK1="${2:-}"; shift 2 ;;
-    --blok2) A_BLOK2="${2:-}"; shift 2 ;;
-    --blok3) A_BLOK3="${2:-}"; shift 2 ;;
-    --catal) A_CATAL="${2:-}"; shift 2 ;;
-    --ceviri) A_CEVIRI="${2:-}"; shift 2 ;;
-    --etki) A_ETKI="${2:-}"; shift 2 ;;
-    --bekletir) A_BEKLETIR="${2:-}"; shift 2 ;;
-    --cins) A_CINS="${2:-}"; shift 2 ;;
-    --detay) A_DETAY="${2:-}"; shift 2 ;;
-    --anahtar) A_ANAHTAR="${2:-}"; shift 2 ;;
-    --kod) A_KOD="${2:-}"; shift 2 ;;
-    --secenekler) A_SECENEKLER="${2:-}"; shift 2 ;;
+  SEC="$1"
+  case "$SEC" in
     # Cevap hattı dönem-DIŞI koşar (nabız, dönem kapısının önünde). Sayaç dosyası
     # (.haber-durum) ilk satırındaki DÖNEM kimliğine bağlıdır; dönem-dışı bir alarm onu
     # yeniden yazıp CANLI dönemin tekilleştirme listesini silerdi (hasım bulgusu). Bu bayrak
     # o dosyaya hiç dokunmaz; cevap hattının tekilleştirmesi .cevap-capa satırındadır.
-    --sayacsiz) SAYACSIZ=1; shift ;;
-    --prova) PROVA=1; shift ;;
-    *) hata "tanınmayan argüman: $1 (serbest gövde argümanı YOKTUR — tasarım §7.3)" ;;
+    --sayacsiz) SAYACSIZ=1; shift; continue ;;
+    --prova) PROVA=1; shift; continue ;;
+  esac
+  # TANIMA ÖNCE, DEĞER SONRA: sırası ters olsaydı `--govde` "değersiz kaldı" derdi ve
+  # serbest-metin yasağının kendi sebebi kaybolurdu.
+  case " $DEGERLI_SECENEKLER " in
+    *" $SEC "*) : ;;
+    *) hata "tanınmayan argüman: $SEC (serbest gövde argümanı YOKTUR — tasarım §7.3)" ;;
+  esac
+  # U28 · DEĞERSİZ KALAN SEÇENEK. `shift 2`, $# < 2 iken BAŞARISIZ olur ve HİÇBİR ŞEY kaydırmaz;
+  # `set -e` yoktur (çıkış sözleşmesi kodlarla konuşur, §"Çıkış sözleşmesi") ⇒ döngü aynı
+  # argümanla sonsuza dönerdi ve ÇAĞIRAN KANCA ASKIDA KALIRDI. Canlı ölçüldü, süreç elle
+  # öldürüldü. Ölçüm 18 dalda değil TEK kapıda: kopya = sürüklenme (D-02 dersi).
+  [ $# -ge 2 ] || hata "değer isteyen seçenek değersiz kaldı: $SEC"
+  DEGER="$2"; shift 2
+  case "$SEC" in
+    --olay) OLAY="$DEGER" ;;
+    --donem) A_DONEM="$DEGER" ;;
+    --kutu) A_KUTU="$DEGER" ;;
+    --tur) A_TUR="$DEGER" ;;
+    --sinif) A_SINIF="$DEGER" ;;
+    --uyku) A_UYKU="$DEGER" ;;
+    --blok1) A_BLOK1="$DEGER" ;;
+    --blok2) A_BLOK2="$DEGER" ;;
+    --blok3) A_BLOK3="$DEGER" ;;
+    --catal) A_CATAL="$DEGER" ;;
+    --ceviri) A_CEVIRI="$DEGER" ;;
+    --etki) A_ETKI="$DEGER" ;;
+    --bekletir) A_BEKLETIR="$DEGER" ;;
+    --cins) A_CINS="$DEGER" ;;
+    --detay) A_DETAY="$DEGER" ;;
+    --anahtar) A_ANAHTAR="$DEGER" ;;
+    --kod) A_KOD="$DEGER" ;;
+    --secenekler) A_SECENEKLER="$DEGER" ;;
+    # Beyaz listede olup burada karşılığı OLMAYAN seçenek bir İÇ TUTARSIZLIKTIR ve sessiz
+    # geçmez: iki liste ayrışırsa kullanıcı sessizce yok sayılan bir argüman verir.
+    *) hata "iç tutarsızlık: $SEC beyaz listede ama atanmıyor (tools/sevk/haber.sh)" ;;
   esac
 done
 
@@ -93,8 +114,11 @@ if [ "$OLAY" = "alarm" ]; then
     # F1-5g: cevapsiz = eşiği aşan cevapsız çatal (P4.4) · cevap-okunamadi = kimlik geçti ama
     # gövde çözülemedi ya da kod düştü. Beyaz liste KAPALI olduğu için bu iki cins EKLENMEDEN
     # yükseltme hattı `exit 1` verip izsiz kalıyordu (hasım bulgusu, dört mercek).
-    sessizlik|sisme|kirmizi|kanal|tavan|cevapsiz|cevap-okunamadi) : ;;
-    *) hata "alarm olayı --cins ister: sessizlik | sisme | kirmizi | kanal | tavan | cevapsiz | cevap-okunamadi" ;;
+    # `olculemedi` AYRI bir cinstir, `sessizlik`in alt hâli DEĞİL (U49): "yapı sustu" ile
+    # "susup susmadığını ölçemedim" sahibe farklı şey söyler ve farklı yere baktırır. İkisini
+    # tek ada sıkıştırmak, tam da bu turda kapatılan körlüğün adlandırma yarısıdır.
+    sessizlik|sisme|kirmizi|kanal|tavan|cevapsiz|cevap-okunamadi|olculemedi) : ;;
+    *) hata "alarm olayı --cins ister: sessizlik | sisme | kirmizi | kanal | tavan | cevapsiz | cevap-okunamadi | olculemedi" ;;
   esac
 fi
 # Kod biçimi SERT: konuya/başlığa girmeden önce ayrıştırılır. Alfabe karışması imkânsız

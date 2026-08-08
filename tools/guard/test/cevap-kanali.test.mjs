@@ -325,10 +325,18 @@ test('CEVAP_KANALI boşken kanal KAPALI sayılır; tanınmayan değer de AÇMAZ'
 // ── 9 · DUR hattının onarımı (bitti ölçütü 1 · §0.1) ──────────────────────────────────────
 test('nabız IMAP aramaları UID SEARCH kullanır (düz SEARCH sıra numarası döndürür)', () => {
   const s = readFileSync(join(KOK_REPO, 'tools', 'sevk', 'nabiz.sh'), 'utf8');
-  const aramalar = s.match(/request = "[^"]*SEARCH[^"]*"/g) || [];
-  assert.ok(aramalar.length >= 1, 'IMAP araması bulunamadı');
-  for (const a of aramalar) {
-    assert.match(a, /UID SEARCH/,
+  // ÜÇ ÜRETİCİ ayrı ayrı taranır. Eskiden yalnız `request = "…"` literalleri taranıyordu;
+  // U27 onarımı DUR aramasını bir DEĞİŞKENE taşıyınca ölçüm HİÇBİR ŞEY görmez oldu. Kapıyı
+  // sessiz yeşile döndürmeyen tek şey sayı çapasıydı (ölçüldü, K11) — çapa bu yüzden kalıyor
+  // ve üretici listesi genişliyor: bir kapının KÖR KİPİ, kapının kendisinden tehlikelidir.
+  const uretilen = [
+    ...[...s.matchAll(/imap_ara "([^"]*)"/g)].map((m) => m[1]),
+    ...[...s.matchAll(/^\s*DUR_ARAMA="([^"$]*)"/gm)].map((m) => m[1]),
+    ...[...s.matchAll(/request = "([^"]*SEARCH[^"]*)"/g)].map((m) => m[1]),
+  ];
+  assert.ok(uretilen.length >= 3, `IMAP arama üreticisi bulunamadı (${uretilen.length}) — çapa kaydı`);
+  for (const a of uretilen) {
+    assert.match(a, /^UID SEARCH/,
       `düz SEARCH kullanılıyor (${a}) — dönen SIRA numarası ;UID= olarak verilirse YANLIŞ mesaj çekilir`);
   }
 });
