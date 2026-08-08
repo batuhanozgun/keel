@@ -664,6 +664,10 @@ if (conf) {
     for (const f of ['tools/guard/file-guard.sh', 'tools/guard/rol-ac.sh', 'tools/guard/kapanis.sh', 'tools/guard/acilis.sh',
       'tools/guard/kurulum-surucu.sh', 'tools/guard/porcelain.sh', 'tools/guard/korunan-yollar.txt',
       'tools/guard/icerik-suzgeci.sh', 'tools/guard/gercek-veri-isaretleri.txt',
+      // yazim-kalibi.txt (U59): iki kapinin ORTAK tanim evi. Uretmek yetmez, BAGLAMAK gerekir
+      // (U49 dersi) — dosya yoksa iki kapi da fail-closed davranir ve yazma durur; sahibin
+      // sebebini ogrenecegi yer burasi.
+      'tools/guard/yazim-kalibi.txt',
       'tools/sevk/sevk.sh', 'tools/sevk/zarf-ekle.sh', 'tools/sevk/zarf-bicim-kapisi.sh']) {
       if (oku(join(KOK, f)) === null) bulgu('DURDURAN', 'koruma-hattı', 'kablo', 'kablo eksik: ' + f);
     }

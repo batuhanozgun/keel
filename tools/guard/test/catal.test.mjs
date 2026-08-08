@@ -704,7 +704,7 @@ test('hasım-8: dönem-AÇIK iken kuyruğa yazım ENGEL — CEVAPLANDI dönemin 
     });
   };
   mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
-  for (const b of ['file-guard.sh', 'icerik-suzgeci.sh', 'korunan-yollar.txt', 'gercek-veri-isaretleri.txt']) {
+  for (const b of ['file-guard.sh', 'icerik-suzgeci.sh', 'korunan-yollar.txt', 'gercek-veri-isaretleri.txt', 'yazim-kalibi.txt']) {
     copyFileSync(join(KOK_REPO, 'tools', 'guard', b), join(kok, 'tools', 'guard', b));
   }
   writeFileSync(join(kok, '.kurulum-tamam'), 'kuruldu\n');

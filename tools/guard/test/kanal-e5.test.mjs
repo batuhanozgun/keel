@@ -48,7 +48,7 @@ function kurulum({ kanal = true, donem = null, pano = true } = {}) {
   copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
                join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
   }
-  for (const g of ['icerik-suzgeci.sh', 'gercek-veri-isaretleri.txt']) {
+  for (const g of ['icerik-suzgeci.sh', 'gercek-veri-isaretleri.txt', 'yazim-kalibi.txt']) {
     copyFileSync(join(KOK_REPO, 'tools', 'guard', g), join(kok, 'tools', 'guard', g));
   }
   if (kanal) {

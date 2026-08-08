@@ -35,6 +35,10 @@ esac
 
 KOK="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 ISARET="$KOK/tools/guard/gercek-veri-isaretleri.txt"
+# Yazım-kalıbı tanımının TEK EVİ (U59 · U65). Okunamazsa FAIL-CLOSED: "ölçemedim" ile "temiz"
+# ayrı şeydir ve çağıran (file-guard) 0/3 dışını ENGEL'e çevirir.
+YK_YOL="$KOK/tools/guard/yazim-kalibi.txt"
+[ -r "$YK_YOL" ] || hata "yazım-kalıbı tanımı okunamadı: $YK_YOL — Bash yazım kalıbı ölçülemez (çağıran fail-closed davranmalı)"
 
 # node keşfi (file-guard ailesiyle aynı: GUI oturumunda PATH dar olabilir)
 NODE_BIN="$(command -v node 2>/dev/null || true)"
@@ -53,12 +57,27 @@ else
 fi
 
 SONUC=0
-SZ_KIP="$KIP" SZ_ISARET="$ISARET" SZ_GIRDI="$GIRDI_YOLU" "$NODE_BIN" --input-type=module -e '
+SZ_KIP="$KIP" SZ_ISARET="$ISARET" SZ_GIRDI="$GIRDI_YOLU" SZ_YK="$YK_YOL" "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync } from "node:fs";
 
 const KIP = process.env.SZ_KIP;
 const ISARET_YOL = process.env.SZ_ISARET;
 const GIRDI_YOLU = process.env.SZ_GIRDI;
+
+// Yazim-kalibi tanimi TEK EVDEN okunur (U59 · U65): tools/guard/yazim-kalibi.txt. Ayni dosyayi
+// file-guard.sh de okur. Eksik/bozuk anahtar FAIL-CLOSED: cozulemeyen tanimla "temiz" denmez.
+const yk = (() => {
+  const h = {};
+  for (const satirHam of readFileSync(process.env.SZ_YK, "utf8").split("\n")) {
+    const satir = satirHam.replace(/\r$/, "");
+    if (!satir.trim() || satir.trimStart().startsWith("#")) continue;
+    const i = satir.indexOf("=");
+    if (i > 0) h[satir.slice(0, i).trim()] = satir.slice(i + 1);
+  }
+  for (const a of ["BOLUT_AYRAC", "ANAHTAR_SOZCUK", "SARMALAYICI", "YONLENDIRME", "HEREDOC", "FIIL", "FIIL_BAYRAKLI"])
+    if (!h[a]) { console.error("icerik-suzgeci HATA: yazim-kalibi.txt eksik anahtar: " + a); process.exit(1); }
+  return h;
+})();
 
 const ham = GIRDI_YOLU === "-" ? readFileSync(0, "utf8") : readFileSync(GIRDI_YOLU, "utf8");
 
@@ -74,17 +93,22 @@ if (KIP === "--arac-json") {
   if (ad === "Write" && typeof ti.content === "string") parcalar.push(["Write.content", ti.content]);
   if (ad === "NotebookEdit" && typeof ti.new_source === "string") parcalar.push(["NotebookEdit.new_source", ti.new_source]);
   if (ad === "Bash" && typeof ti.command === "string") {
-    // Bash yalniz YAZIM-KALIPLI ise taranir (tasarim §3): yonlendirme (fd-yonlendirmesi 2>&1 ve
-    // /dev/null haric) · heredoc · komut-konumunda tee/cp/mv/dd/rsync/install/truncate/sed -i.
-    // Ayni tanim file-guard SOR-YAZIM dikisinde de kullanilir — iki yerde SENKRON birakilir.
+    // Bash yalniz YAZIM-KALIPLI ise taranir (tasarim §3). TANIM BURADA DEGIL, tek evdedir:
+    // tools/guard/yazim-kalibi.txt — file-guard SOR-YAZIM dikisi de AYNI dosyadan okur.
+    // Eskiden tanim iki yerde elle yaziliydi ve iki dosya da "ayni" diye ILAN ediyordu (U59).
     const k = ti.command;
     const temiz = k.replace(/[0-9]*>>?\s*\/dev\/null/g, "").replace(/[0-9]*>&[0-9-]*/g, "");
-    const yonlendirme = /(^|[^>])>{1,2}(?!&)/.test(temiz);
-    const heredoc = /<<-?\s*["'\''"]?\w/.test(k);
-    const fiil = k.split(/[;&|`\n]|\$\(/).some((s) => {
-      const w = (s.trim().replace(/^((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+)/, "").replace(/^(?:env|sudo|nohup|command|time|exec|builtin)\s+(?:-\S+\s+)*/, "").match(/^(\S+)/) || [])[1] || "";
-      const ad2 = w.split("/").pop();
-      return /^(tee|cp|mv|dd|rsync|install|truncate)$/.test(ad2) || (ad2 === "sed" && /(^|\s)(-i|--in-place)\b/.test(s));
+    const yonlendirme = new RegExp(yk.YONLENDIRME).test(temiz);
+    const heredoc = new RegExp(yk.HEREDOC).test(k);
+    const [fbAd, fbDesen] = yk.FIIL_BAYRAKLI.split(":");
+    const fiil = k.split(new RegExp(yk.BOLUT_AYRAC)).some((s) => {
+      const t = s.trim()
+        .replace(new RegExp("^(?:" + yk.ANAHTAR_SOZCUK + ")\\s+"), "")
+        .replace(/^((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+)/, "")
+        .replace(new RegExp("^(?:" + yk.SARMALAYICI + ")\\s+(?:-\\S+\\s+)*"), "");
+      const ad2 = ((t.match(/^(\S+)/) || [])[1] || "").split("/").pop();
+      const kuyruk = t.replace(/^\S+\s*/, "");
+      return new RegExp("^(?:" + yk.FIIL + ")$").test(ad2) || (ad2 === fbAd && new RegExp(fbDesen).test(kuyruk));
     });
     if (yonlendirme || heredoc || fiil) parcalar.push(["Bash.command", k]);
   }

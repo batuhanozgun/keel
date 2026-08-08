@@ -64,8 +64,11 @@ kapısı sessiz söner). Hepsi metin-eşleşmelidir, kusursuz değildir; bilinen
   worktree yoksa (uydurma yol) sanal kök AÇILMAZ → `.claude/` [SERT] kalır (hasım bulgusu:
   sahte-worktree ile [SERT] delme kapandı). + **git-obje dikişi**: dönem-AÇIK iken
   `git add/commit/stash`; worktree bağlamında her hâlde ENGEL (ortak nesne deposu).
-- **Yazım+korumalı-yol dikişi**: yazım-kalıplı Bash komutu (yönlendirme/heredoc/`tee`/`cp`/
-  `mv`/`dd`/`rsync`/`sed -i`) korunan-yollar kaydını anıyorsa SORULUR (hedef/kaynak metinden
+- **Yazım+korumalı-yol dikişi**: yazım-kalıplı Bash komutu korunan-yollar kaydını anıyorsa
+  SORULUR. **"Yazım-kalıplı" tanımının TEK EVİ `tools/guard/yazim-kalibi.txt`'tir** (U59) —
+  bölütleyici, anahtar sözcük/sarmalayıcı soyma, yönlendirme, heredoc ve fiil listesi orada;
+  bu dikiş ile içerik süzgeci AYNI dosyayı okur ve eşitliği test ölçer. Burada liste TEKRAR
+  EDİLMEZ: eskiden edilirdi ve iki kalem (`install` · `truncate`) bu metinden düşmüştü (hedef/kaynak metinden
   ayrılamaz; `2>/dev/null` yazım sayılmaz; kurulum sürerken yalnız çekirdek üçlü sorulur).
 - **İZİN KAPISI (F1-5f, 2026-07-30):** yukarıdaki "SORULUR" kararlarının hepsi otonom dönemde
   kutunun `İZİN:` satırına bakar. Sözlük: `git-obje` · `disa` · `mcp` · `yazim` ·

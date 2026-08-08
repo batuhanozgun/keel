@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,6 +43,7 @@ function kurulum({ isaret = null } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'suzgec-test-'));
   mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
   copyFileSync(SUZGEC_KAYNAK, join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'));
+  copyFileSync(join(BURASI, '..', 'yazim-kalibi.txt'), join(kok, 'tools', 'guard', 'yazim-kalibi.txt'));
   if (isaret === null) copyFileSync(ISARET_KAYNAK, join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   else writeFileSync(join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'), isaret);
   return kok;
@@ -215,4 +216,86 @@ test('U37 TERS YÖN: sağlayıcı öneki taşımayan uzun dize SERBEST (yanlış
     const r = kos(kok, ['--metin'], 'sıradan metin ' + temiz + ' devam');
     assert.equal(r.status, 0, temiz.slice(0, 8) + '… yanlış-pozitif üretti: ' + r.stdout);
   }
+});
+
+// ── U59 · U65 · yazım-kalıbı tanımının TEK EVİ (K25) ────────────────────────────────────
+// Tanım eskiden İKİ dosyada elle yazılıydı ve iki dosya da "tanım aynıdır" diye ilan ediyordu;
+// ölçüldü, ayrışmışlardı. Aşağıdaki üç test tanımın kendisini değil, TEK EV İDDİASINI ölçer.
+
+function bashJson(komut) {
+  return JSON.stringify({ tool_name: 'Bash', tool_input: { command: komut } });
+}
+
+test('U59: alt-kabuk · fonksiyon gövdesi · then-dalı da yazım-kalıplıdır (komut konumu gizlenemez)', () => {
+  const kok = kurulum();
+  // Üçü de komut KONUMUNDA `cp` taşıyor; eskiden üçü de süzgeçten SESSİZCE kaçıyordu.
+  for (const k of [
+    `(cp ${TCKN}.pdf hedef/)`,
+    `f() { cp ${TCKN}.pdf hedef/; }; f`,
+    `if true; then cp ${TCKN}.pdf hedef/; fi`,
+  ]) {
+    const r = kos(kok, ['--arac-json'], bashJson(k));
+    assert.equal(r.status, 3, 'yazım-kalıbı kaçtı: ' + k);
+    assert.match(r.stdout, /^ESLESME\ttckn\tBash\.command$/m);
+    sizdirmaz(r, TCKN);
+  }
+  // TERS YÖN: yazımsız komut hâlâ taranmıyor — bu genişleme her komutu taramaya çevirmedi.
+  assert.equal(kos(kok, ['--arac-json'], bashJson(`grep ${TCKN} dosya.txt`)).status, 0);
+  assert.equal(kos(kok, ['--arac-json'], bashJson(`cat ${TCKN}.txt`)).status, 0);
+});
+
+test('U65: ters-eğik çizgili heredoc (<<\\EOF) yakalanır; öteki biçimler kaçmaz', () => {
+  const kok = kurulum();
+  for (const ayrac of ['<<\\EOF', '<<-\\EOF', '<<EOF', '<<"EOF"', "<< 'EOF'"]) {
+    const k = `psql db ${ayrac}\n${TCKN}\nEOF`;
+    assert.equal(kos(kok, ['--arac-json'], bashJson(k)).status, 3, 'heredoc kaçtı: ' + ayrac);
+  }
+  // TERS YÖN: karşılaştırma operatörü heredoc değildir (yanlış-pozitif açılmadı).
+  assert.equal(kos(kok, ['--arac-json'], bashJson(`test ${TCKN} < b`)).status, 0);
+});
+
+// TEK EV DİKİŞİ (U40 emsali). İLK HÂLİ SAHTE-YEŞİLDİ ve kasıtlı bozma onu yakaladı: test
+// yalnız `FIIL` anahtarını düşürüyordu, bu yüzden bölütleyiciyi KODA GÖMEN bir tüketici
+// testten geçiyordu. Dikiş artık HER anahtar için ayrı bir hüküm dönüşü istiyor — bir anahtarı
+// koda gömen tüketici, o anahtarın satırında kırmızıya döner.
+const TEK_EV_VAKALARI = [
+  { anahtar: 'BOLUT_AYRAC', yeni: '[;&|`\\n]|\\$\\(', komut: (t) => `(cp ${t}.pdf hedef/)` },
+  { anahtar: 'ANAHTAR_SOZCUK', yeni: 'zzhicbirzaman', komut: (t) => `if true; then cp ${t}.pdf hedef/; fi` },
+  { anahtar: 'SARMALAYICI', yeni: 'zzhicbirzaman', komut: (t) => `env -i cp ${t}.pdf hedef/` },
+  { anahtar: 'YONLENDIRME', yeni: 'zzhicbirzaman', komut: (t) => `echo ${t} > not.txt` },
+  { anahtar: 'HEREDOC', yeni: '<<-?\\s*["\']?\\w', komut: (t) => `psql db <<\\EOF\n${t}\nEOF` },
+  { anahtar: 'FIIL', yeni: 'tee|mv|dd|rsync|install|truncate', komut: (t) => `cp ${t}.pdf hedef/` },
+  { anahtar: 'FIIL_BAYRAKLI', yeni: 'sed:(^|\\s)--asla-boyle-bir-bayrak\\b', komut: (t) => `sed -i s/x/y/ ${t}.txt` },
+];
+
+test('U59 TEK EV: tanım dosyasındaki HER anahtar düşünce süzgecin hükmü DÖNER', () => {
+  for (const vaka of TEK_EV_VAKALARI) {
+    const kok = kurulum();
+    const yol = join(kok, 'tools', 'guard', 'yazim-kalibi.txt');
+    const k = vaka.komut(TCKN);
+    assert.equal(kos(kok, ['--arac-json'], bashJson(k)).status, 3,
+      'taban: ' + vaka.anahtar + ' vakası yazım-kalıplı olmalı — ' + k);
+    const metin = readFileSync(yol, 'utf8').replace(new RegExp('^' + vaka.anahtar + '=.*$', 'm'), vaka.anahtar + '=' + vaka.yeni);
+    writeFileSync(yol, metin);
+    assert.equal(kos(kok, ['--arac-json'], bashJson(k)).status, 0,
+      vaka.anahtar + ' değişti ama hüküm DÖNMEDİ — bu anahtar tek evden okunmuyor, koda gömülü');
+  }
+});
+
+test('U59 TEK EV: eksik anahtar FAIL-CLOSED (ölçemedim serbest bırakma değildir)', () => {
+  const kok = kurulum();
+  const yol = join(kok, 'tools', 'guard', 'yazim-kalibi.txt');
+  writeFileSync(yol, readFileSync(yol, 'utf8').replace(/^HEREDOC=.*$/m, ''));
+  const r = kos(kok, ['--arac-json'], bashJson(`cp ${TCKN}.pdf hedef/`));
+  assert.equal(r.status, 1, 'eksik anahtar 1 dönmeli (çağıran fail-closed)');
+  assert.match(r.stderr, /eksik anahtar/);
+});
+
+test('U59 TEK EV: tanım dosyası YOKSA süzgeç hata döner (çağıran fail-closed davranır)', () => {
+  const kok = kurulum();
+  rmSync(join(kok, 'tools', 'guard', 'yazim-kalibi.txt'));
+  const r = kos(kok, ['--arac-json'], bashJson(`cp ${TCKN}.pdf hedef/`));
+  assert.notEqual(r.status, 0, 'tanım yokken 0 dönmemeli');
+  assert.notEqual(r.status, 3, 'tanım yokken eşleşme iddiası da edilmemeli');
+  assert.match(r.stderr, /yazım-kalıbı tanımı okunamadı/);
 });

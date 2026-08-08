@@ -395,6 +395,7 @@ function kancaKurulum({ kurulumTamam = false } = {}) {
   mkdirSync(join(kok, '02_kanon', 'kilitli'), { recursive: true });
   copyFileSync(join(GUARD, 'korunan-yollar.txt'), join(kok, 'tools', 'guard', 'korunan-yollar.txt'));
   copyFileSync(join(GUARD, 'icerik-suzgeci.sh'), join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'));
+  copyFileSync(join(GUARD, 'yazim-kalibi.txt'), join(kok, 'tools', 'guard', 'yazim-kalibi.txt'));
   copyFileSync(join(GUARD, 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   writeFileSync(join(kok, 'tools', 'sevk', 'sevk.sh'), '#!/bin/bash\n');
   for (const k of SABIT_KOLTUKLAR) writeFileSync(join(kok, '.claude', 'agents', k), '---\nname: x\n---\n');

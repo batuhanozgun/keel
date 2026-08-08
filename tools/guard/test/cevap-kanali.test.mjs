@@ -38,7 +38,7 @@ function kurulum({ cevapKanali = 'acik', jeton = '' } = {}) {
   // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
   copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
                join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
-  for (const g of ['icerik-suzgeci.sh', 'gercek-veri-isaretleri.txt']) {
+  for (const g of ['icerik-suzgeci.sh', 'gercek-veri-isaretleri.txt', 'yazim-kalibi.txt']) {
     copyFileSync(join(KOK_REPO, 'tools', 'guard', g), join(kok, 'tools', 'guard', g));
   }
   writeFileSync(join(kok, 'tools', 'sevk', 'kanal.conf'),

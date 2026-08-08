@@ -74,6 +74,11 @@ esac
 # taranır; MCP kanalı da içerik-fail-closed olur — hasım bulgusu: "her kipte keser" beyanı MCP'yi
 # de kapsamalı). Bash/mcp süzgeç ÇALIŞAMAZSA (rc≠0, çoğu kez node-yok) fail-open (komut serbest,
 # pre-E2 tabanı); YAZMA araçları süzgeç çalışamaz/yoksa fail-CLOSED (engel).
+# Yazım-kalıbı tanımının TEK EVİ (U59 · U65) — içerik süzgeci AYNI dosyayı okur. Okunamazsa
+# fail-closed: komutun yazım-kalıplı olup olmadığını ölçemeden "değil" denmez.
+YK="$ROOT/tools/guard/yazim-kalibi.txt"
+[ -r "$YK" ] || engel "yazım-kalıbı tanımı okunamadı ($YK) — komut sınıflandırması tanımsız (fail-closed)"
+
 SUZGEC="$ROOT/tools/guard/icerik-suzgeci.sh"
 SUZGEC_KIP=""
 case "$INPUT" in
@@ -159,8 +164,7 @@ fi
 
 LIST="$ROOT/tools/guard/korunan-yollar.txt"
 [ -r "$LIST" ] || engel "korunan-yollar.txt okunamadı ($LIST) — koruma tanımsız (fail-closed)"
-
-KARAR="$(printf '%s' "$INPUT" | GUARD_ROOT="$ROOT" GUARD_LIST="$LIST" "$NODE_BIN" --input-type=module -e '
+KARAR="$(printf '%s' "$INPUT" | GUARD_ROOT="$ROOT" GUARD_LIST="$LIST" GUARD_YK="$YK" "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync, realpathSync, lstatSync } from "node:fs";
 import { resolve, dirname, join, sep } from "node:path";
 
@@ -325,7 +329,21 @@ if ((j.tool_name || "") === "Bash") {
   // komut satirsonuyla ucunu de atliyordu). "komut-konumu" = bir bolutun BASI.
   // SUSLU VE DUZ PARANTEZ DE AYRACTIR (U10): fonksiyon govdesi ve alt-kabuk da komut-konumu
   // acar — bolunmeseydi "f() { curl ... }; f x" satirinda ad "f()" cozulur ve curl kacardi.
-  const bolutler = komut.split(/[;&|`\n{}()]|\$\(/);
+  // TANIM BURADA DEGIL, tek evdedir: tools/guard/yazim-kalibi.txt (U59). Ayni dosyayi
+  // icerik-suzgeci.sh de okur; eksik anahtar FAIL-CLOSED (asagida atiliyor -> bash tuzagi engeller).
+  const YK = (() => {
+    const h = {};
+    for (const satirHam of readFileSync(process.env.GUARD_YK, "utf8").split("\n")) {
+      const satir = satirHam.replace(/\r$/, "");
+      if (!satir.trim() || satir.trimStart().startsWith("#")) continue;
+      const i = satir.indexOf("=");
+      if (i > 0) h[satir.slice(0, i).trim()] = satir.slice(i + 1);
+    }
+    for (const a of ["BOLUT_AYRAC", "ANAHTAR_SOZCUK", "SARMALAYICI", "YONLENDIRME", "HEREDOC", "FIIL", "FIIL_BAYRAKLI"])
+      if (!h[a]) throw new Error("yazim-kalibi.txt eksik anahtar: " + a);
+    return h;
+  })();
+  const bolutler = komut.split(new RegExp(YK.BOLUT_AYRAC));
   // Bir bolutun ETKIN komut adini cikar: bastaki VAR=deger atamalarini + env/sudo/nohup/command/
   // time/exec oneklerini at; mutlak yolu son parcaya (basename) indir (hasim: /usr/bin/curl, git -C,
   // sudo curl kaciyordu). Boylece "git -C x push" -> git alt-komut cozumu, "/usr/bin/curl" -> curl.
@@ -333,9 +351,12 @@ if ((j.tool_name || "") === "Bash") {
   // bakilmiyordu; cagiran taraf artik ona da bakabilsin diye ayrica veriliyor.
   const komutAdi = (s) => {
     let t = s.trim();
+    // Bolut basindaki kabuk anahtar sozcugu soyulur (U59 kardesi): `if x; then curl y; fi`
+    // bolutunde ad `then` cozuluyor ve komut-konumundaki fiil GIZLENIYORDU.
+    t = t.replace(new RegExp("^(?:" + YK.ANAHTAR_SOZCUK + ")\\s+"), "");
     const atamalar = (t.match(/^((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+)/) || [])[1] || "";
     t = t.replace(/^((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+)/, "");           // VAR=val onekleri
-    t = t.replace(/^(?:env|sudo|nohup|command|time|exec|builtin)\s+(?:-\S+\s+)*/, ""); // sarmalayicilar
+    t = t.replace(new RegExp("^(?:" + YK.SARMALAYICI + ")\\s+(?:-\\S+\\s+)*"), ""); // sarmalayicilar
     const w = (t.match(/^(\S+)/) || [])[1] || "";
     return { ad: w.split("/").pop(), kuyruk: t.replace(/^\S+\s*/, ""), atamalar };
   };
@@ -445,12 +466,15 @@ if ((j.tool_name || "") === "Bash") {
   // Yazim+korumali-yol dikisi (HER KIPTE; besinci dikis — hasim bulgusu: cp golden/ uc hatti
   // deliyordu): yazim-kalipli komut metninde korunan-yollar kaydi geciyorsa sahibe SORULUR.
   // [SERT] icin de SOR (ENGEL degil): metin-es sezgi hedef/kaynak ayiramaz — goldendan OKUYAN
-  // mesru komut yanlis-ENGEL yememeli. Yazim-kalibi tanimi icerik-suzgeciyle AYNIdir.
+  // mesru komut yanlis-ENGEL yememeli. Yazim-kalibi tanimi ORTAK TEK EVDEN okunur
+  // (tools/guard/yazim-kalibi.txt) — icerik-suzgeci.sh de ayni dosyayi okur; eskiden iki
+  // yerde elle yaziliydi ve "ayni" beyani YANLISTI (U59).
   // /dev/null yonlendirmesi ve fd-dup (2>&1) yazim SAYILMAZ (hasim bulgusu: "cat X 2>/dev/null"
   // yanlis SOR-YAZIM uretiyordu — hedef gercek dosya degil).
   const komutTemiz = komut.replace(/[0-9]*>>?\s*\/dev\/null/g, "").replace(/[0-9]*>&[0-9-]*/g, "");
-  const yazimKalip = /(^|[^>])>{1,2}(?!&)/.test(komutTemiz) || /<<-?\s*["'\''"]?\w/.test(komut) ||
-    bolutler.some((s) => { const c = komutAdi(s); return /^(tee|cp|mv|dd|rsync|install|truncate)$/.test(c.ad) || (c.ad === "sed" && /(^|\s)(-i|--in-place)\b/.test(c.kuyruk)); });
+  const [fbAd, fbDesen] = YK.FIIL_BAYRAKLI.split(":");
+  const yazimKalip = new RegExp(YK.YONLENDIRME).test(komutTemiz) || new RegExp(YK.HEREDOC).test(komut) ||
+    bolutler.some((s) => { const c = komutAdi(s); return new RegExp("^(?:" + YK.FIIL + ")$").test(c.ad) || (c.ad === fbAd && new RegExp(fbDesen).test(c.kuyruk)); });
   if (yazimKalip) {
     const anilanlar = kurallar.filter((k) => komut.includes(k.yol.replace(/\/$/, "")));
     if (anilanlar.length) {

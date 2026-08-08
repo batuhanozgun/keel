@@ -31,6 +31,7 @@ function kurulum({ liste = VARSAYILAN_LISTE, kurulumTamam = true, aktifRol = nul
   writeFileSync(join(kok, 'tools', 'guard', 'korunan-yollar.txt'), liste);
   // E2 Hat-1: içerik süzgeci kurulu dokuda file-guard'ın ön şartıdır (yokluğu fail-closed engel).
   copyFileSync(join(BURASI, '..', 'icerik-suzgeci.sh'), join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'));
+  copyFileSync(join(BURASI, '..', 'yazim-kalibi.txt'), join(kok, 'tools', 'guard', 'yazim-kalibi.txt'));
   copyFileSync(join(BURASI, '..', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   writeFileSync(join(kok, '.claude', 'settings.json'), '{}\n');
   writeFileSync(join(kok, '02_kanon', 'kilitli', 'K-01.md'), '# kilitli karar\n');
@@ -932,4 +933,40 @@ test('U37: engel metni KAPSAMI ADIYLA söyler ve SINIRINI ilan eder ("sır" diye
   }
   assert.match(r.stderr, /liste dışı bir sır bu kapıdan geçer/i, 'ilan kendi SINIRINI söylemeli');
   assert.ok(!r.stderr.includes(anahtar), 'engel metni değeri sızdırmamalı');
+});
+
+// ── U59 · yazım-kalıbı tanımının TEK EVİ: file-guard ucu (K25) ──────────────────────────
+// Süzgeç ucunun çapası suzgec.test.mjs'te. Burada ölçülen şey file-guard'ın AYNI dosyadan
+// okuduğu: tanım değişince SOR-YAZIM dikişinin hükmü dönmek zorunda. İki uç ayrı ayrı
+// çapalanmazsa "tek ev" iddiası yarım kalır — biri okur, öteki koda gömer ve kimse görmez.
+test('U59 TEK EV (file-guard ucu): tanım dosyasındaki HER anahtar düşünce SOR-YAZIM hükmü DÖNER', () => {
+  const vakalar = [
+    { anahtar: 'BOLUT_AYRAC', yeni: '[;&|`\\n]|\\$\\(', komut: '(cp x 02_kanon/golden/a.md)' },
+    { anahtar: 'ANAHTAR_SOZCUK', yeni: 'zzhicbirzaman', komut: 'if true; then cp x 02_kanon/golden/a.md; fi' },
+    { anahtar: 'SARMALAYICI', yeni: 'zzhicbirzaman', komut: 'env -i cp x 02_kanon/golden/a.md' },
+    { anahtar: 'YONLENDIRME', yeni: 'zzhicbirzaman', komut: 'echo x > 02_kanon/golden/a.md' },
+    { anahtar: 'FIIL', yeni: 'tee|mv|dd|rsync|install|truncate', komut: 'cp x 02_kanon/golden/a.md' },
+    { anahtar: 'FIIL_BAYRAKLI', yeni: 'sed:(^|\\s)--asla-boyle-bir-bayrak\\b', komut: 'sed -i s/a/b/ 02_kanon/golden/a.md' },
+  ];
+  for (const v of vakalar) {
+    const kok = kurulum();
+    const yol = join(kok, 'tools', 'guard', 'yazim-kalibi.txt');
+    const bash = (k) => kos(kok, { tool_name: 'Bash', tool_input: { command: k } });
+    const once = bash(v.komut);
+    assert.equal(once.status, 0, v.anahtar);
+    assert.match(askJson(once).permissionDecisionReason, /Yazım-kalıp/,
+      'taban: ' + v.anahtar + ' vakası SOR-YAZIM üretmeli — ' + v.komut);
+    writeFileSync(yol, readFileSync(yol, 'utf8')
+      .replace(new RegExp('^' + v.anahtar + '=.*$', 'm'), v.anahtar + '=' + v.yeni));
+    const sonra = bash(v.komut);
+    assert.equal(sonra.stdout.trim(), '', v.anahtar + ' değişti ama SOR-YAZIM hâlâ basıyor — bu anahtar koda gömülü');
+  }
+});
+
+test('U59 TEK EV (file-guard ucu): tanım dosyası YOKSA yazma fail-closed ENGEL', () => {
+  const kok = kurulum();
+  rmSync(join(kok, 'tools', 'guard', 'yazim-kalibi.txt'));
+  const r = kos(kok, edit(kok, '01_kutular/serbest.md'));
+  assert.equal(r.status, 2, 'tanım okunamazken yazma serbest bırakılamaz');
+  assert.match(r.stderr, /yazım-kalıbı tanımı okunamadı/);
 });

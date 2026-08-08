@@ -174,7 +174,7 @@ export function kurulum(opts = {}) {
   yaz('03_roller/disgoz/DURUM.md', '# DURUM — Dış göz\nHenüz oturum açılmadı\n');
   yaz('03_roller/disgoz/BRIFING.md', '<!-- yazar: disgoz -->\n# DIŞ GÖZ — brifing\nTarih: 2026-08-01\n');
 
-  for (const betik of ['file-guard.sh', 'rol-ac.sh', 'kapanis.sh', 'acilis.sh', 'kurulum-surucu.sh', 'porcelain.sh', 'icerik-suzgeci.sh']) {
+  for (const betik of ['file-guard.sh', 'rol-ac.sh', 'kapanis.sh', 'acilis.sh', 'kurulum-surucu.sh', 'porcelain.sh', 'icerik-suzgeci.sh', 'yazim-kalibi.txt']) {
     yaz('tools/guard/' + betik, '#!/bin/bash\n# fixture kablosu\n');
   }
   yaz('tools/guard/gercek-veri-isaretleri.txt', '# fixture\n');

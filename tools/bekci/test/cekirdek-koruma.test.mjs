@@ -153,3 +153,15 @@ test('kilitli-tarih kurulum penceresinde: sinyallerin TAMAMI BİLGİ (kilitliye 
   assert.equal(r.alanlar.durduran, 0, r.stdout);
   temizle(kok);
 });
+
+// U59 (K25): yazım-kalıbı tanımı iki kapının ORTAK evidir. Dosya yoksa iki kapı da fail-closed
+// davranır ve YAZMA durur — sahibin sebebini öğreneceği yer bekçidir. Üretmek yetmez, BAĞLAMAK
+// gerekir (U49 dersinin bu listedeki karşılığı).
+test('kablo: ortak yazım-kalıbı tanımı da kablodur (U59)', () => {
+  const kok = kurulum();
+  rmSync(join(kok, 'tools', 'guard', 'yazim-kalibi.txt'));
+  commitEt(kok, 'ortak tanım silindi');
+  const r = kos(kok);
+  assert.ok(/DURDURAN \[koruma-hattı\] kablo: kablo eksik: tools\/guard\/yazim-kalibi\.txt/.test(r.stdout), r.stdout);
+  temizle(kok);
+});

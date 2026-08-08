@@ -1,0 +1,42 @@
+# yazim-kalibi — "bu Bash komutu YAZIM-KALIPLI mı" tanımının TEK EVİ.
+#
+# İKİ TÜKETİCİ aynı satırları okur: tools/guard/file-guard.sh (SOR-YAZIM dikişi) ve
+# tools/guard/icerik-suzgeci.sh (Bash içerik taraması). DOĞUŞ (U59, 2026-08-08): tanım iki
+# yerde ELLE yazılıydı ve iki dosya da "tanım aynıdır" diye İLAN EDİYORDU — ölçüldü,
+# ayrışmışlardı: bölütleyicinin bir kopyasında süslü/düz parantez ayraç değildi, yani
+# `(cp gizli.pdf hedef/)` içerik taramasından sessizce kaçıyordu. İlan edilmiş bir eşitliği
+# ölçen hiçbir şey yoktu. Kural: aynı tanımın ikinci kopyası ya KALKAR ya eşitliği DAVRANIŞLA
+# ölçen bir dikiş doğar. Bu dosya birinci yolu seçer.
+#
+# Biçim: ANAHTAR=değer · satır başında "#" yorumdur · tırnak kullanılmaz · değer İLK
+# eşittirden sonrasıdır (desenler `=` taşıyabilir). Değerler JS RegExp GÖVDESİDİR; bayrağı
+# çağıran ekler. VERİ dosyasıdır, source edilmez.
+#
+# DOSYA OKUNAMAZSA İKİ TÜKETİCİ DE FAIL-CLOSED davranır — "ölçemedim" serbest bırakma değildir.
+# Kümeden bir satır düşerse iki tüketicinin de hükmü döner; bunu test ölçer (U40 emsali).
+
+# Komut bölütleyici. Bir bölütün BAŞI "komut konumu"dur. Süslü ve düz parantez de ayraçtır
+# (U10): fonksiyon gövdesi ve alt-kabuk da komut konumu açar.
+BOLUT_AYRAC=[;&|`\n{}()]|\$\(
+
+# Bölüt başındaki kabuk anahtar sözcükleri soyulur (U59'un kardeşi, ölçüldü):
+# `if true; then cp gizli.pdf hedef/; fi` bölütünde fiil `then`in arkasında gizleniyordu.
+ANAHTAR_SOZCUK=then|else|elif|do
+
+# Sarmalayıcı önekler (VAR=değer atamalarından SONRA soyulur).
+SARMALAYICI=env|sudo|nohup|command|time|exec|builtin
+
+# Yönlendirme. /dev/null yönlendirmesi ve fd-dup (2>&1) yazım SAYILMAZ; çağıran onları
+# taramadan önce metinden siler.
+YONLENDIRME=(^|[^>])>{1,2}(?!&)
+
+# Heredoc. Ters-eğik çizgili biçim (`<<\EOF`) de POSIX heredocudur ve genişlemeyi kapatmanın
+# en kısa yolu olduğu için yaygındır — eskiden İKİ kopyada birden kaçıyordu (U65).
+HEREDOC=<<-?\s*\\?["']?\w
+
+# Komut konumundaki yazım fiilleri.
+FIIL=tee|cp|mv|dd|rsync|install|truncate
+
+# Bayrağa bağlı yazım fiili: <ad>:<bayrak deseni>. Bayrak, komut adı SOYULDUKTAN SONRAKİ
+# kuyrukta aranır (bölütün tamamında değil — `env -i sed f` iki kopyada ayrı sonuç veriyordu).
+FIIL_BAYRAKLI=sed:(^|\s)(-i|--in-place)\b
