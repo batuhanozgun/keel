@@ -180,6 +180,9 @@ function kurulum({ ek = EK_TAM, defo = true, retro = true, bekci = BEKCI_SAHTE, 
   if (korunanYollar) {
     copyFileSync(join(BURASI, '..', 'korunan-yollar.txt'), join(kok, 'tools', 'guard', 'korunan-yollar.txt'));
   }
+  // Node sürüm tabanı da ŞABLONLA gelir (U39): kapı onu okuyup koşan sürümle karşılaştırır;
+  // yoksa KIRMIZI basar — ilan edilmemiş taban, "eski Node'da ne olur" sorusunu cevapsız bırakır.
+  copyFileSync(join(BURASI, '..', 'node-tabani.txt'), join(kok, 'tools', 'guard', 'node-tabani.txt'));
   // İleriye bakan iki kanon iskeleti (G3.3d) — ilk kutunun dört çıktısından ikisinin evi.
   if (kanon) {
     writeFileSync(join(kok, '02_kanon', 'BITTI_TANIMI.md'),

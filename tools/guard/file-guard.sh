@@ -85,18 +85,50 @@ if [ -n "$SUZGEC_KIP" ]; then
     *'"tool_name":"Bash"'*|*'"tool_name": "Bash"'*|*'"mcp__'*) YAZMA_SINIFI=0 ;;
     *) YAZMA_SINIFI=1 ;;
   esac
+  # U39 · DÜŞEN KATMAN KENDİ DÜŞTÜĞÜNÜ SÖYLER. Komut sınıfının süzgeç düştüğünde serbest
+  # geçmesi BİLİNÇLİDİR (node-yok tabanı korunur, hasım bulgusu) — ama SESSİZ geçmesi değil,
+  # ve tek sesli sınıf yazma araçlarıydı: eski bir Node'da süzgeç düşerse koruma katmanı
+  # kimseye haber vermeden inerdi. İz TEK SATIRDIR ve üzerine yazılır (şişmez); süzgeç yeniden
+  # koşabildiğinde SİLİNİR — bayat bir uyarı, uyarı olmaktan çıkar. İzin TÜKETİCİSİ kurulum
+  # denetimidir: üretmek yetmez, BAĞLAMAK gerekir (U49 dersinin bu dosyadaki karşılığı).
+  SUZGEC_IZ="$ROOT/tools/guard/.suzgec-dustu"
+  suzgec_dustu() { # $1: sebep
+    local SURUM TABAN
+    # `|| true` ZORUNLU: bu betikte `set -o pipefail` + ERR tuzağı var. Taban dosyası yoksa
+    # `sed` düşer, pipefail bunu boruya taşır ve atama başarısız olur — tuzak ateşlenip HER
+    # ŞEYİ engellerdi. Yani "izi yazamamak" bütün araç katmanını kilitlerdi (fail-closed'un
+    # yanlış tarafı: iz bir uyarıdır, kapı değil).
+    SURUM="$(node --version 2>/dev/null || printf 'node-bulunamadi')"
+    TABAN="$( (sed -n 's/^KOSU=//p' "$ROOT/tools/guard/node-tabani.txt" 2>/dev/null || true) | head -n1 || true)"
+    printf '%s\t%s\ttaban=%s\t%s\n' \
+      "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$SURUM" "${TABAN:-ilan-yok}" "$1" > "$SUZGEC_IZ" 2>/dev/null || true
+  }
   if [ -r "$SUZGEC" ]; then
     SUZGEC_RC=0
     SUZGEC_CIKTI="$(printf '%s' "$INPUT" | bash "$SUZGEC" "$SUZGEC_KIP" 2>/dev/null)" || SUZGEC_RC=$?
+    # `[ … ] && …` YAZILMAZ: bu betikte `set -e` + ERR tuzağı var; testi YANLIŞ dönen bir
+    # `&&` zinciri dalın çıkış kodunu 1 yapar ve tuzak HER ŞEYİ engeller (fail-closed'un
+    # yanlış tarafı). Açık `if` bilerek.
+    if [ "$SUZGEC_RC" = "0" ] || [ "$SUZGEC_RC" = "3" ]; then
+      if [ -e "$SUZGEC_IZ" ]; then rm -f "$SUZGEC_IZ" 2>/dev/null || true; fi
+    else
+      suzgec_dustu "icerik-suzgeci.sh cikis $SUZGEC_RC"
+    fi
     if [ "$SUZGEC_RC" = "3" ]; then
       SINIFLAR="$(printf '%s\n' "$SUZGEC_CIKTI" | awk -F'\t' '$1=="ESLESME"{print $2}' | sort -u | paste -sd+ -)"
       engel "önleme bulgusu (${SINIFLAR:-içerik}): gerçek kişisel veri/sır dokuya ajan eliyle girmez — sentetik örnek kullan; gerçek veri gerekiyorsa sahibine söyle (Hat-1; işaret listesi: tools/guard/gercek-veri-isaretleri.txt)"
     elif [ "$SUZGEC_RC" != "0" ] && [ "$YAZMA_SINIFI" = "1" ]; then
       engel "içerik süzgeci koşamadı (fail-closed; çıkış $SUZGEC_RC): tools/guard/icerik-suzgeci.sh — node kurulu mu / süzgeç sağlam mı bak; YAZMA güvenli tarafta engellendi (komut sınıfı fail-open geçer)"
     fi
-    # Bash/mcp + süzgeç hatası → fail-open (komut serbest; node-yok tabanı korunur — hasım bulgusu).
-  elif [ "$YAZMA_SINIFI" = "1" ]; then
-    engel "içerik süzgeci yok (tools/guard/icerik-suzgeci.sh) — önleme hattı tanımsız; YAZMA güvenli tarafta engellendi"
+    # Bash/mcp + süzgeç hatası → fail-open (komut serbest; node-yok tabanı korunur — hasım
+    # bulgusu) AMA İZLİ: yukarıdaki iz düştü, kurulum denetimi onu sahibe söyler.
+  else
+    # Süzgeç DOSYASI yok/okunamıyor. İz HER İKİ sınıf için düşer — eskiden yalnız yazma sınıfı
+    # sesliydi ve komut sınıfı bu dalda da izsiz geçiyordu (U39'un ikinci yarısı).
+    suzgec_dustu "icerik-suzgeci.sh okunamiyor/yok"
+    if [ "$YAZMA_SINIFI" = "1" ]; then
+      engel "içerik süzgeci yok (tools/guard/icerik-suzgeci.sh) — önleme hattı tanımsız; YAZMA güvenli tarafta engellendi"
+    fi
   fi
 fi
 

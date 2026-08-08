@@ -55,6 +55,9 @@ tools/sevk/.haber-durum
 # uzaktan DUR ucu eksik uyarısının dönem izi (U27) — dönem başına BİR bulgu düşsün diye
 # tutulur; 15 dakikada bir tekrarlayan bulgu günlüğü boğar ve boğulan günlük kör eder.
 tools/sevk/.dur-imap-eksik
+# icerik suzgecinin DUSTUGU izi (U39) — makine durumu. Suzgec yeniden kosunca file-guard
+# kendisi siler; kurulum denetimi onu okuyup sahibe soyler (izin tuketicisi vardir).
+tools/guard/.suzgec-dustu
 # watchdog canlılık damgası + hata günlüğü + uyanık-tutma savının PID'i (E5) — makine durumu
 tools/sevk/.nabiz-son
 tools/sevk/.nabiz-hata.log

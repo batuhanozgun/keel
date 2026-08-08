@@ -890,6 +890,37 @@ else
   done
 fi
 
+# ── U39 · ÖNLEME KATMANI DÜŞTÜ MÜ, VE KOŞAN NODE TABANIN ÜSTÜNDE Mİ ───────────────────────
+# file-guard, içerik süzgeci koşamadığında komut sınıfını BİLEREK serbest bırakır (node-yok
+# tabanı korunur) ama artık iz bırakır. İZİN TÜKETİCİSİ BURASIDIR — üretilip okunmayan bir hâl,
+# hiç üretilmemiş hâlle aynı körlüğü verir (U49 dersi). Taban TEK EVDEN okunur, gömülmez.
+NODE_TABANI="$KOK/tools/guard/node-tabani.txt"
+if [ -r "$NODE_TABANI" ]; then
+  TABAN_KOSU="$(sed -n 's/^KOSU=//p' "$NODE_TABANI" | head -n1)"
+  KOSAN="$(node --version 2>/dev/null | sed 's/^v//' | cut -d. -f1 || true)"
+  case "$TABAN_KOSU" in
+    ''|*[!0-9]*) kirmizi "node sürüm tabanı okunamadı (tools/guard/node-tabani.txt) — taban ilansız" ;;
+    *)
+      case "$KOSAN" in
+        ''|*[!0-9]*) kirmizi "node sürümü ÖLÇÜLEMEDİ — önleme katmanının koşup koşmadığı bilinmiyor (taban $TABAN_KOSU)" ;;
+        *)
+          if [ "$KOSAN" -lt "$TABAN_KOSU" ]; then
+            kirmizi "node $KOSAN, koşu tabanının ($TABAN_KOSU) ALTINDA — içerik süzgeci bu sürümde düşer ve komut sınıfı korumasız kalır"
+          else
+            gecti "node $KOSAN, koşu tabanı $TABAN_KOSU"
+          fi ;;
+      esac ;;
+  esac
+else
+  kirmizi "node sürüm tabanı dosyası yok (tools/guard/node-tabani.txt) — taban ilan edilmemiş (U39)"
+fi
+SUZGEC_IZ="$KOK/tools/guard/.suzgec-dustu"
+if [ -s "$SUZGEC_IZ" ]; then
+  kirmizi "içerik süzgeci DÜŞTÜ, komut sınıfı o sırada korumasız geçti — iz: $(head -n1 "$SUZGEC_IZ" | tr '\t' ' ')"
+else
+  gecti "içerik süzgeci düşme izi yok"
+fi
+
 if [ "$SORUN" -eq 0 ]; then
   # KOŞTUĞUNUN İZİ (F1-1 · hasım turu 2026-07-30). İlan edilen "çift hat" tek yönlüydü: sürücü
   # devreye girmediyse bu kapı yakalıyordu, ama BU KAPININ hiç koşmadığını hiçbir şey yakalamıyordu

@@ -826,3 +826,82 @@ test('file-guard/U36: Keychain parola OKUMA komutu serbest bırakılmaz', () => 
     assert.equal(guard(k).status, 0, 'serbest kalmalı: ' + k);
   }
 });
+
+// ── U39 · Düşen katman kendi düştüğünü SÖYLER; sürüm tabanı İLAN EDİLİR ───────────────────
+// Komut sınıfının süzgeç düştüğünde serbest geçmesi BİLİNÇLİDİR (node-yok tabanı korunur,
+// hasım bulgusu) — ama SESSİZ geçmesi değil. Kök 3'ün hükmü: bir katman düştüğünde sessiz
+// serbest bırakma yoktur. Ve iz ÜRETMEK yetmez, BAĞLAMAK gerekir (U49 dersi): izin tüketicisi
+// kurulum denetimidir, yani sahibin oturum başında gördüğü yüzey.
+test('file-guard/U39: süzgeç düşünce komut serbest ama SESSİZ değil — iz düşer, başarıda silinir', () => {
+  const kok = kurulum();
+  mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
+  copyFileSync(join(KOK_REPO, 'tools', 'guard', 'file-guard.sh'), join(kok, 'tools', 'guard', 'file-guard.sh'));
+  copyFileSync(join(KOK_REPO, 'tools', 'guard', 'korunan-yollar.txt'), join(kok, 'tools', 'guard', 'korunan-yollar.txt'));
+  copyFileSync(join(KOK_REPO, 'tools', 'guard', 'node-tabani.txt'), join(kok, 'tools', 'guard', 'node-tabani.txt'));
+  const iz = join(kok, 'tools', 'guard', '.suzgec-dustu');
+  const g = (komut) => spawnSync('bash', [join(kok, 'tools', 'guard', 'file-guard.sh')], {
+    encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: kok },
+    input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: komut } }) });
+
+  // Süzgeç KOŞAMIYOR: komut sınıfı serbest kalmalı (taban korunur) AMA iz bırakmalı.
+  writeFileSync(join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'), '#!/bin/bash\nexit 90\n');
+  const r = g('git status');
+  assert.equal(r.status, 0, 'komut sınıfı fail-open kalmalı (bilinçli taban)');
+  assert.ok(existsSync(iz), 'düşen katman iz BIRAKMALI — sessiz fail-open kalktı');
+  const satir = readFileSync(iz, 'utf8');
+  assert.match(satir, /\d{4}-\d{2}-\d{2}T/, 'iz ne zaman düştüğünü söyler');
+  assert.match(satir, /v?\d+\./, 'iz hangi node sürümüyle düştüğünü söyler');
+
+  // İZ ŞİŞMEZ: iz tek satırdır, her komutta büyümez.
+  g('git status'); g('ls -la >/tmp/x'); g('git status');
+  assert.equal(readFileSync(iz, 'utf8').trim().split('\n').length, 1, 'iz tek satır kalır');
+
+  // KENDİ KENDİNİ İYİLEŞTİRİR: süzgeç yeniden koşabildiğinde iz SİLİNİR — yoksa bir kerelik
+  // arıza sonsuza dek "süzgeç düşük" der ve uyarı gürültüye dönüşür (bayat uyarı = uyarı yok).
+  copyFileSync(join(KOK_REPO, 'tools', 'guard', 'icerik-suzgeci.sh'), join(kok, 'tools', 'guard', 'icerik-suzgeci.sh'));
+  assert.equal(g('git status').status, 0);
+  assert.ok(!existsSync(iz), 'süzgeç yeniden koşunca iz silinir');
+});
+
+test('U39: node sürüm tabanı TEK EVDE ilan edilir ve tüketicileri onu okur', () => {
+  const taban = readFileSync(join(KOK_REPO, 'tools', 'guard', 'node-tabani.txt'), 'utf8');
+  // İki taban AYRI: kurulu bir kutunun KOŞMASI için gereken sürüm ile bu depoda TEST koşturmak
+  // için gereken sürüm aynı değildir; tek sayıya sıkıştırmak ya kullanıcıyı gereksiz kısıtlar
+  // ya geliştiriciyi yanıltır.
+  const kosu = taban.match(/^KOSU=(\d+)$/m);
+  const gelistirme = taban.match(/^GELISTIRME=(\d+)$/m);
+  assert.ok(kosu && gelistirme, 'iki taban da makine-okur satırda ilan edilmeli');
+  assert.ok(Number(gelistirme[1]) >= Number(kosu[1]), 'geliştirme tabanı koşu tabanından düşük olamaz');
+  // İÇERİK KOPYALANMAZ, İŞARETÇİ YAZILIR: tüketiciler sayıyı gömmez, bu dosyadan okur.
+  for (const t of ['file-guard.sh', 'kurulum-denetimi.sh']) {
+    const s = readFileSync(join(KOK_REPO, 'tools', 'guard', t), 'utf8');
+    assert.match(s, /node-tabani\.txt/, t + ' tabanı tek evden okumalı');
+  }
+});
+
+test('U39: izin TÜKETİCİSİ var — kurulum denetimi düşmüş süzgeci SAHİBE söyler', () => {
+  // U49 dersinin bu pakete uygulanmasi: iz URETMEK yetmez, BAGLAMAK gerekir. Tuketicisi
+  // olmayan bir iz, hic uretilmemis izle ayni korlugu verir — bu test o baglantiyi olcer.
+  const kok = kurulum();
+  mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
+  copyFileSync(join(KOK_REPO, 'tools', 'guard', 'node-tabani.txt'), join(kok, 'tools', 'guard', 'node-tabani.txt'));
+  const denetim = () => spawnSync('bash', [join(KOK_REPO, 'tools', 'guard', 'kurulum-denetimi.sh'), kok],
+    { encoding: 'utf8' }).stdout;
+
+  assert.match(denetim(), /içerik süzgeci düşme izi yok/, 'iz yokken temiz olduğunu söyler');
+
+  // TABAN FİİLEN DOSYADAN OKUNUR. "Kaynakta adı geçiyor" bunu ÖLÇMEZ — kasıtlı bozmada
+  // ölçüldü: yol başka bir dosyayı gösterse bile ad yorumlarda geçtiği için grep yeşil kalıyordu.
+  // Ölçüm davranışsal: dosyadaki sayıyı değiştir, rapordaki hüküm değişiyor mu.
+  const tabanYolu = join(kok, 'tools', 'guard', 'node-tabani.txt');
+  assert.match(denetim(), /koşu tabanı 14/, 'taban dosyadan okunup raporlanmalı');
+  writeFileSync(tabanYolu, 'KOSU=99\nGELISTIRME=99\n');
+  assert.match(denetim(), /koşu tabanının \(99\) ALTINDA/, 'taban değişince hüküm de değişmeli');
+  writeFileSync(tabanYolu, readFileSync(join(KOK_REPO, 'tools', 'guard', 'node-tabani.txt'), 'utf8'));
+  writeFileSync(join(kok, 'tools', 'guard', '.suzgec-dustu'),
+    '2026-08-08T03:00:00Z\tv12.0.0\ttaban=14\ticerik-suzgeci.sh cikis 1\n');
+  const r = denetim();
+  assert.match(r, /içerik süzgeci DÜŞTÜ/, 'iz varken SAHİBE söylenir');
+  assert.match(r, /v12\.0\.0/, 'hangi sürümle düştüğü de söylenir');
+  assert.match(r, /^KIRMIZI · içerik süzgeci DÜŞTÜ/m, 'düşmüş koruma katmanı KIRMIZI basar');
+});

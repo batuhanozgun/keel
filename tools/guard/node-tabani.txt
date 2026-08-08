@@ -1,0 +1,22 @@
+# KEEL'in Node sürüm tabanı — TEK EV (U39, 2026-08-08).
+#
+# NEDEN VAR: taban hiçbir yerde ilan edilmiyordu. İlan edilmemiş bir taban, "eski Node'da ne
+# olur" sorusunu cevapsız bırakır — ve cevabı sessizdi: içerik süzgeci eski Node'da düşünce
+# komut sınıfı İZ BIRAKMADAN serbest geçiyordu (yalnız yazma araçları sesliydi).
+#
+# İKİ TABAN AYRIDIR ve karıştırılmaz. Tek sayıya sıkıştırmak ya kullanıcıyı gereksiz kısıtlar
+# ya geliştiriciyi yanıltır:
+#   KOSU        — kurulu bir kutunun KOŞMASI için gereken en düşük sürüm. Ölçülen ihtiyaç:
+#                 gömülü blokların hepsi ESM (`--input-type=module`, Node 12+), `matchAll`
+#                 (12+), `??` (14+). Taban 14'tür; altında süzgeç ve yol çözümleyici düşer.
+#   GELISTIRME  — bu depoda TEST koşturmak için gereken en düşük sürüm. `node --test` 18'de
+#                 kararlı oldu ve `--test-name-pattern` 18.1 ile geldi; kasıtlı bozma koşucusu
+#                 o bayrağa dayanır.
+#
+# TÜKETİCİLER (sayıyı GÖMMEZ, buradan okur — içerik kopyalanmaz, işaretçi yazılır):
+#   tools/guard/file-guard.sh          — süzgeç düştüğünde izin içine hangi tabanın altında
+#                                        kalındığını yazar
+#   tools/guard/kurulum-denetimi.sh    — oturum başında koşan sürümü tabanla karşılaştırır ve
+#                                        düşmüş süzgeç izini SAHİBE bildirir (izin tüketicisi)
+KOSU=14
+GELISTIRME=18
