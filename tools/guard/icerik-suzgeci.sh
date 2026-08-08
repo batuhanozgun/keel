@@ -1,7 +1,7 @@
 #!/bin/bash
 # icerik-suzgeci — ORTAK içerik süzgeci (E2, önleme Hat-1). Yazıma giden İÇERİĞİ ADI KONMUŞ
 # desenlere tarar. KAPSAM BU LİSTEDİR, "her sır" DEĞİL (U37 — ilan kapsamı adıyla söyler):
-#   · TCKN (çift kontrol-hanesi) · TR IBAN (mod-97) · kart (Luhn, 15-16 hane)
+#   · TCKN (çift kontrol-hanesi) · TR IBAN (mod-97) · kart (Luhn, 15-16 hane, ilk hane 2-6)
 #   · API anahtarı: sk-… · gh[pousr]_… · AKIA… · AIza… · xox[baprs]-…   [sınıf: api-anahtari]
 #   · JWT jetonu (üç parçalı eyJ…eyJ…)                                   [sınıf: jeton]
 #   · PEM özel anahtar başlığı                                           [sınıf: ozel-anahtar]
@@ -171,9 +171,12 @@ for (const [konum, metin] of parcalar) {
     if (ibanMi(es[0])) { bulunan.push(["iban", konum]); break; }
   // kart adaylari: bitisik 15-16 hane YA DA tutarli tek ayracla 4-4-4-4 / 4-6-5 gruplama
   // (gevsek "her aralikli dizi" adayligi sayi tablolarinda yanlis-pozitif uretirdi — dar tutuldu)
+  // U64 · ILK HANE SINIFI [2-6]. Eskiden [3-6] idi ve Mastercardin 2-serisi (222100-272099,
+  // 2017den beri CANLI bir BIN araligi) Luhn-gecerli olsa bile TEMIZ geciyordu — bitisik de,
+  // 4-4-4-4 gruplu da. Yanlis-pozitif freni degismedi: Luhn + 15-16 hane yerinde.
   const kartAdaylari = [
-    /(?<![0-9])[3-6][0-9]{14,15}(?![0-9])/g,
-    /(?<![0-9])[3-6][0-9]{3}([ -])[0-9]{4}\1[0-9]{4}\1[0-9]{4}(?![0-9])/g,
+    /(?<![0-9])[2-6][0-9]{14,15}(?![0-9])/g,
+    /(?<![0-9])[2-6][0-9]{3}([ -])[0-9]{4}\1[0-9]{4}\1[0-9]{4}(?![0-9])/g,
     /(?<![0-9])3[0-9]{3}([ -])[0-9]{6}\1[0-9]{5}(?![0-9])/g,
   ];
   let kartVar = false;

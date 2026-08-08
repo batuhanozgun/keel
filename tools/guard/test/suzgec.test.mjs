@@ -299,3 +299,15 @@ test('U59 TEK EV: tanım dosyası YOKSA süzgeç hata döner (çağıran fail-cl
   assert.notEqual(r.status, 3, 'tanım yokken eşleşme iddiası da edilmemeli');
   assert.match(r.stderr, /yazım-kalıbı tanımı okunamadı/);
 });
+
+test('U64: Mastercard 2-serisi kart yakalanır (ilk hane sınıfı 2-6); sayı tablosu hâlâ temiz', () => {
+  const kok = kurulum();
+  const kart2 = luhnTamamla('222100123456789');   // 2-serisi, 16 hane
+  assert.equal(kos(kok, ['--metin'], `kart ${kart2} islem`).status, 3, 'bitişik 2-serisi kaçtı');
+  const gruplu = kart2.replace(/(.{4})/g, '$1 ').trim();
+  assert.equal(kos(kok, ['--metin'], `kart ${gruplu} islem`).status, 3, '4-4-4-4 gruplu 2-serisi kaçtı');
+  // TERS YÖN: ilan edilmiş yanlış-pozitif freni açılmadı — Luhn tutmayan 2-serisi ve sayı tablosu serbest.
+  const bozuk = kart2.slice(0, 15) + String((Number(kart2[15]) + 5) % 10);
+  assert.equal(kos(kok, ['--metin'], `kart ${bozuk} islem`).status, 0, 'Luhn bozuk 2-serisi serbest kalmalı');
+  assert.equal(kos(kok, ['--metin'], 'tutarlar: 12 34 56 78 90 12 34 56 78 90 12 34 56 78 90').status, 0);
+});
