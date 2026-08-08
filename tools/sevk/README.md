@@ -171,8 +171,18 @@ yapılandırılmış adresten `KEEL DUR` konulu posta; **yalnız başlık okunur
 edildi (jeton alanı `kanal.conf`'ta hazır, varsayılan kapalı).
 
 **Watchdog iki durum.** (a) nabız durdu — eşik (varsayılan 30 dk) aşıldı · (b) hiç doğmadı —
-dönem açık, tek kaydı açılış. **Diriltmez.** Canlılık `launchctl print` + `.nabiz-son` tazeliğiyle
+dönem açık, tek kaydı açılış. **Diriltmez.** Canlılık `launchctl print` + `.nabiz-son` ile
 ölçülür: *işaret dosyası yetmez.*
+
+**Nabız damgası İKİ soruya cevap verir; tazelik yalnız birincisidir** (U32). Damganın 1. satırı
+ISO zaman damgasıdır — *ne zaman koştu.* 2. satırı `hal=TAM` ya da `hal=EKSIK` + `sebep=…`
+taşır — *işini yapabildi mi.* İkisi ayrı ölçümdür: `nabiz.sh` ortak kitaplığı okuyamadan ya da
+node'unu bulamadan sessizce çıktığında damga **taze** olur ve watchdog **ölüdür**. Damgayı
+betiğin çıkış tuzağı basar; böylece "işin önüne damga basma" bir daha yazılamaz. Üç tüketici de
+hâli okur ve ayrı ad verir: `ortak.sh` (`watchdog-KOSUYOR-AMA-ISINI-YAPAMIYOR(<sebep>)` ·
+`watchdog-damgasi-HALSIZ`) · `tools/bekci` watchdog gözü (DURDURAN) · `watchdog-kur --durum`.
+Hâl satırı hiç yoksa eski bir `nabiz.sh` koşuyordur ve bu **kendi adıyla** söylenir —
+"bilinmiyor" bir ölçüm değeri değildir.
 
 **Uyanık tutma.** macOS'ta boşta kalan makine uyur; uyuyan makinede ne dönem sürer ne watchdog
 ateşler. `/donem` gerçek sınıfta `caffeinate` savı başlatır (PID `.caffeinate-pid`), üç yerden

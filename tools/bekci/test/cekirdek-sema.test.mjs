@@ -98,15 +98,44 @@ test('watchdog: iş yüklü ama NABIZ BAYAT/YOK → DURDURAN (en derin kol, ilk 
   temizle(kok);
 });
 
-test('watchdog TERS YÖN: iş yüklü + nabız TAZE ise hiç konuşmaz (yanlış-pozitif kapısı)', () => {
+test('watchdog TERS YÖN: iş yüklü + nabız TAZE + hâl TAM ise hiç konuşmaz (yanlış-pozitif kapısı)', () => {
   // Üç kırmızı kolun karşı kutbu. Bu olmadan yukarıdaki üç test "kapı her şeye kırmızı
   // basıyor"dan da geçerdi ve ölçtüğünü ölçmezdi.
+  const kok = kurulum();
+  writeFileSync(ISARET(kok), 'etiket=dev.keel.nabiz.deneme\nplist=/tmp/yok.plist\n');
+  writeFileSync(join(kok, 'tools', 'sevk', '.nabiz-son'), new Date().toISOString() + '\nhal=TAM\n');
+  const yol = sahteLaunchctl(0);
+  const r = kos(kok, { PATH: yol + ':' + process.env.PATH });
+  assert.ok(!/\[şema\] watchdog/.test(r.stdout), 'taze nabızda watchdog konuştu: ' + r.stdout);
+  rmSync(yol, { recursive: true, force: true });
+  temizle(kok);
+});
+
+test('watchdog/U32: nabız TAZE ama hâl EKSİK → DURDURAN (taze damga canlılık kanıtı değildir)', () => {
+  // Bu gözün en derin kolu bugüne dek yalnız YAŞ soruyordu. Watchdog ortak.sh'ı okuyamadan
+  // ya da node'unu bulamadan sessizce çıktığında damga TAZE olur ve koruma kâğıt üstünde
+  // kalır — bekçi tam da bunu görmek için var.
+  const kok = kurulum();
+  writeFileSync(ISARET(kok), 'etiket=dev.keel.nabiz.deneme\nplist=/tmp/yok.plist\n');
+  writeFileSync(join(kok, 'tools', 'sevk', '.nabiz-son'),
+    new Date().toISOString() + '\nhal=EKSIK\nsebep=node-yok\n');
+  const yol = sahteLaunchctl(0);
+  const r = kos(kok, { PATH: yol + ':' + process.env.PATH });
+  assert.ok(/DURDURAN \[şema\] watchdog: watchdog koşuyor ama işini yapamıyor \(node-yok\)/.test(r.stdout), r.stdout);
+  assert.ok(!/bayat\/yok/.test(r.stdout), 'taze nabza BAYAT denmez — ayrı sorular ayrı adlarla');
+  assert.equal(r.rc, 1);
+  rmSync(yol, { recursive: true, force: true });
+  temizle(kok);
+});
+
+test('watchdog/U32: hâl satırı HİÇ yoksa → DURDURAN (eski nabiz.sh; "bilinmiyor" ölçüm değildir)', () => {
   const kok = kurulum();
   writeFileSync(ISARET(kok), 'etiket=dev.keel.nabiz.deneme\nplist=/tmp/yok.plist\n');
   writeFileSync(join(kok, 'tools', 'sevk', '.nabiz-son'), new Date().toISOString() + '\n');
   const yol = sahteLaunchctl(0);
   const r = kos(kok, { PATH: yol + ':' + process.env.PATH });
-  assert.ok(!/\[şema\] watchdog/.test(r.stdout), 'taze nabızda watchdog konuştu: ' + r.stdout);
+  assert.ok(/DURDURAN \[şema\] watchdog: nabız damgasında hâl satırı yok/.test(r.stdout), r.stdout);
+  assert.equal(r.rc, 1);
   rmSync(yol, { recursive: true, force: true });
   temizle(kok);
 });
@@ -521,5 +550,25 @@ test('boş-backlog durağı: aktif kutu yoksa BİLGİ + AKIŞ=VERİ-YOK + pano d
   const pano = readFileSync(join(kok, '00_pano', 'PANO.md'), 'utf8');
   assert.ok(pano.includes('Durak: insan girdisi bekleniyor (D9)'), pano);
   assert.ok(pano.includes('Görevler: —'), pano);
+  temizle(kok);
+});
+
+test('watchdog/U32 kardeşi: işaret VAR ama okunamıyorsa SESSİZ geçmez (kurulmamış ≠ ölçülemedi)', () => {
+  // `oku()` her hatada null döner ve bu göz onu "watchdog kurulmamış" sayıyordu. Kurulmamış
+  // watchdog meşru sessizliktir (gerçek dönem açılışı zaten engeller); OKUNAMAYAN işaret ise
+  // ölçüm kaybıdır ve bu gözün kendi dersi (launchctl yokluğunun ayrı ad alması) sekiz satır
+  // aşağıda yazılıydı — aynı dosyada öğrenilmiş bir dersin taşınmamış kopyası.
+  const kok = kurulum();
+  mkdirSync(ISARET(kok), { recursive: true });     // dosya yerine DİZİN: var ama okunamaz
+  const r = kos(kok);
+  assert.ok(/UYARI \[şema\] watchdog: watchdog işareti VAR ama okunamıyor/.test(r.stdout), r.stdout);
+  temizle(kok);
+});
+
+test('watchdog/U32 kardeşi TERS YÖN: işaret HİÇ yoksa göz konuşmaz (yanlış-pozitif kapısı)', () => {
+  const kok = kurulum();
+  rmSync(ISARET(kok), { force: true });
+  const r = kos(kok);
+  assert.ok(!/\[şema\] watchdog/.test(r.stdout), 'kurulmamış watchdog için uyarı basıldı: ' + r.stdout);
   temizle(kok);
 });

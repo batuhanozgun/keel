@@ -1,0 +1,36 @@
+# zarf-jetonlari — dönüş zarfının KOLTUK SINIFI ve GÖREV JETONU kümesinin TEK EVİ (K23, U40).
+#
+# DOĞUŞ (ölçülmüş kusur): karne sözleşmesinin GİDİŞ yarısı ile DÖNÜŞ yarısı ayrı evlerdeydi.
+# `sevk.sh` kurulum turunda koltuğa `gorev: KURULUM` veriyor, kapanış turunda `gorev: KAPANIS`
+# veriyordu; `zarf-bicim-kapisi.sh` ise dönen zarfın `BİTEN:` satırında KOŞULSUZ `G-NN`
+# arıyordu. Yani sevkin kendi verdiği görevi aynen taşıyan, sözleşmeye TAM UYAN bir dönüş
+# YAPISAL OLARAK reddediliyordu: koltuk ya uydurma bir G-NN yazacak ya da hiç dönemeyecekti.
+# İki uç birbirini hiç okumadığı için kusur kâğıtta görünmüyordu — kapanışı bir kez de hasım
+# turu çürüttü. Kök 5 hükmü: bir şemanın gidiş ve dönüş yönü TEK EVDE tanımlanır ve iki uç
+# AYNI TANIMI OKUR.
+#
+# BİÇİM — iki kayıt cinsi, alan ayracı `:` (dönüşümsüz birebir eşleşme; küçültme ve `grep -i`
+# yasak — İ/ı güvenliği):
+#   KOLTUK:<alt-ajan slug'ı>:<sınıf>      — kadroda ayrıca yazılmayan her koltuk `uretim`dir
+#   JETON:<jeton>:<jetonu taşıyabilen sınıf>
+# `G-NN` (sayısal görev numarası) HER SINIFTA geçerlidir ve burada YAZILMAZ: o bir desendir,
+# jeton listesi değil. Buradaki jetonlar G-NN'nin YANINA gelir, yerine değil.
+#
+# SINIFLARIN ANLAMI (kapının kendi ayrımları):
+#   uretim   — iş döndürür; BEKLETİR kilidi ve çatal-iz şüphesi uygulanır
+#   denetci  — hüküm döndürür (ÇATAL-KAYNAK/HÜKÜM/KALEMLER); işi çatal değerlendirmektir
+#   karneci  — görev hükmü döndürür (KARNE-GOREV/HÜKÜM/MADDELER); "kimse kendi işine yeşil
+#              diyemez" kuralının mekanik yüzü
+#   gozlemci — dış göz; iş zincirinin dışındadır, görev almaz, brifing üretir
+#
+# OKUYANLAR — İKİ UÇ: tools/sevk/sevk.sh (GİDİŞ: koltuğa hangi jetonu verebileceğini buradan
+# öğrenir) · tools/sevk/zarf-bicim-kapisi.sh (DÖNÜŞ: hangi jetonu kabul edeceğini buradan
+# öğrenir). Dosya yok/biçimsizse İKİSİ DE fail-closed: sevk görevi hiç açmaz, kapı zarfı geri
+# çevirir. "Ölçemedim" ile "temiz" aynı şey değildir.
+KOLTUK:dogrulayici:karneci
+KOLTUK:kurulum-denetcisi:karneci
+KOLTUK:catal-denetcisi:denetci
+KOLTUK:disgoz:gozlemci
+JETON:KURULUM:karneci
+JETON:KAPANIS:karneci
+JETON:BRIFING:gozlemci

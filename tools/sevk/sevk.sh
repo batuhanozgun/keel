@@ -275,6 +275,37 @@ if (!URETIMDE.length || !KAPANISTA.length) {
   dur("gorev durum sozlugunde iki sinifin IKISI de dolu olmali (uretimde · kapanista): tools/bekci/gorev-durumlari.txt — fail-closed");
 }
 const DURUM_SOZ = new Set([...URETIMDE, ...KAPANISTA]);
+
+// ── U40 · ZARF JETONU + KOLTUK SINIFI — TEK EV, IKI UC ──────────────────────────────────
+// GIDIS ucu burasidir: sevk koltuga bir gorev jetonu verir (`gorev: KURULUM`). DONUS ucu
+// DONUS ucu tools/sevk/zarf-bicim-kapisi.sh dosyasidir. Iki uc AYRI yazildigi surece: sevk
+// KURULUM veriyor, kapi donen zarfta KOSULSUZ G-NN ariyor ve sozlesmeye TAM UYAN donusu
+// yapisal olarak reddediyordu (U40 — kapanisi bir kez de hasim turu curuttu). Artik ikisi de
+// AYNI dosyayi okur ve sevk, KABUL EDILMEYECEK bir jetonu HIC VERMEZ.
+// Okuma FAIL-CLOSED (gorev-durumlari.txt emsali): evsiz kume ile donem surmez.
+const jetonYolu = join(KOK, "tools", "sevk", "zarf-jetonlari.txt");
+let jetonMetin = null;
+try { jetonMetin = readFileSync(jetonYolu, "utf8"); } catch { jetonMetin = null; }
+if (jetonMetin === null) {
+  dur("zarf jeton kumesi yok: tools/sevk/zarf-jetonlari.txt — koltuk sinifi ve gorev jetonu evsiz; zarf-bicim-kapisi ile ORTAK tek evdir (fail-closed)");
+}
+const KOLTUK_SINIFI = new Map(), JETON_SINIFI = new Map();
+for (const ham of jetonMetin.split("\n")) {
+  const s = ham.replace(/\r$/, "").trim();
+  if (!s || s.startsWith("#")) continue;
+  const m = s.match(/^(KOLTUK|JETON):([^:]+):(uretim|denetci|karneci|gozlemci)$/);
+  if (!m) dur("zarf jeton kumesinde bicimsiz kalem: " + s.slice(0, 80) + " (tools/sevk/zarf-jetonlari.txt) — fail-closed");
+  (m[1] === "KOLTUK" ? KOLTUK_SINIFI : JETON_SINIFI).set(m[2], m[3]);
+}
+if (!KOLTUK_SINIFI.size || !JETON_SINIFI.size) {
+  dur("zarf jeton kumesinde KOLTUK ve JETON kalemlerinin IKISI de dolu olmali: tools/sevk/zarf-jetonlari.txt — fail-closed");
+}
+// Sevkin verdigi jetonu koltugun DONUSTE tasiyip tasiyamayacagi: tek evden sorulur.
+const jetonGecerliMi = (rol, gorev) => {
+  if (/^G-\d+$/.test(String(gorev || ""))) return true;      // sayisal gorev her sinifta gecerli
+  return JETON_SINIFI.get(String(gorev)) === (KOLTUK_SINIFI.get(String(rol)) || "uretim");
+};
+
 const gorevler = [];
 for (const s of kutuMetin.split("\n")) {
   if (!/^\s*\|/.test(s)) continue;
@@ -566,6 +597,15 @@ const kapaliSayilir = (gorev) => {
 const ajanVar = (slug) => /^[a-z0-9_-]+$/.test(String(slug || "")) && existsSync(join(KOK, ".claude", "agents", slug + ".md"));
 
 const talimat = (rol, gorev, tip, sebep, ekOkuma) => {
+  // U40 · SEVK, DONUSTE KABUL EDILMEYECEK BIR JETONU VERMEZ. Bu satir olmasa iki uc yine ayni
+  // dosyayi okurdu ama sevk kendi verdigi jetonu HIC sinamazdi: kume degistiginde koltuk
+  // gorevi alir, isi yapar ve donusu kapida olurdu — en pahali sirada.
+  if (!jetonGecerliMi(rol, gorev)) {
+    dur("sevk, donus kapisinin kabul etmeyecegi bir gorev jetonu veriyordu: «" + gorev +
+        "» → koltuk " + rol + " (sinif " + (KOLTUK_SINIFI.get(String(rol)) || "uretim") + "). " +
+        "Jeton kumesinin evi tools/sevk/zarf-jetonlari.txt; GIDIS ile DONUS onu ORTAK okur. " +
+        "kume ile talimat cakisirsa is hic acilmaz (fail-closed) — cunku o is donemezdi.");
+  }
   kayit({ tip: "sevk-karar", gorev, rol, is_tipi: tip, sebep });
   kayit({ tip: "nabiz", gorev, tur_no: TUR_NO, zarf_sayisi: zarfSayisi });
   // SAYAÇ NE ÖLÇTÜĞÜNÜ SÖYLER: bütçe artık YALNIZ üretimi sayıyor; ekrana toplam çağrı sayısını

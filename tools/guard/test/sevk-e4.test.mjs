@@ -92,6 +92,10 @@ function kurulum({ donem = null, kadro = ['uretici', 'dogrulayici', 'catal-denet
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
   copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
                join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
+  // zarf-jetonlari.txt de VERI dosyasidir ve IKI UC (sevk + zarf-bicim-kapisi) onu
+  // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
+  copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
+               join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
   copyFileSync(join(KOK_REPO, 'tools', 'guard', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '---\nname: ' + a + '\ntools: Read\n---\n# test ajanı\n');
   mkdirSync(join(kok, '03_roller', 'uretici'), { recursive: true });
@@ -1002,4 +1006,87 @@ test('miras görev: dönemden önce kapanmış görev yeniden doğrulanmaz ama i
   assert.equal(r.status, 2, 'miras görev G-02yi kilitlememeli: ' + r.stdout);
   assert.match(r.stderr, /^gorev: G-02$/m);
   assert.ok(gunluk(kok).some((j) => j.cins === 'miras-gorev'), 'miras görev izsiz geçmemeli');
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════════
+// U40 · KARNE SÖZLEŞMESİNİN GİDİŞ ve DÖNÜŞ YÖNÜ TEK EVDEN (Kök 5)
+// ══════════════════════════════════════════════════════════════════════════════════════════
+// Kusur: sevk kurulum turunda koltuğa `gorev: KURULUM` veriyordu; dönüş kapısı ise BİTEN
+// satırında KOŞULSUZ `G-NN` arıyordu. Yani sevkin kendi verdiği görevi aynen taşıyan,
+// sözleşmeye TAM UYAN bir dönüş YAPISAL OLARAK reddediliyordu. İki uç birbirini hiç
+// okumadığı için kusur kâğıtta görünmüyordu (kapanışını bir kez de hasım turu çürüttü).
+const JETON_EVI = (kok) => join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt');
+const karneDonusu = (ajan, jeton) => ({
+  agent_type: ajan,
+  last_assistant_message: zarf({
+    biten: jeton + ' — denetim bitti · kanıt: 00_pano/PANO.md:1',
+    ek: [`KARNE-GOREV: ${jeton}`, 'HÜKÜM: YEŞİL', 'MADDELER: 1=geçti 2=geçti'].join('\n'),
+  }),
+});
+
+test('U40: kurulum karnesinin dönüşü GEÇER — sevkin verdiği jetonu kapı da tanır', () => {
+  const kok = kurulum({ donem: true });
+  const r = kapi(kok, karneDonusu('kurulum-denetcisi', 'KURULUM'));
+  assert.equal(r.status, 0, 'sözleşmeye uyan dönüş geri çevrildi: ' + r.stderr);
+  const z = gunluk(kok).filter((j) => j.tip === 'zarf');
+  assert.equal(z[z.length - 1].gorev, 'KURULUM', 'zarf kaydı jetonu taşımalı');
+});
+
+test('U40: kapanış karnesinin dönüşü de GEÇER (aynı jeton ailesi, ikinci koltuk)', () => {
+  const kok = kurulum({ donem: true });
+  assert.equal(kapi(kok, karneDonusu('dogrulayici', 'KAPANIS')).status, 0);
+});
+
+test('U40: jeton SINIFA BAĞLIDIR — üretim koltuğu KURULUM jetonuyla dönemez', () => {
+  const kok = kurulum({ donem: true });
+  const r = kapi(kok, karneDonusu('uretici', 'KURULUM'));
+  assert.equal(r.status, 2, 'üretim rolünde G-NN zorunluluğu sürmeli');
+  assert.match(r.stderr, /görev numarası yok/);
+  assert.match(r.stderr, /sınıf uretim/, 'red gerekçesi koltuğun sınıfını ve izinli jetonları söylemeli');
+});
+
+test('U40 TEK EV, İKİ UÇ: jeton kümesinden KURULUM düşünce İKİ UÇ da hükmünü değiştirir', () => {
+  // Bu, tek-ev iddiasının DAVRANIŞSAL ölçümüdür. "Kaynakta dosya adı geçiyor" o dosyanın
+  // OKUNDUĞUNU ölçmez (U39 dersi): kümedeki bir satırı düşürüp iki ucun da hükmünün
+  // döndüğünü görmek ölçer.
+  // İKİ AYRI KÖK: aynı kökte önce kapıyı koşturmak günlüğe YEŞİL bir KURULUM karnesi düşürür
+  // ve sevk o turda görev açmak yerine turu KAPATIR — ölçüm o zaman gidiş ucunu değil karne
+  // kaydını ölçerdi (ilk yazımda tam bu oldu).
+  const kurulumTuru = `DONEM-E4\t${KUTU_ADI}\tkurulum\ttatbikat\ndamga\t${new Date().toISOString()}\n`;
+  const donusKok = kurulum({ donem: true });
+  const gidisKok = kurulum({ donem: kurulumTuru });
+  assert.equal(kapi(donusKok, karneDonusu('kurulum-denetcisi', 'KURULUM')).status, 0,
+    'küme yerindeyken DÖNÜŞ geçer');
+  assert.match(sevk(gidisKok).stderr, /^gorev: KURULUM$/m,
+    'küme yerindeyken GİDİŞ KURULUM görevini açar');
+
+  // KÜMEDEN DÜŞÜR — tek satır, iki kökte de.
+  const dusur = (kok) => writeFileSync(JETON_EVI(kok),
+    readFileSync(JETON_EVI(kok), 'utf8').split('\n').filter((s) => s !== 'JETON:KURULUM:karneci').join('\n'));
+  dusur(donusKok); dusur(gidisKok);
+
+  const r = kapi(donusKok, karneDonusu('kurulum-denetcisi', 'KURULUM'));
+  assert.equal(r.status, 2, 'DÖNÜŞ ucu kümeyi okumuyor');
+  const s1 = sevk(gidisKok);
+  assert.ok(!/^gorev: KURULUM$/m.test(s1.stderr), 'GİDİŞ ucu kümeyi okumuyor: ' + s1.stderr);
+  assert.match(s1.stdout + s1.stderr, /kabul etmeyecegi bir gorev jetonu/,
+    'sevk, dönemeyecek bir işi açmamalı ve sebebini söylemeli');
+});
+
+test('U40: jeton kümesi YOKSA iki uç da fail-closed (ölçemedim ile temiz aynı şey değildir)', () => {
+  const kok = kurulum({ donem: true });
+  rmSync(JETON_EVI(kok));
+  const r = kapi(kok, karneDonusu('kurulum-denetcisi', 'KURULUM'));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /zarf jeton kümesi yok/);
+  const s = sevk(kok);
+  assert.match(s.stdout + s.stderr, /zarf jeton kumesi yok/);
+});
+
+test('U40: jeton kümesi BİÇİMSİZSE fail-closed (sessizce yok sayılmaz)', () => {
+  const kok = kurulum({ donem: true });
+  writeFileSync(JETON_EVI(kok), 'KOLTUK:dogrulayici:karneci\nJETON:KURULUM:karneci\nSACMA SATIR\n');
+  const r = kapi(kok, karneDonusu('dogrulayici', 'KURULUM'));
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /biçimsiz kalem/);
 });

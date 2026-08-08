@@ -34,6 +34,10 @@ function kurulum({ cevapKanali = 'acik', jeton = '' } = {}) {
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
   copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
                join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
+  // zarf-jetonlari.txt de VERI dosyasidir ve IKI UC (sevk + zarf-bicim-kapisi) onu
+  // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
+  copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
+               join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
   for (const g of ['icerik-suzgeci.sh', 'gercek-veri-isaretleri.txt']) {
     copyFileSync(join(KOK_REPO, 'tools', 'guard', g), join(kok, 'tools', 'guard', g));
   }
@@ -714,6 +718,10 @@ function kapiKos(zarf) {
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
   copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
                join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
+  // zarf-jetonlari.txt de VERI dosyasidir ve IKI UC (sevk + zarf-bicim-kapisi) onu
+  // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
+  copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
+               join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
   writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'D1\tKT-001\tyapim\tgercek\n2026-07-31T00:00:00Z\n');
   writeFileSync(join(kok, '.claude', 'agents', 'po.md'), '# rol\n');
   writeFileSync(join(kok, '00_pano', 'PANO.md'), '# pano\n');   // kanıt işaretçisinin hedefi

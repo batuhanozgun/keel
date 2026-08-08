@@ -52,10 +52,16 @@ Yedi kalem; her biri için "geçti" / "kaldı" / "doğrulanamadı" de:
 her biri AYRI satırın başında:
 
 ```
+BİTEN:       KURULUM — <tek cümle> · kanıt: <dosya:satır>
 KARNE-GOREV: KURULUM
 HÜKÜM:       YEŞİL | KIRMIZI | DOĞRULANAMADI
 MADDELER:    1=geçti 2=geçti 3=kaldı 4=geçti 5=geçti 6=geçti 7=beyan
 ```
+
+**`BİTEN` satırının jetonu `KURULUM`dur, uydurma bir `G-NN` DEĞİL.** Sevk sana zaten
+`gorev: KURULUM` verir; dönüş kapısı da aynı jetonu bekler — ikisi tek evden okur
+(`tools/sevk/zarf-jetonlari.txt`). Bir görev numarası uydurmak, hükmünü yanlış işin altına
+yazmak demektir.
 
 **HÜKÜM YEŞİL yalnız yedi kalemin hiçbiri "kaldı" değilse verilir.** Bir kalem bile kaldıysa
 KIRMIZI; koşamadığın kalem varsa ve gerisi temizse DOĞRULANAMADI. Raporun açılış mührü paketine

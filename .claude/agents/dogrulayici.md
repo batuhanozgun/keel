@@ -32,11 +32,16 @@ dönüşün standart 6 alanlı zarfla biter (`02_kanon/OTONOM_DONEM.md` §4) ve 
 her biri AYRI satırın başında:
 
 ```
+BİTEN:       <G-NN | KURULUM | KAPANIS> — <tek cümle> · kanıt: <dosya:satır>
 KARNE-GOREV: G-NN | KURULUM | KAPANIS
 HÜKÜM:       YEŞİL | KIRMIZI | DOĞRULANAMADI
 MADDELER:    <iddia=hüküm çiftleri, tek satır>
 BULGU-GOREV: G-NN [G-NN …]   ← YALNIZ «KARNE-GOREV: KAPANIS» + hüküm YEŞİL DEĞİLKEN; zorunlu
 ```
+
+**`BİTEN` satırının jetonu, sevkin sana verdiği `gorev:` satırının aynısıdır** — `KAPANIS`
+karnesinde `KAPANIS`, `KURULUM` karnesinde `KURULUM`, görev karnesinde o `G-NN`. Uydurma bir
+numara yazma: gidiş ve dönüş aynı evden okunur (`tools/sevk/zarf-jetonlari.txt`).
 
 `HÜKÜM: YEŞİL` yalnız her maddesi DOĞRU olan karnede verilir; bir madde bile YANLIŞ ise KIRMIZI,
 bir madde DOĞRULANAMADI ve gerisi doğruysa DOĞRULANAMADI. **Görevi bu satır kapatır:** sevk bir

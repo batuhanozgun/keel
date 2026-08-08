@@ -1,7 +1,14 @@
 #!/bin/bash
-# icerik-suzgeci — ORTAK içerik süzgeci (E2, önleme Hat-1). Yazıma giden İÇERİĞİ kişisel-veri
-# desenlerine tarar: TCKN (çift kontrol-hanesi) · TR IBAN (mod-97) · kart (Luhn, 15-16 hane) ·
-# gerçek-veri işaret listesi (tools/guard/gercek-veri-isaretleri.txt — birebir bayt).
+# icerik-suzgeci — ORTAK içerik süzgeci (E2, önleme Hat-1). Yazıma giden İÇERİĞİ ADI KONMUŞ
+# desenlere tarar. KAPSAM BU LİSTEDİR, "her sır" DEĞİL (U37 — ilan kapsamı adıyla söyler):
+#   · TCKN (çift kontrol-hanesi) · TR IBAN (mod-97) · kart (Luhn, 15-16 hane)
+#   · API anahtarı: sk-… · gh[pousr]_… · AKIA… · AIza… · xox[baprs]-…   [sınıf: api-anahtari]
+#   · JWT jetonu (üç parçalı eyJ…eyJ…)                                   [sınıf: jeton]
+#   · PEM özel anahtar başlığı                                           [sınıf: ozel-anahtar]
+#   · gerçek-veri işaret listesi (tools/guard/gercek-veri-isaretleri.txt — birebir bayt)
+# LİSTE DIŞI bir sır bu kapıdan GEÇER: sağlayıcı öneki taşımayan anahtarlar, parola dizeleri ve
+# genel "yüksek entropili dize" avı BİLEREK yoktur — bu süzgeç her araç çağrısında koşar ve bir
+# yanlış-pozitif meşru işi durdurur. Kapsamı genişletmek desen eklemektir, ilanı değiştirmek değil.
 # Çağıranlar: file-guard.sh (yazım-öncesi, bugün) · haber betiği (gönderim-öncesi, E5).
 # Kipler: --arac-json (stdin=PreToolUse araç JSON'u; Edit new_string / MultiEdit edits[].new_string /
 #         Write content / NotebookEdit new_source / Bash command[yalnız yazım-kalıplıysa]) ·
@@ -112,6 +119,19 @@ function ibanMi(s) { // TR + 24 hane, mod-97 == 1 (ISO 7064)
   for (const ch of cevrik) m = (m * 10n + BigInt(ch)) % 97n;
   return m === 1n;
 }
+// U37 · Anahtar/jeton desenleri: her biri SAGLAYICI ONEKI ya da yapisal cerceve tasir; hicbiri
+// "uzun rastgele dize" avi degildir. Kaynakta ORNEK DEGER YOK — desenin kendisi de kendine
+// uymaz (onekten hemen sonra `[` gelir, sinif disi karakter).
+const ANAHTAR_DESENLERI = [
+  [/(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}/g, "api-anahtari"],                    // OpenAI / Anthropic
+  [/(?<![A-Za-z0-9])gh[pousr]_[A-Za-z0-9]{36}(?![A-Za-z0-9])/g, "api-anahtari"], // GitHub
+  [/(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}(?![A-Za-z0-9])/g, "api-anahtari"],          // AWS erisim kimligi
+  [/(?<![A-Za-z0-9])AIza[0-9A-Za-z_-]{35}(?![A-Za-z0-9])/g, "api-anahtari"],     // Google
+  [/(?<![A-Za-z0-9])xox[baprs]-[0-9A-Za-z-]{10,}/g, "api-anahtari"],             // Slack
+  [/(?<![A-Za-z0-9])eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g, "jeton"], // JWT
+  [/-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----/g, "ozel-anahtar"],                  // PEM ozel anahtar
+];
+
 function luhnMi(s) {
   const d = s.split("").map(Number).reverse();
   let top = 0;
@@ -141,6 +161,17 @@ for (const [konum, metin] of parcalar) {
     if (kartVar) break;
   }
   if (kartVar) bulunan.push(["kart", konum]);
+  // ── U37 · ANAHTAR ve JETON SINIFLARI ────────────────────────────────────────────────
+  // TCKN/IBAN/kart KISISEL VERIdir; API anahtari ve jeton AYRI bir sinifitir ve bu suzgecte
+  // HIC YOKTU. Olculdu: sk-… · ghp_… · JWT uctan uca TEMIZ geciyordu, oysa engel metni
+  // kapsamini "sir" diye GENELLIYORDU — ilan gercekten genis, uygulama dardi (Kok 4).
+  // Desenler DAR ve SAGLAYICI-ONEKLIDIR: bu suzgec HER arac cagrisinda kosar ve bir
+  // yanlis-pozitif mesru isi durdurur. Genel "yuksek entropili dize" avi BILEREK YOKTUR;
+  // sinir dosyanin basinda ILAN EDILIR — kapsam bu listedir, "her sir" degil.
+  for (const [re, sinif] of ANAHTAR_DESENLERI) {
+    if (re.test(metin)) bulunan.push([sinif, konum]);
+    re.lastIndex = 0;                       // /g durumlu: sonraki parcaya temiz girilir
+  }
   // isaret listesi: birebir BAYT eslesmesi (harf donusumu YOK); # yorum; <4 karakter yok sayilir
   if (ISARET_YOL && existsSync(ISARET_YOL)) {
     for (const satirHam of readFileSync(ISARET_YOL, "utf8").split("\n")) {

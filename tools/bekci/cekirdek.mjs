@@ -519,8 +519,19 @@ if (conf) {
   goz('şema', 'watchdog', () => {
     // Dosyada duran ölü kural bu ailenin en pahalı ders sınıfıdır (BEKCI_TARIFI md.21/2).
     if (PENCERE === 'kurulum') return;
-    const isaret = oku(join(KOK, 'tools', 'sevk', 'watchdog-kurulu'));
-    if (isaret === null) return;
+    // U32 kardeşi · `oku()` HER hatada null döner: "watchdog hiç kurulmamış" ile "işaret dosyası
+    // VAR ama okunamıyor (izin/dizin)" aynı SESSİZ dala düşüyordu. Birincisi meşru sessizliktir
+    // (kurulmamış watchdog gerçek dönem açılışında zaten engel), ikincisi ölçüm kaybıdır ve bu
+    // gözün KENDİ dersi sekiz satır aşağıda yazılı: launchctl'in yokluğu ayrı ad alıyor.
+    const isaretYol = join(KOK, 'tools', 'sevk', 'watchdog-kurulu');
+    const isaret = oku(isaretYol);
+    if (isaret === null) {
+      if (existsSync(isaretYol)) {
+        bulgu('UYARI', 'şema', 'watchdog',
+          'watchdog işareti VAR ama okunamıyor (tools/sevk/watchdog-kurulu) — koruma ölçülemedi; "kurulmamış" ile aynı şey değil');
+      }
+      return;
+    }
     const etiket = (isaret.split('\n').find((s) => s.startsWith('etiket=')) || '').slice('etiket='.length).trim();
     if (!etiket) { bulgu('DURDURAN', 'şema', 'watchdog', 'watchdog işaretinde etiket= satırı yok — koruma kâğıt üstünde'); return; }
     let launchctlVar = true;
@@ -530,9 +541,29 @@ if (conf) {
       else { bulgu('DURDURAN', 'şema', 'watchdog', 'watchdog işareti var ama iş yüklü değil (' + etiket + ') — koruma kâğıt üstünde'); return; }
     }
     if (!launchctlVar) { bulgu('BILGI', 'şema', 'watchdog', 'launchctl yok — watchdog gözü bu ortamda ölçülemedi (ilan; sözleşme §7)'); return; }
+    // U32 · Damga İKİ soruya cevap verir ve ikisi ayrı ölçümdür: 1. satır NE ZAMAN koştuğunu,
+    // 2. satır İŞİNİ YAPIP YAPAMADIĞINI söyler. Buranın eskiden yalnız birincisi vardı ve
+    // `damga.trim()` TÜM dosyayı tarihe çevirmeye çalışıyordu — hâl satırı eklendiği anda taze
+    // bir damga bile "bayat" görünürdü. Tarih artık İLK SATIRDAN okunur (ortak.sh sözleşmesi).
     const damga = oku(join(KOK, 'tools', 'sevk', '.nabiz-son'));
-    const yasDk = damga === null ? Infinity : (Date.now() - new Date(damga.trim()).getTime()) / 60000;
-    if (!(yasDk <= 20)) bulgu('DURDURAN', 'şema', 'watchdog', 'watchdog işareti var ama nabız bayat/yok — koruma kâğıt üstünde');
+    const satirlar = (damga === null ? '' : damga).split('\n');
+    const yasDk = damga === null ? Infinity : (Date.now() - new Date((satirlar[0] || '').trim()).getTime()) / 60000;
+    if (!(yasDk <= 20)) {
+      bulgu('DURDURAN', 'şema', 'watchdog', 'watchdog işareti var ama nabız bayat/yok — koruma kâğıt üstünde');
+      return;
+    }
+    // TAZE DAMGA CANLILIK KANITI DEĞİLDİR: watchdog ortak.sh'ı okuyamadan ya da node'u
+    // bulamadan sessizce çıkmış olabilir. O hâlde koruma yine kâğıt üstündedir ve bunu
+    // söyleyecek tek yer damganın hâl satırıdır (üretilen hâlin tüketicisi burasıdır).
+    const halS = satirlar.find((s) => s.startsWith('hal=')) || '';
+    const hal = halS.slice('hal='.length).trim();
+    if (hal === 'EKSIK') {
+      const sebepS = satirlar.find((s) => s.startsWith('sebep=')) || '';
+      const sebep = sebepS.slice('sebep='.length).trim().replace(/[^A-Za-z0-9._-]/g, '') || 'sebep-okunmadi';
+      bulgu('DURDURAN', 'şema', 'watchdog', 'watchdog koşuyor ama işini yapamıyor (' + sebep + ') — nabız taze, koruma yine kâğıt üstünde');
+    } else if (hal !== 'TAM') {
+      bulgu('DURDURAN', 'şema', 'watchdog', 'nabız damgasında hâl satırı yok — eski bir nabiz.sh koşuyor, damganın neyi kanıtladığı bilinmiyor');
+    }
   });
 
   if (kadran === 'tam') {

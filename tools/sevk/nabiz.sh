@@ -28,11 +28,38 @@ KOK="${CLAUDE_PROJECT_DIR:-$(cd "$DIZIN/../.." && pwd)}"
 GOSTERGE="$DIZIN/.donem-acik"
 NABIZ_DAMGA="$DIZIN/.nabiz-son"
 
-# Canlılık damgası HER turda basılır — dönem olsun olmasın. Kurulum denetimi bunu okur:
-# "işaret dosyası var" ile "iş fiilen koşuyor" ayrı şeylerdir (E4'ün ölü-kural dersi).
-date -u '+%Y-%m-%dT%H:%M:%SZ' > "$NABIZ_DAMGA" 2>/dev/null || true
+# ── U32 · CANLILIK DAMGASI İŞİN SONUNDA BASILIR ───────────────────────────────────────────
+# Damga HER turda basılır — dönem olsun olmasın; kurulum denetimi bunu okur, çünkü "işaret
+# dosyası var" ile "iş fiilen koşuyor" ayrı şeylerdir (E4'ün ölü-kural dersi). AMA damga
+# eskiden bu betiğin İLK iş satırıydı: "koştum" diyordu, "İŞİMİ YAPTIM" demiyordu. İki satır
+# sonra `[ -r ortak.sh ] || exit 0`, biraz aşağıda `node_bul || exit 0` sessizce çıkabiliyordu
+# ve damga yine de TAZE duruyordu. Üç tüketici (ortak.sh gercek_kutu_eksikleri · tools/bekci
+# watchdog gözü · watchdog-kur --durum) onu canlılık kanıtı saydığı için ÖLÜ BİR WATCHDOG
+# YEŞİL GÖRÜNÜYORDU — tam da onun raporlaması gereken arıza sınıfında. Kök 1(b) hükmü:
+# tazelik damgası işin SONUNDA basılır.
+#
+# MEKANİK: damgayı ÇIKIŞ TUZAĞI basar, düz bir satır değil. Böylece "işin önüne basma" bir
+# daha YAZILAMAZ: betik nereden çıkarsa çıksın damgayı tuzak yazar ve O ANKİ hâli yazar.
+#   hal=TAM              → yapabileceği işi yaptı (yapacak iş yoksa da TAMdır)
+#   hal=EKSIK sebep=…    → koştu ama işini YAPAMADI; sebep adıyla yazılı, sahip oraya bakar
+# İlk satır ISO damgadır — tüketiciler `head -n1` okur, o sözleşme DEĞİŞMEDİ; hâl 2. satırda.
+# `yarim-kaldi` tuzağın kendi varsayılanıdır: betik beklenmedik yerde ölürse (ya da bir
+# gelecek düzenleme yeni bir sessiz `exit 0` eklerse) damga kendiliğinden EKSİK basar —
+# sessiz kaçış yolu açmak, açanın ekstra bir satır yazmasını gerektirir.
+NABIZ_SEBEP=""       # dolu = ADIYLA bilinen bir yetenek eksiği
+NABIZ_BITTI=0        # 1 = betik meşru durağına ulaştı
+damga_bas() {
+  local HAL="EKSIK" SEBEP="$NABIZ_SEBEP"
+  [ "$NABIZ_BITTI" = "1" ] && [ -z "$NABIZ_SEBEP" ] && HAL="TAM"
+  [ -n "$SEBEP" ] || SEBEP="yarim-kaldi"
+  { date -u '+%Y-%m-%dT%H:%M:%SZ'
+    printf 'hal=%s\n' "$HAL"
+    [ "$HAL" = "TAM" ] || printf 'sebep=%s\n' "$SEBEP"
+  } > "$NABIZ_DAMGA" 2>/dev/null || true
+}
+trap damga_bas EXIT
 
-[ -r "$DIZIN/ortak.sh" ] || exit 0
+[ -r "$DIZIN/ortak.sh" ] || { NABIZ_SEBEP="ortak.sh-okunmuyor"; exit 0; }
 # shellcheck source=/dev/null
 . "$DIZIN/ortak.sh"
 
@@ -407,7 +434,9 @@ imap_getir() {
 }
 
 kanal_oku "$KOK" >/dev/null 2>&1 || true
-node_bul || NODE_BIN=""
+# node YOKSA 0. iş (uzaktan cevap) HİÇ koşamaz — cevap_hatti sessizce döner. U32: bu sessiz
+# yetenek kaybı damgaya ADIYLA geçer, yoksa "dönem kapalıydı, işim yoktu" ile aynı görünürdü.
+node_bul || { NODE_BIN=""; NABIZ_SEBEP="node-yok"; }
 cevap_hatti
 
 DONEM_RC=0; donem_oku "$KOK" || DONEM_RC=$?
@@ -422,13 +451,19 @@ sav_birak() {
 }
 if [ "$DONEM_RC" != "0" ]; then
   [ -f "$DIZIN/.caffeinate-pid" ] && { sav_birak "$(head -n1 "$DIZIN/.caffeinate-pid" 2>/dev/null)"; rm -f "$DIZIN/.caffeinate-pid"; }
+  # U32 · "DÖNEM YOK" ile "GÖSTERGEYİ OKUYAMADIM" AYNI ŞEY DEĞİLDİR — donem_oku 1 ile 2'yi
+  # zaten ayırıyordu, burası ikisini tek dala atıp aynı damgayı basıyordu. 1 = yapacak iş yok,
+  # damga TAMdır. 2 = gösterge bozuk; watchdog'un 1-4 numaralı işlerinin HİÇBİRİ koşamaz ve
+  # bunu sahibe söyleyecek tek yer damgadır (Kök 1'in bu betikteki kardeşi).
+  [ "$DONEM_RC" = "2" ] && NABIZ_SEBEP="donem-gostergesi-bozuk"
+  NABIZ_BITTI=1
   exit 0
 fi
 
 kanal_oku "$KOK" >/dev/null 2>&1 || true
 ESIK_DK="${KANAL_SESSIZLIK_ESIK_DK:-30}"
 
-node_bul || exit 0
+node_bul || { NABIZ_SEBEP="node-yok"; exit 0; }
 
 # ── 1 · İki durum ─────────────────────────────────────────────────────────────────────────
 # Günlükten BU dönemin kayıtları okunur: en yeni kaydın yaşı + açılıştan başka kayıt var mı.
@@ -623,4 +658,6 @@ console.log(Number.isFinite(t)&&Number.isFinite(s)&&t<s?"ESKI":"TAZE")
  fi
 fi
 
+# Dört işin de arkasındayız: damga ancak BURADAN sonra TAM basılabilir (U32).
+NABIZ_BITTI=1
 exit 0

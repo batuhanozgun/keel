@@ -162,8 +162,30 @@ nabiz_yasi_dk() { # $1: damga dosyası
   printf '%s' "$YAS"
 }
 
+# Nabız damgasının HÂLİ (U32). Damganın 1. satırı NE ZAMAN koştuğunu söyler; 2. satır İŞİNİ
+# YAPIP YAPAMADIĞINI. İkisi ayrı sorudur ve eskiden yalnız birincisi vardı: watchdog ortak.sh'ı
+# okuyamadan ya da node'u bulamadan sessizce çıksa bile damga TAZE duruyor, üç tüketici de ona
+# bakıp YEŞİL diyordu. Yaş ölçümü (nabiz_yasi_dk) BU FONKSİYONUN İŞİ DEĞİL — o "ne zaman"
+# sorusunun cevabıdır, bu "ne yaptı" sorusunun.
+# Dönüş: 0 = stdout `TAM` · 1 = stdout `EKSIK:<sebep>` · 2 = stdout `HALSIZ` (hâl satırı yok —
+# eski sürüm bir nabiz.sh koşuyor: damga TAZE olabilir ama neyi kanıtladığı BİLİNMİYOR, ve
+# "bilinmiyor" bir ölçüm değeri değildir).
+nabiz_hali() { # $1: damga dosyası
+  local DOSYA="${1:-}" HAL SEBEP
+  [ -s "$DOSYA" ] || { printf 'HALSIZ'; return 2; }
+  HAL="$(sed -n 's/^hal=//p' "$DOSYA" 2>/dev/null | head -n1)"
+  case "$HAL" in
+    TAM) printf 'TAM'; return 0 ;;
+    EKSIK)
+      SEBEP="$(sed -n 's/^sebep=//p' "$DOSYA" 2>/dev/null | head -n1)"
+      case "$SEBEP" in ''|*[!A-Za-z0-9._-]*) SEBEP="sebep-okunmadi" ;; esac
+      printf 'EKSIK:%s' "$SEBEP"; return 1 ;;
+    *) printf 'HALSIZ'; return 2 ;;
+  esac
+}
+
 gercek_kutu_eksikleri() { # $1: sevk dizini
-  local D="${1:-$ORTAK_DIZIN}" E="" ETIKET="" YAS="" YRC=0
+  local D="${1:-$ORTAK_DIZIN}" E="" ETIKET="" YAS="" YRC=0 HAL="" HRC=0
   if [ ! -s "$D/watchdog-kurulu" ]; then
     E="$E watchdog-kaydi(tools/sevk/watchdog-kurulu)"
   else
@@ -183,6 +205,14 @@ gercek_kutu_eksikleri() { # $1: sevk dizini
         0) [ "$YAS" -le 20 ] || E="$E watchdog-nabzi-BAYAT(${YAS}dk)" ;;
         2) E="$E watchdog-nabzi-OLCULEMEDI(node-bulunamadi)" ;;
         *) E="$E watchdog-damgasi-okunmuyor" ;;
+      esac
+      # DÖRDÜNCÜ SORU (U32): damga taze olabilir ve watchdog yine de işini yapamıyor olabilir.
+      # "Ne zaman koştu" ile "işini yaptı mı" ayrı ölçümlerdir; ikincisinin tüketicisi burasıdır.
+      # Üretilip bağlanmayan hâl, hiç üretilmemiş hâlle aynı körlüğü verir (Kök 1c).
+      HAL="$(nabiz_hali "$D/.nabiz-son")" || HRC=$?
+      case "$HRC" in
+        1) E="$E watchdog-KOSUYOR-AMA-ISINI-YAPAMIYOR(${HAL#EKSIK:})" ;;
+        2) E="$E watchdog-damgasi-HALSIZ(eski-nabiz.sh-kosuyor)" ;;
       esac
     fi
   fi

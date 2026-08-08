@@ -168,3 +168,51 @@ test('süzgeç: temiz metin 0 döner, çıktı boş', () => {
   assert.equal(r.status, 0);
   assert.equal(r.stdout.trim(), '');
 });
+
+// ── U37 · ANAHTAR ve JETON SINIFLARI ──────────────────────────────────────────────────────
+// Kusur: engel metni kapsamını "gerçek kişisel veri/sır" diye GENELLİYORDU ama fiilî kapsam
+// TCKN + IBAN + kart + işaret listesiydi. API anahtarı ve jeton uçtan uca TEMİZ geçiyordu —
+// ölçüldü. Kapının okunan ilanı ile yaptığı iş arasındaki fark, kapının kendisinden daha
+// tehlikelidir: ajan "bu kapı sırları tutuyor" varsayımıyla çalışır. Kök 4 hükmü: ilan,
+// kapsamı ADIYLA söyler.
+// DEĞER ÜRETİLİR, YAZILMAZ: aşağıdaki dizeler desen KURALINDAN kurulur; hiçbiri gerçek
+// bir anahtar değildir ve dosyada duran bir literal de değildir.
+const SK = 'sk-' + 'A'.repeat(24);
+const GHP = 'ghp_' + 'b'.repeat(36);
+const AKIA = 'AKIA' + 'C'.repeat(16);
+const AIZA = 'AIza' + 'd'.repeat(35);
+const XOX = 'xoxb-' + '1'.repeat(12);
+const JWT = 'eyJ' + 'a'.repeat(12) + '.eyJ' + 'b'.repeat(12) + '.' + 'c'.repeat(12);
+const PEM = '-----BEGIN RSA PRIVATE KEY-----';
+
+test('U37: API anahtarı · JWT jetonu · PEM özel anahtar YAKALANIR (eskiden temiz geçiyordu)', () => {
+  const kok = kurulum();
+  for (const [deger, sinif] of [[SK, 'api-anahtari'], [GHP, 'api-anahtari'], [AKIA, 'api-anahtari'],
+                                [AIZA, 'api-anahtari'], [XOX, 'api-anahtari'],
+                                [JWT, 'jeton'], [PEM, 'ozel-anahtar']]) {
+    const r = kos(kok, ['--metin'], `ayar dosyası: ${deger} son`);
+    assert.equal(r.status, 3, deger.slice(0, 6) + '… yakalanmadı: ' + r.stdout);
+    assert.match(r.stdout, new RegExp('^ESLESME\\t' + sinif + '\\tmetin$', 'm'));
+    sizdirmaz(r, deger);          // DEĞER SIZDIRMAMA kuralı yeni sınıflarda da geçerli
+  }
+});
+
+test('U37: yeni sınıflar araç JSON kipinde de koşar (yalnız --metin değil)', () => {
+  const kok = kurulum();
+  const r = kos(kok, ['--arac-json'], JSON.stringify({
+    tool_name: 'Write', tool_input: { file_path: '/x/y.env', content: 'API=' + SK + '\n' } }));
+  assert.equal(r.status, 3, r.stdout + r.stderr);
+  assert.match(r.stdout, /^ESLESME\tapi-anahtari\tWrite\.content$/m);
+});
+
+test('U37 TERS YÖN: sağlayıcı öneki taşımayan uzun dize SERBEST (yanlış-pozitif kapısı)', () => {
+  // Bu süzgeç HER araç çağrısında koşar; genel "yüksek entropili dize" avı meşru işi
+  // durdururdu. Sınır BİLEREK dardır ve dosyanın başında İLAN EDİLİR — bu test o ilanın
+  // doğru olduğunu ölçer, yoksa ilan yine gerçekten geniş olurdu.
+  const kok = kurulum();
+  for (const temiz of ['x'.repeat(40), 'sk' + 'A'.repeat(24), 'ghp_' + 'b'.repeat(10),
+                       'AKIA' + 'c'.repeat(16), 'eyJ' + 'a'.repeat(30)]) {
+    const r = kos(kok, ['--metin'], 'sıradan metin ' + temiz + ' devam');
+    assert.equal(r.status, 0, temiz.slice(0, 8) + '… yanlış-pozitif üretti: ' + r.stdout);
+  }
+});

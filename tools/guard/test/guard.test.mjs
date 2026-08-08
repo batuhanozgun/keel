@@ -917,3 +917,19 @@ test('bekçi ayarı istisnası rol kafesini DELMEZ: yazamaz rolde bekci.conf →
   const kok = kurulum({ liste: BEKCI_LISTE, aktifRol: 'disgoz\tyazamaz\t03_roller/disgoz/\n' });
   assert.equal(kos(kok, edit(kok, 'tools/bekci/bekci.conf')).status, 2);
 });
+
+test('U37: engel metni KAPSAMI ADIYLA söyler ve SINIRINI ilan eder ("sır" diye genellemez)', () => {
+  // Kök 4 hükmü: ilan, kapsamı adıyla söyler. Eski metin "gerçek kişisel veri/sır dokuya ajan
+  // eliyle girmez" diyordu; okuyan ajan kapının HER SIRRI tuttuğunu sanıyordu, oysa fiilî
+  // kapsam üç desendi. İlan metni de bir güvencedir ve ölçülür.
+  const kok = kurulum();
+  const anahtar = 'sk-' + 'A'.repeat(24);           // desen kuralından üretildi, literal değil
+  const r = kos(kok, { tool_name: 'Write', tool_input: { file_path: join(kok, '01_kutular/n.md'), content: 'K=' + anahtar } });
+  assert.equal(r.status, 2, 'API anahtarı eskiden bu kapıdan TEMİZ geçiyordu');
+  assert.match(r.stderr, /önleme bulgusu \(api-anahtari\)/, 'sınıf ADIYLA basılmalı');
+  for (const ad of ['TCKN', 'IBAN', 'kart', 'API anahtarı', 'JWT', 'PEM']) {
+    assert.ok(r.stderr.includes(ad), 'ilan «' + ad + '» sınıfını adıyla saymıyor: ' + r.stderr);
+  }
+  assert.match(r.stderr, /liste dışı bir sır bu kapıdan geçer/i, 'ilan kendi SINIRINI söylemeli');
+  assert.ok(!r.stderr.includes(anahtar), 'engel metni değeri sızdırmamalı');
+});

@@ -84,6 +84,10 @@ function kurulum({ donem = 'yapim', kutu = kutuMetni(), kadro = ['uretici'],
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
   copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
                join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
+  // zarf-jetonlari.txt de VERI dosyasidir ve IKI UC (sevk + zarf-bicim-kapisi) onu
+  // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
+  copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
+               join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
   copyFileSync(join(KOK_REPO, 'tools', 'guard', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   for (const a of [...kadro, ...koltuk]) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), `---\nname: ${a}\ntools: Read\n---\n# ajan\n`);
   for (const r of kadro) {

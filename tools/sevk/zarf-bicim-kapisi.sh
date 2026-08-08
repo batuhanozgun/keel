@@ -163,6 +163,7 @@ console.log(parcalar.map((x, i) => (i + 1) + ") " + x).join("\n"));
 CIKTI="$(printf '%s' "$GIRDI" | KAPI_KOK="$KOK" KAPI_DONEM="$DONEM_ID" KAPI_KUTU="$DONEM_KUTU" \
   KAPI_KARAR_ALANI="$KARAR_ALANI_DURUM" KAPI_KUYRUK="$KUYRUK_DURUM" KAPI_KUYRUK_HATA="$KUYRUK_HATA" \
   KAPI_SOZLUK="$KOK/tools/sevk/cevap-sozlugu.txt" \
+  KAPI_JETONLAR="$KOK/tools/sevk/zarf-jetonlari.txt" \
   "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync, readdirSync, writeFileSync, lstatSync } from "node:fs";
 import { resolve, join } from "node:path";
@@ -223,23 +224,41 @@ const ETIKETLER = ["BİTEN", "ÇATAL", "DEĞERLENDİRMEDİKLERİM", "SIRADAKİ",
                    "ÇATAL-KAYNAK", "HÜKÜM", "KALEMLER",    // E3: denetçi dönüş sözleşmesi
                    "KARNE-GOREV", "MADDELER", "BULGU-GOREV", // E4 + F1-5b: karne dönüş sözleşmesi
                    "BRIFING-1", "BRIFING-2", "BRIFING-3", "BRIFING-4", "BRIFING-5"];  // F1-5c: dış göz
-// E3 · denetçi sınıfı: dönüşü ZARF + üç ek satır taşıyan yazamaz koltuklar. Bu koltukların
-// dönüşü "iş" değil "hüküm"dür — BEKLETİR kilidi (aşağıda) onlara uygulanmaz.
-const DENETCILER = new Set(["catal-denetcisi"]);
-// E4 · karneci sınıfı: görev hükmü üreten yazamaz koltuklar (K2 — "kimse kendi işine yeşil
-// diyemez" kuralının mekanik yüzü). Dönüşleri ZARF + KARNE-GOREV/HÜKÜM/MADDELER taşır ve
-// günlüğe ayrıca `karne` kaydı düşer; sevk görevi YALNIZ o kayda bakarak kapalı sayar.
-const KARNECILER = new Set(["dogrulayici", "kurulum-denetcisi"]);
-// F1-5c · gözlemci sınıfı: dış göz koltuğu. YAZAMAZ kalır (araç listesi Read/Grep/Glob) — brifingi
-// o yazmaz, DÖNÜŞ ZARFIYLA getirir ve diske BU KAPI yazar. Gerekçe: koltuğa Write vermek "yazamayan
-// göz" güvencesini öldürürdü; dönem içinde başka her koltuğa dar bir yol açmak ise brifingi ölçtüğü
-// tarafın yazabildiği bir satıra çevirirdi (sıra 6 dersi). Kanca süreci araç katmanından
-// geçmez — meşru yazıcı odur (catal-kuyruk.sh emsali).
-const GOZLEMCILER = new Set(["disgoz"]);
+// ── U40 · KOLTUK SINIFI ve GÖREV JETONU: TEK EV ──────────────────────────────────────────
+// Üç sınıf kümesi eskiden BURADA elle yazılıydı; sevk.sh ise koltuğa hangi görev jetonunu
+// verdiğini kendi bilirdi. İki uç birbirini okumadığı için sevkin verdiği `KURULUM` görevini
+// aynen taşıyan, sözleşmeye TAM UYAN bir dönüş bu kapının koşulsuz `G-\d+` şartına takılıp
+// YAPISAL OLARAK reddediliyordu. Kümenin evi artık tools/sevk/zarf-jetonlari.txt ve İKİ UÇ
+// da oradan okur. Okuma FAIL-CLOSED: evsiz ya da biçimsiz küme ile zarf denetlenmiş sayılmaz.
+//   uretim · denetci (hüküm döndürür) · karneci (görev hükmü) · gozlemci (dış göz, görev almaz)
+// Sınıfların NE İŞE YARADIĞI aşağıda kullanıldıkları yerde yazılı; kim hangi sınıftadır
+// sorusunun cevabı ARTIK BURADA DEĞİL, tek evdedir.
+const KOLTUK_SINIFI = new Map();   // slug  → sınıf
+const JETON_SINIFI = new Map();    // jeton → o jetonu taşıyabilen sınıf
+{
+  let hamJ = null;
+  try { hamJ = readFileSync(process.env.KAPI_JETONLAR || "", "utf8"); } catch { hamJ = null; }
+  if (hamJ === null) {
+    red("zarf jeton kümesi yok: tools/sevk/zarf-jetonlari.txt",
+        "koltuk sınıfı ve görev jetonu evsiz — sevk ile kapı AYNI tanımı okumak zorundadır (fail-closed)");
+  }
+  for (const satirHam of hamJ.split("\n")) {
+    const s = satirHam.replace(/\r$/, "").trim();
+    if (!s || s.startsWith("#")) continue;
+    const m = s.match(/^(KOLTUK|JETON):([^:]+):(uretim|denetci|karneci|gozlemci)$/);
+    if (!m) red("zarf jeton kümesinde biçimsiz kalem: " + s.slice(0, 80),
+                "biçim «KOLTUK:<slug>:<sınıf>» ya da «JETON:<jeton>:<sınıf>» (tools/sevk/zarf-jetonlari.txt) — fail-closed");
+    (m[1] === "KOLTUK" ? KOLTUK_SINIFI : JETON_SINIFI).set(m[2], m[3]);
+  }
+  if (!KOLTUK_SINIFI.size || !JETON_SINIFI.size)
+    red("zarf jeton kümesi eksik: KOLTUK ve JETON kalemlerinin İKİSİ de dolu olmalı",
+        "tools/sevk/zarf-jetonlari.txt — fail-closed");
+}
+const SINIF = KOLTUK_SINIFI.get(tipHam) || "uretim";
 // Hüküm üreten koltuklar: iş değil yargı döndürürler — BEKLETİR kilidi ve çatal-iz şüphesi
 // onlara uygulanmaz (T3a dersi: denetçinin İŞİ çatal değerlendirmektir, şüphe değil beklentidir).
 // Dış göz de buradadır: işi zaten sapma aramaktır, "ÇATAL" kelimesini görmek beklenendir.
-const HUKUM_SINIFI = new Set([...DENETCILER, ...KARNECILER, ...GOZLEMCILER]);
+const HUKUM_SINIFLARI = new Set(["denetci", "karneci", "gozlemci"]);
 const alan = {};
 // COK SATIRLI ALANLAR (hasim bulgusu 2026-07-30): brifing sozlesmesi bes basligin her birinde
 // coklu madde ve her maddenin arkasinda kanit istiyor, ama ayristirici YALNIZ etiketin kendi
@@ -303,18 +322,24 @@ const kanit = kanitEs[1].trim().split(/\s+/)[0].replace(/[.,;:)\]"»]+$/, "");
 // Virgullu bicim T3a canli olcumunde geldi (2026-07-28): ajan iki ayri satiri tek isaretcide
 // gosterdi, dar desen eslesmedi ve gecerli kanit "kopuk" sayildi — yanlis-pozitif.
 const satirEkiniSoy = (y) => y.replace(/:[0-9][0-9,\-]*$/, "");
-// Dış göz koltuğunun BİTEN jetonu `BRIFING`tir: iş zincirinin dışındadır, görev almaz (sözleşme).
-// Gevşetme SINIFA BAĞLIDIR — üretim rolünde G-NN zorunluluğu aynen sürer.
-const gozlemciMi = GOZLEMCILER.has(tipHam);
-const gorevEs = biten.match(gozlemciMi ? /(G-\d+|BRIFING)/ : /G-\d+/);
+// U40 · BİTEN JETONU TEK EVDEN. `G-NN` her sınıfta geçerlidir; ad taşıyan jetonlar YALNIZ
+// kendi sınıflarında (dış gözün `BRIFING`i, karnecinin `KURULUM`/`KAPANIS`ı). Gevşetme sınıfa
+// bağlıdır — üretim rolünde G-NN zorunluluğu aynen sürer. Buradaki liste sevkin koltuğa
+// verdiği jeton listesiyle AYNI DOSYADAN gelir; ayrı yazıldığı sürece kusur şuydu: sevk
+// `gorev: KURULUM` veriyor, kapı o dönüşü "görev numarası yok" diye geri çeviriyordu.
+const gozlemciMi = SINIF === "gozlemci";
+const SINIF_JETONLARI = [...JETON_SINIFI.entries()].filter(([, s]) => s === SINIF).map(([j]) => j);
+const gorevEs = biten.match(new RegExp("(G-\\d+" + SINIF_JETONLARI.map((j) => "|" + j).join("") + ")"));
 const gorev = gorevEs ? gorevEs[0] : null;
 // GÖREV NUMARASI ZORUNLU (hasim bulgusu): sema zaten "BİTEN: G-NN — …" diyor ama kapi yalniz
 // «kanıt:»i mekanik zorluyordu. G-NNsiz zarf iki kapiyi birden deliyordu: BEKLETİR kilidi hic
 // calismiyor (gorev null) VE kuyruk teslimati eslesmiyor (catal sahibe hic ulasmiyor).
 // Sozlesmenin bir yarisini kesip digerini serbest birakmak kapinin varlik sebebine aykiri.
-if (!gorev) red("BİTEN satırında görev numarası yok", gozlemciMi
-  ? "«BİTEN: BRIFING — <tek cümle> · kanıt: <dosya:satır>» biçimini kullan (dış göz görev almaz, brifing üretir)"
-  : "«BİTEN: G-NN — <tek cümle> · kanıt: …» biçimini kullan (OTONOM_DONEM §4); G-NN olmadan kilit ve sahip kuyruğu bağlanamaz");
+if (!gorev) red("BİTEN satırında görev numarası yok",
+  "«BİTEN: <jeton> — <tek cümle> · kanıt: …» biçimini kullan (OTONOM_DONEM §4). Bu koltuğun (" +
+  tipHam + " · sınıf " + SINIF + ") taşıyabileceği jetonlar: G-NN" +
+  SINIF_JETONLARI.map((j) => " · " + j).join("") +
+  ". Jeton olmadan kilit ve sahip kuyruğu bağlanamaz; kümenin evi tools/sevk/zarf-jetonlari.txt");
 if (/^(00_pano|01_kutular|02_kanon|03_roller|tools)\//.test(kanit)) {
   const yol = satirEkiniSoy(kanit);
   if (!existsSync(resolve(KOK, yol))) red("kanit isaretcisi kopuk: " + kanit, "dosya bulunamadi — gercek yolu yaz");
@@ -379,7 +404,7 @@ const geriYok = /^yok\b/i.test(alan["GERİ-ÇEKİLEN"] || "");
 // gerekcesi zarfin kendi "ÇATAL:" etiketiydi — o gerekce artik ETIKET SUZGECIYLE karsilaniyor,
 // mesaji komple dislamaya gerek yok. Etiket satirlari (6+3 alan) havuzdan cikarilir.
 const ETIKET_DESENI = /^[\s>*+-]*(?:\d+[.)])?\s*\**(?:ÇATAL|ÇATAL-KAYNAK|ÇEVİRİ|ETKİ|BEKLETİR|SEÇENEKLER|UZAKTAN|BİTEN|DEĞERLENDİRMEDİKLERİM|SIRADAKİ|TÜRETME-İZİ|GERİ-ÇEKİLEN|İZİN-ENGELİ|HÜKÜM|KALEMLER)\**\s*:/;
-if (catalYok && geriYok && !HUKUM_SINIFI.has(tipHam) && ajanMetinleri.length) {
+if (catalYok && geriYok && !HUKUM_SINIFLARI.has(SINIF) && ajanMetinleri.length) {
   const govde = ajanMetinleri.join("\n")
     .split("\n").filter((s) => !ETIKET_DESENI.test(s)).join("\n");
   if (/ÇATAL\b/.test(govde) || /sahibe (mi )?sor/i.test(govde)) {
@@ -395,9 +420,9 @@ if (catalYok && geriYok && !HUKUM_SINIFI.has(tipHam) && ajanMetinleri.length) {
 // Bes adim: jargon kapisi · TÜRETME-İZİ capasi · BEKLETİR kilidi · denetci sozlesmesi ·
 // karar-alani on kosulu + kuyruga ekleme. Hepsi donem-ACIK sartinin ARDINDA (el-surusluye
 // dokunmaz) ve stop_hook_active dalinda ENGELLEMEZ (red() bunu zaten tasiyor).
-const denetciMi = DENETCILER.has(tipHam);
-const karneciMi = KARNECILER.has(tipHam);
-const hukumSinifi = HUKUM_SINIFI.has(tipHam);
+const denetciMi = SINIF === "denetci";
+const karneciMi = SINIF === "karneci";
+const hukumSinifi = HUKUM_SINIFLARI.has(SINIF);
 // Talimat-fiil dikisinin bakacagi gorev: uretim rolunde BİTEN satirinin G-NNsi; hukum
 // koltuklarinda HÜKMÜN KONUSU (catal denetcisinde ÇATAL-KAYNAK, karnecide KARNE-GOREV) —
 // cunku onlarin BİTEN satiri kendi cagrilarini anlatir, sevkin actigi gorevi degil.
@@ -592,8 +617,17 @@ if (denetciMi) {
   // UZAKTAN (F1-5g · denetçinin 6. kalemi): bu karar telefondan basılabilir mi?
   // FAIL-CLOSED: satır yoksa, okunamıyorsa ya da "uygun" yazmıyorsa hüküm UYGUN-DEĞİL olur —
   // kod üretilmez, soru klavyede kalır. Yeni bir alanın YOKLUĞU bir karar kanalını AÇAMAZ.
+  // İLK JETON BİREBİR OKUNUR — desen değil, bayt eşitliği. Eski hâli `/^uygun\b/i` ile
+  // `!/^uygun-değil/i` çiftiydi ve İKİSİ DE Türkçe harfte düşüyordu: `\b`den sonraki `-`
+  // sınır sayıldığı için «uygun-değil» birinci desene UYUYOR, ikinci desen ise JS `/i`
+  // U+0130 (İ) ile `i` harfini katlamadığı için «UYGUN-DEĞİL»i TUTMUYORDU. Ölçüldü:
+  // denetçinin «UYGUN-DEĞİL» hükmü «uygun» okunuyor ve fail-closed ilan edilmiş uzaktan
+  // cevap kanalı FAIL-OPEN açılıyordu — sahibin telefondan basabileceği bir kod üretiliyor.
+  // Aynı ders bu dosyada HÜKÜM jetonu için ZATEN yazılıydı (E3: ASCII \b Türkçe harfte
+  // sınır saymaz) ve ikinci hükme taşınmamıştı; Kök 5 ile aynı sınıf, U40 turunda kapandı.
   const uzaktanHam = (alan["UZAKTAN"] || "").trim();
-  const uzaktan = /^uygun\b/i.test(uzaktanHam) && !/^uygun-değil/i.test(uzaktanHam) ? "uygun" : "uygun-degil";
+  const UZAKTAN_JETONLARI = { "uygun": "uygun", "uygun-değil": "uygun-degil" };
+  const uzaktan = UZAKTAN_JETONLARI[uzaktanHam.split(/\s+/)[0]] || "uygun-degil";
   kayit({ tip: "catal-suzgec", ajan: tipHam, gorev: kaynakGorev, hukum, kalemler, uzaktan,
           ceviri: kis(kaynakAlan && kaynakAlan.ceviri), etki: kis(kaynakAlan && kaynakAlan.etki),
           bekletir: kis(kaynakAlan && kaynakAlan.bekletir),
@@ -624,8 +658,14 @@ if (karneciMi) {
     red("karne dönüşünde eksik alan: " + eksikK.join(", "),
         "karneci koltuk zarfa üç satır daha ekler: KARNE-GOREV: G-NN|KURULUM|KAPANIS · HÜKÜM: YEŞİL|KIRMIZI|DOĞRULANAMADI · MADDELER: <iddia=hüküm çiftleri>");
   }
-  const gorevEs = gorevHam.split(/\s+/)[0].match(/^(G-\d+|KURULUM|KAPANIS)$/);
-  if (!gorevEs) red("KARNE-GOREV çözülmüyor: " + gorevHam, "hükmün konusu olan görevi yaz (G-NN ya da KURULUM/KAPANIS)");
+  // U40 · KARNE-GOREV jetonu da TEK EVDEN. Burası "G-NN|KURULUM|KAPANIS"i ÜÇÜNCÜ kez elle
+  // yazıyordu (sevk bir yerde, BİTEN kapısı başka yerde, burası bir daha). Aynı olguyu üç
+  // yerde yazmak, ikisini düzeltip üçüncüsünü unutmanın açık davetidir.
+  const gorevEs = gorevHam.split(/\s+/)[0]
+    .match(new RegExp("^(G-\\d+" + SINIF_JETONLARI.map((j) => "|" + j).join("") + ")$"));
+  if (!gorevEs) red("KARNE-GOREV çözülmüyor: " + gorevHam,
+    "hükmün konusu olan görevi yaz — bu koltuğun taşıyabileceği jetonlar: G-NN" +
+    SINIF_JETONLARI.map((j) => " · " + j).join("") + " (tools/sevk/zarf-jetonlari.txt)");
   const gorev = gorevEs[1];
   // Ilk jeton BIREBIR karsilastirilir (E3 dersi: ASCII \b Turkce harfte sinir saymaz).
   const hIlk = hukumHam2.split(/\s+/)[0];

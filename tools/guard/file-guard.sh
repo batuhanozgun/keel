@@ -116,7 +116,11 @@ if [ -n "$SUZGEC_KIP" ]; then
     fi
     if [ "$SUZGEC_RC" = "3" ]; then
       SINIFLAR="$(printf '%s\n' "$SUZGEC_CIKTI" | awk -F'\t' '$1=="ESLESME"{print $2}' | sort -u | paste -sd+ -)"
-      engel "önleme bulgusu (${SINIFLAR:-içerik}): gerçek kişisel veri/sır dokuya ajan eliyle girmez — sentetik örnek kullan; gerçek veri gerekiyorsa sahibine söyle (Hat-1; işaret listesi: tools/guard/gercek-veri-isaretleri.txt)"
+      # U37 · İLAN KAPSAMI ADIYLA SÖYLER. Bu metin eskiden "gerçek kişisel veri/sır" diyordu
+      # ve okuyan ajan kapıyı HER SIRRI tutuyor sanıyordu; fiilî kapsam ise üç desendi.
+      # Kapının aradığı sınıflar burada TEK TEK yazılı ve sınırı da yazılı: liste dışı bir sır
+      # bu kapıdan geçer. (Kapsamın kendi evi: tools/guard/icerik-suzgeci.sh başlığı.)
+      engel "önleme bulgusu (${SINIFLAR:-içerik}): bu kapı ADI KONMUŞ desenleri arar — TCKN · TR IBAN · kart (Luhn) · API anahtarı (sk- · gh?_ · AKIA · AIza · xox?-) · JWT jetonu · PEM özel anahtar · gerçek-veri işaret listesi (tools/guard/gercek-veri-isaretleri.txt). Gerçek değeri dokuya ajan eliyle sokma: sentetik örnek kullan, gerçek veri gerekiyorsa sahibine söyle (Hat-1). Kapsam BU LİSTEDİR — liste dışı bir sır bu kapıdan geçer, ona güvenme"
     elif [ "$SUZGEC_RC" != "0" ] && [ "$YAZMA_SINIFI" = "1" ]; then
       engel "içerik süzgeci koşamadı (fail-closed; çıkış $SUZGEC_RC): tools/guard/icerik-suzgeci.sh — node kurulu mu / süzgeç sağlam mı bak; YAZMA güvenli tarafta engellendi (komut sınıfı fail-open geçer)"
     fi

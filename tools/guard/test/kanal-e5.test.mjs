@@ -43,6 +43,10 @@ function kurulum({ kanal = true, donem = null, pano = true } = {}) {
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
   copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
                join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
+  // zarf-jetonlari.txt de VERI dosyasidir ve IKI UC (sevk + zarf-bicim-kapisi) onu
+  // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
+  copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
+               join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
   }
   for (const g of ['icerik-suzgeci.sh', 'gercek-veri-isaretleri.txt']) {
     copyFileSync(join(KOK_REPO, 'tools', 'guard', g), join(kok, 'tools', 'guard', g));
@@ -408,7 +412,7 @@ test('ortak/U26: nabız yaşı ÖLÇÜLEMEYİNCE sayı basmaz — 999 sentineli 
 test('ortak/U26: gerçek kutu şartı, ölçemediğinde "BAYAT" DEMEZ', () => {
   const kok = kurulum();
   writeFileSync(join(kok, 'tools', 'sevk', 'watchdog-kurulu'), 'etiket=dev.keel.nabiz.k11-test\n');
-  writeFileSync(join(kok, 'tools', 'sevk', '.nabiz-son'), new Date().toISOString() + '\n');
+  writeFileSync(join(kok, 'tools', 'sevk', '.nabiz-son'), new Date().toISOString() + '\nhal=TAM\n');
   // launchctl dalı testte HİÇ koşmuyordu (kapının kör kipi): yükleme sorgusu artık kendi
   // fonksiyonunda, böylece kuyruğun tamamı ölçülebiliyor.
   const YUKLU = 'watchdog_isi_yuklu() { return 0; }; ';
@@ -423,8 +427,83 @@ test('ortak/U26: gerçek kutu şartı, ölçemediğinde "BAYAT" DEMEZ', () => {
   assert.doesNotMatch(kor, /999/, '999 sentineli sahip yüzeyine sızmaz');
 
   writeFileSync(join(kok, 'tools', 'sevk', '.nabiz-son'),
-    new Date(Date.now() - 120 * 60000).toISOString() + '\n');
+    new Date(Date.now() - 120 * 60000).toISOString() + '\nhal=TAM\n');
   assert.match(eksik(), /watchdog-nabzi-BAYAT\(1[12][0-9]dk\)/, 'GERÇEKTEN bayat nabız hâlâ bayattır');
+});
+
+// ── U32 · CANLILIK DAMGASI İŞİN SONUNDA BASILIR ───────────────────────────────────────────
+// Damga eskiden nabiz.sh'ın İLK iş satırıydı ve "koştum" diyordu, "işimi yaptım" demiyordu.
+// İki satır sonra sessizce çıkan bir watchdog üç tüketicinin gözünde YEŞİL görünüyordu.
+// Aşağıdaki beş kol o hâllerin her birini ADIYLA ölçer; altıncısı ters yöndür (yanlış-pozitif
+// kapısı) — o olmadan "kapı her şeye EKSİK basıyor" da bu testlerden geçerdi.
+const damgaOku = (kok) => readFileSync(join(kok, 'tools', 'sevk', '.nabiz-son'), 'utf8');
+
+test('nabız/U32: yapacak iş yokken damga TAM — ama ortak.sh OKUNAMIYORSA taze damga TAM DEMEZ', () => {
+  const kok = kurulum();
+  kos(kok, 'nabiz.sh');
+  assert.match(damgaOku(kok), /^\d{4}-\d{2}-\d{2}T[\d:]+Z\nhal=TAM\n$/,
+    'dönem yoksa watchdog yapabileceğini yapmıştır: TAM');
+
+  // Arızanın canlı hâli: ortak.sh okunamıyor → betik 2. satırda çıkıyor, eskiden damga TAZEydi.
+  chmodSync(join(kok, 'tools', 'sevk', 'ortak.sh'), 0o000);
+  kos(kok, 'nabiz.sh');
+  chmodSync(join(kok, 'tools', 'sevk', 'ortak.sh'), 0o644);
+  const d = damgaOku(kok);
+  assert.match(d, /hal=EKSIK/, 'ortak.sh okunamayan watchdog işini YAPAMAZ');
+  assert.match(d, /sebep=ortak\.sh-okunmuyor/, 'sebep ADIYLA yazılır — sahip oraya bakar');
+  assert.match(d.split('\n')[0], /^\d{4}-\d{2}-\d{2}T/, 'ilk satır sözleşmesi (ISO damga) korunur');
+});
+
+test('nabız/U32: "dönem yok" ile "göstergeyi okuyamadım" aynı damgaya düşmez', () => {
+  const kok = kurulum();
+  mkdirSync(join(kok, 'tools', 'sevk', '.donem-acik'), { recursive: true });  // gösterge BOZUK
+  kos(kok, 'nabiz.sh');
+  assert.match(damgaOku(kok), /hal=EKSIK\nsebep=donem-gostergesi-bozuk/,
+    'gösterge bozukken 1-4 numaralı işlerin hiçbiri koşamaz; damga bunu söylemeli');
+});
+
+test('nabız/U32: node yoksa 0. iş (uzaktan cevap) hiç koşamaz ve damga bunu ADIYLA söyler', () => {
+  const kok = kurulum();
+  // ortak.sh KOPYASINA override eklenir: nabiz.sh onu source ettiği için sonraki tanım kazanır.
+  // Bu makinede /opt/homebrew/bin/node mutlak yolla bulunuyor; node'u PATH'ten gizlemek yetmez.
+  appendFileSync(join(kok, 'tools', 'sevk', 'ortak.sh'), '\nnode_bul() { NODE_BIN=""; return 1; }\n');
+  kos(kok, 'nabiz.sh');
+  assert.match(damgaOku(kok), /hal=EKSIK\nsebep=node-yok/, 'node yoksa cevap hattı sessizce ölür');
+});
+
+test('nabız/U32: beklenmedik ölümde damga TAM DEMEZ (tuzağın varsayılanı eksiktir)', () => {
+  // Damgayı ÇIKIŞ TUZAĞI basar. Bu kol tuzağın varsayılanını ölçer: betik hiç annotate
+  // edilmemiş bir yerden çıkarsa (çökme, ya da ileride eklenen yeni bir sessiz `exit 0`)
+  // damga kendiliğinden EKSİK basar — sessiz kaçış yolu açmak ekstra bir satır ister.
+  const kok = kurulum();
+  appendFileSync(join(kok, 'tools', 'sevk', 'ortak.sh'), '\nexit 7\n');
+  const r = kos(kok, 'nabiz.sh');
+  assert.equal(r.status, 7, 'betik gerçekten yarıda öldü');
+  assert.match(damgaOku(kok), /hal=EKSIK\nsebep=yarim-kaldi/, 'yarıda ölen koşu TAM damga basamaz');
+});
+
+test('ortak/U32: taze ama EKSİK damga gerçek kutu dönemini AÇTIRMAZ (hâlin tüketicisi var)', () => {
+  const kok = kurulum();
+  writeFileSync(join(kok, 'tools', 'sevk', 'watchdog-kurulu'), 'etiket=dev.keel.nabiz.u32-test\n');
+  const damga = join(kok, 'tools', 'sevk', '.nabiz-son');
+  const YUKLU = 'watchdog_isi_yuklu() { return 0; }; ';
+  const eksik = () => kabukta(kok, YUKLU + 'CLAUDE_PROJECT_DIR="$1" gercek_kutu_eksikleri "$1/tools/sevk"').stdout;
+  const taze = () => new Date().toISOString();
+
+  writeFileSync(damga, taze() + '\nhal=EKSIK\nsebep=node-yok\n');
+  const e = eksik();
+  assert.match(e, /watchdog-KOSUYOR-AMA-ISINI-YAPAMIYOR\(node-yok\)/, 'taze damga canlılık kanıtı DEĞİLDİR');
+  assert.doesNotMatch(e, /watchdog-nabzi-BAYAT/, 'taze nabza BAYAT denmez — ayrı sorular, ayrı adlar');
+
+  // HÂL SATIRI HİÇ YOKSA: eski bir nabiz.sh koşuyordur. "Bilinmiyor" bir ölçüm değeri değildir.
+  writeFileSync(damga, taze() + '\n');
+  assert.match(eksik(), /watchdog-damgasi-HALSIZ\(eski-nabiz\.sh-kosuyor\)/, 'hâlsiz damga kendi adıyla söylenir');
+
+  // TERS YÖN: TAM damgada bu kalemlerin HİÇBİRİ basılmaz.
+  writeFileSync(damga, taze() + '\nhal=TAM\n');
+  const t = eksik();
+  assert.doesNotMatch(t, /KOSUYOR-AMA-ISINI-YAPAMIYOR/, 'TAM damgada eksik uydurulmaz');
+  assert.doesNotMatch(t, /HALSIZ/, 'TAM damgada hâlsizlik uydurulmaz');
 });
 
 // ── U27 · Uzaktan DUR: SAHTE IMAP TAŞIYICISI ──────────────────────────────────────────────

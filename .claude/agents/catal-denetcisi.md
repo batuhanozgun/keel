@@ -61,7 +61,7 @@ ayrıdır: o soruyu sahibe göndermeyi değil, **telefondan cevaplanmasını** k
   **GEÇTİ** ver ve gerekçene "kararsız kaldım, sahibe bıraktım" yaz. Sahibi işten dışlamak,
   ona fazladan soru sormaktan daha pahalıdır.
 
-**Dönüşün** standart 6 alanlı zarfla biter (`02_kanon/OTONOM_DONEM.md` §4) ve ÜÇ ek satır taşır —
+**Dönüşün** standart 6 alanlı zarfla biter (`02_kanon/OTONOM_DONEM.md` §4) ve DÖRT ek satır taşır —
 her biri AYRI satırın başında:
 
 ```
@@ -70,6 +70,10 @@ HÜKÜM:        GEÇTİ | DÖNDÜ
 KALEMLER:     1=geçti 2=geçti 3=geçti 4=geçti 5=geçti
 UZAKTAN:      uygun | uygun-değil — <gerekçe>
 ```
+
+**`UZAKTAN` jetonu BİREBİR okunur:** küçük harfle `uygun` ya da `uygun-değil`. Başka her şey
+(büyük harfli yazım, ASCII `uygun-degil`, boş satır) **uygun-değil** sayılır. Bu kanal
+fail-closed'dur — bir yazım farkı sahibin telefonundan basabileceği bir kod ÜRETMEZ.
 
 `UZAKTAN` satırı yoksa ya da okunamıyorsa hüküm **uygun-değil** sayılır (fail-closed): yeni bir
 alanın YOKLUĞU bir karar kanalını açamaz. `uygun-değil` ise kod üretilmez, soru yine gider ama

@@ -56,6 +56,10 @@ function kurulum({ donem = true, kadro = ['po', 'catal-denetcisi'], profil = tru
   mkdirSync(join(kok, 'tools', 'bekci'), { recursive: true });
   copyFileSync(join(KOK_REPO, 'tools', 'bekci', 'gorev-durumlari.txt'),
                join(kok, 'tools', 'bekci', 'gorev-durumlari.txt'));
+  // zarf-jetonlari.txt de VERI dosyasidir ve IKI UC (sevk + zarf-bicim-kapisi) onu
+  // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
+  copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
+               join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '# test ajanı\n');
   if (donem) writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'DONEM-TEST\tKT-001\t2026-07-27T10:00:00Z\n');
   writeFileSync(join(kok, '00_pano', 'PANO.md'), '# pano\n');
@@ -709,4 +713,40 @@ test('hasım-8: dönem-AÇIK iken kuyruğa yazım ENGEL — CEVAPLANDI dönemin 
   assert.match(acik.stderr, /sahibin kuyruğuna/);
   const kapali = gir(false);
   assert.equal(kapali.status, 0, 'el-sürüşlü oturumda engel OLMAMALI (D-21 akışı sürer)');
+});
+
+// ── U40 kardeşi · UZAKTAN jetonu BİREBİR okunur ───────────────────────────────────────────
+// Kusur: hüküm `/^uygun\b/i` + `!/^uygun-değil/i` ile okunuyordu. `\b`den sonraki `-` sınır
+// sayıldığı için «uygun-değil» BİRİNCİ desene uyuyor; ikinci desen ise JS `/i` U+0130 (İ) ile
+// `i`yi katlamadığı için «UYGUN-DEĞİL»i tutmuyordu. Yani denetçinin AÇIKÇA "uygun değil"
+// dediği bir karar «uygun» okunuyor ve fail-closed ilan edilmiş uzaktan cevap kanalı
+// FAIL-OPEN açılıyordu: sahibin telefondan basabileceği bir kod üretiliyor. Aynı ders
+// (bayt-eş jeton okuma) bu dosyada HÜKÜM için zaten yazılıydı, buraya taşınmamıştı.
+test('U40 kardeşi: UZAKTAN hükmü BİREBİR okunur — «UYGUN-DEĞİL» uygun sayılmaz', () => {
+  const uzaktanHukmu = (yazim) => {
+    const kok = kurulum({ donem: true });
+    catalKaydi(kok);
+    kapi(kok, donus('catal-denetcisi', zarf({
+      biten: 'G-90 — çatal hükmü verildi · kanıt: 00_pano/PANO.md:1',
+      ek: ['ÇATAL-KAYNAK: G-12', 'HÜKÜM: GEÇTİ',
+           'KALEMLER: 1=geçti 2=geçti 3=geçti 4=geçti 5=geçti',
+           'UZAKTAN: ' + yazim].join('\n'),
+    })));
+    const s = gunluk(kok).filter((j) => j.tip === 'catal-suzgec');
+    return s.length ? s[s.length - 1].uzaktan : null;
+  };
+
+  // Sözleşmenin yazdığı iki jeton — ve YALNIZ onlar.
+  assert.equal(uzaktanHukmu('uygun — geri alınabilir, iki seçenek'), 'uygun');
+  assert.equal(uzaktanHukmu('uygun-değil — geri alınamaz'), 'uygun-degil');
+
+  // ARIZANIN KENDİSİ: büyük harfli yazım eskiden «uygun» okunuyordu.
+  assert.equal(uzaktanHukmu('UYGUN-DEĞİL — geri alınamaz'), 'uygun-degil',
+    'büyük harfli reddi «uygun» okumak, sahibin telefonuna kod gönderir');
+  assert.equal(uzaktanHukmu('uygun-degil — ASCII yazım'), 'uygun-degil',
+    'ASCII yazım da red tarafındadır (fail-closed)');
+
+  // Tanınmayan ya da eksik her şey fail-closed.
+  assert.equal(uzaktanHukmu('belki — kararsızım'), 'uygun-degil');
+  assert.equal(uzaktanHukmu(''), 'uygun-degil');
 });
