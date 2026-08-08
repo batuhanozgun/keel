@@ -10,6 +10,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFi
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { kuyrukBagimliliklariKur } from './kuyruk-bagimliligi.mjs';
 
 const BURASI = dirname(fileURLToPath(import.meta.url));
 const KOK_REPO = join(BURASI, '..', '..', '..');
@@ -96,6 +97,9 @@ function kurulum({ donem = null, kadro = ['uretici', 'dogrulayici', 'catal-denet
   // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
   copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
                join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
+  // Kuyruga yazan kollar icerik suzgecini FAIL-CLOSED arar (U60): kod betigin yanindan,
+  // VERI projenin kokunden gelir. Kurulu projede ikisi de vardir; simulasyon da tasir.
+  kuyrukBagimliliklariKur(kok, KOK_REPO);
   copyFileSync(join(KOK_REPO, 'tools', 'guard', 'gercek-veri-isaretleri.txt'), join(kok, 'tools', 'guard', 'gercek-veri-isaretleri.txt'));
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '---\nname: ' + a + '\ntools: Read\n---\n# test ajanı\n');
   mkdirSync(join(kok, '03_roller', 'uretici'), { recursive: true });

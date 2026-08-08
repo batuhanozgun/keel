@@ -14,6 +14,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFi
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { kuyrukBagimliliklariKur } from './kuyruk-bagimliligi.mjs';
 
 const BURASI = dirname(fileURLToPath(import.meta.url));
 const KOK_REPO = join(BURASI, '..', '..', '..');
@@ -38,6 +39,9 @@ function kurulum({ cevapKanali = 'acik', jeton = '' } = {}) {
   // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
   copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
                join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
+  // Kuyruga yazan kollar icerik suzgecini FAIL-CLOSED arar (U60): kod betigin yanindan,
+  // VERI projenin kokunden gelir. Kurulu projede ikisi de vardir; simulasyon da tasir.
+  kuyrukBagimliliklariKur(kok, KOK_REPO);
   for (const g of ['icerik-suzgeci.sh', 'gercek-veri-isaretleri.txt', 'yazim-kalibi.txt']) {
     copyFileSync(join(KOK_REPO, 'tools', 'guard', g), join(kok, 'tools', 'guard', g));
   }
@@ -722,6 +726,9 @@ function kapiKos(zarf) {
   // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
   copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
                join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
+  // Kuyruga yazan kollar icerik suzgecini FAIL-CLOSED arar (U60): kod betigin yanindan,
+  // VERI projenin kokunden gelir. Kurulu projede ikisi de vardir; simulasyon da tasir.
+  kuyrukBagimliliklariKur(kok, KOK_REPO);
   writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'D1\tKT-001\tyapim\tgercek\n2026-07-31T00:00:00Z\n');
   writeFileSync(join(kok, '.claude', 'agents', 'po.md'), '# rol\n');
   writeFileSync(join(kok, '00_pano', 'PANO.md'), '# pano\n');   // kanıt işaretçisinin hedefi

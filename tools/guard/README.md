@@ -111,10 +111,15 @@ karşılaştırması** (yukarıda; kancanın kendi yazımlarından ÖNCE); (0) *
 süzmesi** — transcript'in son asistan mesajındaki D2 kapanış-bloğu çapasını (`SENDE BEKLEYEN:`)
 arar; "N madde" ise maddeleri `00_pano/SENDE_BEKLEYEN.md` kuyruğuna tekilleştirerek EKLER
 (kuyruğun mekanik yazarı budur — EL_KITABI F1 istisna 2; SİLME yok), blok durumunu bekçiye
-`KAPANIS_BLOK` ile geçirir (yalnız rol damgası varken); (1) bekçiyi koşar
+`KAPANIS_BLOK` ile geçirir (yalnız rol damgası varken). **Kırpma ve içerik süzgeci kuyruğun
+ortak evinden gelir** (`tools/sevk/kuyruk-ortak.mjs` — `catal-kuyruk.sh` ile AYNI ev; U60·U69):
+madde BAYT tabanlı kırpılır, satırın yapı işaretleri soyulur ve içerik süzgecinden geçer;
+eşleşen ya da ölçülemeyen madde YAZILMAZ ve sayısı `bekleyen_suzuldu` alanına düşer —
+süzülme sessiz kalmaz; (1) bekçiyi koşar
 (`tools/bekci/bekci.sh` varsa — konvansiyon-yol; kuyruk ondan ÖNCE yazılır ki PANO sayacı
 taze olsun); (2) `00_pano/oturum-gunlugu.jsonl`e tek satır oturum-meta düşürür (şema
-`surum:3` — tarih · oturum · neden · rol · blok · bekleyen_eklendi · porcelain · süre · token · damga-yaşı;
+`surum:4` — tarih · oturum · neden · rol · blok · bekleyen_eklendi · bekleyen_suzuldu ·
+bekleyen_suzgec_notu · porcelain · süre · token · damga-yaşı;
 transcript'ten okunabildiği kadar; biçim Claude Code'un iç formatıdır, okunamayan
 alan null düşer, satır HEP düşer). Günlüğün tek yazarı bu kancadır; append-only.
 FAIL-OPEN: SessionEnd zaten engelleyemez (doc-teyitli) — kapanış hijyeni oturumu

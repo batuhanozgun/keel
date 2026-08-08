@@ -10,6 +10,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFi
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { kuyrukBagimliliklariKur } from './kuyruk-bagimliligi.mjs';
 
 const BURASI = dirname(fileURLToPath(import.meta.url));
 const KOK_REPO = join(BURASI, '..', '..', '..');
@@ -47,6 +48,9 @@ function kurulum({ kanal = true, donem = null, pano = true } = {}) {
   // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
   copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
                join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
+  // Kuyruga yazan kollar icerik suzgecini FAIL-CLOSED arar (U60): kod betigin yanindan,
+  // VERI projenin kokunden gelir. Kurulu projede ikisi de vardir; simulasyon da tasir.
+  kuyrukBagimliliklariKur(kok, KOK_REPO);
   }
   for (const g of ['icerik-suzgeci.sh', 'gercek-veri-isaretleri.txt', 'yazim-kalibi.txt']) {
     copyFileSync(join(KOK_REPO, 'tools', 'guard', g), join(kok, 'tools', 'guard', g));

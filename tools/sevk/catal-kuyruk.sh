@@ -12,13 +12,23 @@
 #   --ekle <G-NN>      → zarf günlüğünden o görevin SON "ÇATAL dolu" zarfını okur, sahip-yüzeyi
 #                        metnini ORADAN alır (denetçinin kaleminden değil — §9 sahip-atfı kuralı),
 #                        Ç-NN türetir, tekilleştirir, kuyruğa tek satır ekler.
-#                        stdout: "EKLENDI\tÇ-NN" | "ATLANDI\t<sebep>"
+#                        stdout: "EKLENDI\tÇ-NN" | "ATLANDI\t<sebep>" | "ARIZA\t<sebep>"
+#                        ATLANDI = tekilleştirme, TEK meşru atlama sınıfı. ARIZA = soru sahibe
+#                        ULAŞMADI (kayıt yok · süzgeç eşleşti · süzgeç ölçülemedi) — çağıran
+#                        bunu fail-closed okur ve dönüşü durdurur. Jeton kümesi ÜÇ'tür ve
+#                        büyümez: tüketici (zarf-bicim-kapisi.sh) bilmediği jetonu da engele
+#                        çevirir, ama iki ad aynı hükmü anlatırsa vokabüler sessizce çatallanır.
 #   --not izin <G-NN> <dönem> → ÇATAL DEĞİL, bilgi maddesi (F1-5f): otonom dönemde izin kapısına
 #                        takılıp ATLANAN adımı sahibin kuyruğuna düşürür. Cümle SABİT ŞABLONDUR
 #                        (serbest metin yasağı: ajanın kalemi sahip yüzeyine geçmez); tekilleştirme
 #                        kaynak imzasıyla. Bu madde ÇATAL sınıfı olmadığı için hiçbir işi KİLİTLEMEZ
 #                        — sahibin görmesi gereken bir haberdir, cevap beklenen bir soru değil.
 # FAIL-CLOSED: geçersiz girdi / okunamayan günlük / yazım hatası → exit 1 + stderr gerekçe.
+# İÇERİK SÜZGECİ (U60): kuyruğa yazan ÜÇ kol da (--ekle · --not · --cevapla) yazımdan ÖNCE
+#   tools/sevk/kuyruk-ortak.mjs üzerinden tools/guard/icerik-suzgeci.sh'ten geçer. Eşleşmede ya
+#   da ölçülememede satır YAZILMAZ. Sinyal kola göre değişir çünkü tüketiciler farklı okur:
+#   --ekle/--cevapla ARIZA jetonu basar (tüketici stdout okur), --not ise EXIT 1 döner (tek
+#   tüketicisi sevk.sh yalnız çıkış koduna bakar).
 # Türkçe harf güvenliği: eşleştirme birebir bayt; küçük-harfe indirgeme YALNIZ ASCII üzerinde
 #   (tr komutu İ/ı bozmasın diye node tarafında ve yalnız desen listesinde yapılır).
 set -uo pipefail
@@ -40,33 +50,31 @@ ORTAK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ortak.sh"
 node_bul || hata "node bulunamadi (fail-closed)"
 
 # ── ORTAK JS ÖNEKİ (tek ev — D-02) ────────────────────────────────────────────────────────
-# Üç şey burada TEK kez tanımlanır ve her node bloğuna önekelenir:
-#   kis()        → sahip-yüzeyi metnini kuyruk satırının KENDİ yapı işaretlerinden arındırır
-#                  (· ayracı · tırnak · cevap:/bekletir:/kaynak:/devretti: anahtarları) ve
-#                  BAYT tabanlı kırpar (Türkçe harf UTF-8'de 2 bayt; karakter sayısı yanıltır).
-#   asciiKucuk() → yalnız ASCII küçültme (tr komutu İ/ı bozar)
-#   ANLAMADIM    → "anlamadım" sınıfı, VERİ dosyasından (tools/sevk/cevap-sozlugu.txt)
+# Tanımların kendisi ARTIK BU DOSYADA DEĞİL: tools/sevk/kuyruk-ortak.mjs — kuyruğa yazan HER
+# kolun (buradaki üç kip + tools/guard/kapanis.sh) ortak evi. Burada yalnız o ev yüklenir:
+#   kis()             → sahip-yüzeyi metnini satırın KENDİ yapı işaretlerinden arındırır ve
+#                       BAYT tabanlı kırpar (Türkçe harf UTF-8'de 2 bayt; karakter yanıltır)
+#   asciiKucuk()      → yalnız ASCII küçültme (tr komutu İ/ı bozar)
+#   suzgectenGecir()  → içerik süzgeci (U60): sahip yüzeyine yazılacak metin, dış kapıdaki
+#                       taramanın AYNISINDAN geçer; eşleşmede satır YAZILMAZ (fail-closed)
+#   ANLAMADIM         → "anlamadım" sınıfı, VERİ dosyasından (tools/sevk/cevap-sozlugu.txt)
 # GEREKÇE (hasım bulgusu, dört mercek — F1-5g): kis() eskiden yalnız `--ekle` bloğunun içinde
 # yaşıyordu. Uzaktan cevap yolu ikinci bir yazıcı doğurunca aynı temizlik orada KOŞMUYORDU ve
 # tırnak içeren olağan bir seçenek metni maddeyi "boş cevap" yapıp işi KALICI olarak
-# kilitliyordu — kanalın var oluş sebebinin tam tersi.
+# kilitliyordu — kanalın var oluş sebebinin tam tersi. U69 aynı dersin DÖRDÜNCÜ kopyasını
+# gösterdi (kapanış kancası kendi kırpmasını yazmıştı): tanım artık ortak evde, ve yazıcıların
+# oradan geçtiğini test mekanik olarak sayar (test/kuyruk-yazicilari.test.mjs).
 SOZLUK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/cevap-sozlugu.txt"
 [ -r "$SOZLUK" ] || hata "cevap sozlugu yok ($SOZLUK) — 'anlamadim' sinifi taninamaz (fail-closed)"
+KUYRUK_ORTAK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/kuyruk-ortak.mjs"
+[ -r "$KUYRUK_ORTAK" ] || hata "kuyruk ortak evi yok ($KUYRUK_ORTAK) — sevk ailesi eksik (fail-closed)"
+export KUYRUK_ORTAK_YOL="$KUYRUK_ORTAK"
+export KUYRUK_KOK="$KOK"
 JS_ORTAK='
-import { readFileSync as _oku } from "node:fs";
-const bayt = (s) => Buffer.byteLength(s, "utf8");
-const kis = (s, n) => {
-  let t = String(s || "").replace(/[`*"\n]/g, " ").replace(/·/g, "-")
-    .replace(/\b(cevap|bekletir|kaynak|devretti)\s*:/gi, "$1 -")
-    .replace(/ÇATAL\s+Ç-\d+/g, "çatal").replace(/\s+/g, " ").trim();
-  if (bayt(t) <= n) return t;
-  while (bayt(t) > n - 3 && t.length) t = t.slice(0, -1);
-  return t + "…";
-};
-const asciiKucuk = (s) => String(s).replace(/[A-Z]/g, (c) => c.toLowerCase());
-const ANLAMADIM = _oku(process.env.SOZLUK_YOL, "utf8").split("\n")
-  .map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map(asciiKucuk);
-if (!ANLAMADIM.length) { console.error("cevap sozlugu bos"); process.exit(1); }
+const _KO = await import(process.env.KUYRUK_ORTAK_YOL);
+const { bayt, kis, asciiKucuk, suzgectenGecir } = _KO;
+const ANLAMADIM = _KO.anlamadimOku(process.env.SOZLUK_YOL);
+const suzgecKapisi = (parcalar) => suzgectenGecir(parcalar, { kok: process.env.KUYRUK_KOK });
 '
 
 KIP="${1:-}"
@@ -201,6 +209,14 @@ const d = new Date(), p2 = (n) => String(n).padStart(2, "0");
 const bugun = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
 const satir = "- [ ] " + bugun + " · " + rol + " · ÇATAL " + id + " · \"" + ceviri + "\""
   + (etki ? " · etki: " + etki : "") + " · bekletir: " + bekletir + " · " + imza;
+// İÇERİK SÜZGECİ (U60) — sahibin kuyruğu bir YAZIM hedefidir ve ajanın kalemi oraya değiyor.
+// Aynı metin dış kapıda (file-guard) sansürleniyordu, burada HİÇ taranmıyordu: ölçüldü, `sk-`
+// önekli anahtar ve sahibin işaret listesindeki dize kuyruğa aynen düştü. HAM alanlar da
+// taranır: kırpma bir sırrı ikiye bölüp desenden kaçırabilir. Eşleşme ya da ölçülememe
+// TESLİMAT ARIZASIDIR — satır YAZILMAZ ve çağıran (zarf kapısı) dönüşü durdurur; rol metni
+// sırsız yeniden yazar. Sessizce yazmak dış kapının hükmünü delerdi.
+const sz = suzgecKapisi([String(a.ceviri || ""), String(a.etki || ""), satir]);
+if (!sz.temiz) bitir("ARIZA", sz.sebep + " — sahip yuzeyine yazilmadi");
 // SON BAYT SATIRSONU DEĞİLSE ÖNCE O EKLENİR (hasım bulgusu): satırsonu yutulmuş bir dosyaya
 // append, iki maddeyi TEK satırda birleştirir ve --durum yalnız ilkini görür — ikincisinin
 // kilidi SESSİZCE açılırdı.
@@ -246,11 +262,21 @@ const bugun = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate(
 // SABİT CÜMLE: değişken yalnız görev numarasıdır. Sahibin kuyruğuna ajan kalemi girmez.
 const satir = "- [ ] " + bugun + " · yapı · Gece bir adım izin kapısına takıldı ve ATLANDI (" + gorev +
   "); iş sürdü. Bu adımın yapılmasını istiyorsan kutunun İZİN satırına ilgili sınıfı ekle. · " + imza;
+// İÇERİK SÜZGECİ (U60) — bu kolun cümlesi SABİT şablondur, değişkeni yalnız görev numarasıdır;
+// yine de süzgeçten geçer. Sebep: kuralın kapsamı "kuyruğa yazan HER kol"dur. Şablonu bir gün
+// serbest metne açan değişiklik, kapıyı kaldırmayı da ayrıca yazmak zorunda kalsın.
+const sz = suzgecKapisi([satir]);
+if (!sz.temiz) bitir("ARIZA", sz.sebep + " — izin notu yazilmadi");
 if (mevcut && !mevcut.endsWith("\n")) appendFileSync(ky, "\n");
 appendFileSync(ky, satir + "\n");
 bitir("EKLENDI", gorev);
 ')" || { kilit_birak; hata "kuyruk yazici kosamadi (fail-closed)"; }
     kilit_birak
+    # ÇIKIŞ KODU BU KOLUN TEK SİNYALİDİR: tek tüketici (sevk.sh 8c) stdout'u okumaz, yalnız
+    # koda bakar. Süzgeç notu yazdırmadıysa 0 dönmek, sevkin "not düştü" saymasına yol açardı.
+    case "${CIKTI%%	*}" in
+      ARIZA) hata "izin notu kuyruga yazilmadi: ${CIKTI#*	}" ;;
+    esac
     printf '%s\n' "$CIKTI"
     exit 0
     ;;
@@ -308,14 +334,21 @@ const imza = kis(process.env.CEV_IMZA, 80);
 const satirlar = readFileSync(ky, "utf8").split("\n");
 const d = new Date(), p2 = (n) => String(n).padStart(2, "0");
 const bugun = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
-let yazildi = 0;
+let yazildi = 0, yeni = null, hedef = -1;
 for (let i = 0; i < satirlar.length; i++) {
   const m = satirlar[i].match(/^(\s*-\s*\[) (\]\s.*?ÇATAL\s+)(Ç-\d+)\b(.*)$/);
   if (!m || m[3] !== id) continue;
-  satirlar[i] = m[1] + "x" + m[2] + m[3] + m[4] + " · cevap: \"" + metin + "\" · " + bugun + " · " + imza;
-  yazildi++;
+  yeni = m[1] + "x" + m[2] + m[3] + m[4] + " · cevap: \"" + metin + "\" · " + bugun + " · " + imza;
+  hedef = i; yazildi++;
 }
 if (yazildi !== 1) bitir("ARIZA", "acik madde tam olarak bir kez bulunamadi (" + yazildi + ")");
+// İÇERİK SÜZGECİ (U60) — bu kolun metni UZAKTAN gelir (postayla dönen seçim) ve imza alanı
+// serbest bir dizedir: dar karakter kümesi bir sağlayıcı önekini ELEMİYOR. Ham metin, kırpılmış
+// metin, imza ve kurulan satır birlikte taranır; eşleşmede dosyaya DOKUNULMAZ ve kod tüketilmez
+// (çağıran ARIZA dalını okur: sahip yeniden yanıtlayabilir).
+const sz = suzgecKapisi([String(process.env.CEV_METIN || ""), metin, imza, yeni]);
+if (!sz.temiz) bitir("ARIZA", sz.sebep + " — cevap yazilmadi");
+satirlar[hedef] = yeni;
 // Atomik yazım: yarım yazılmış bir sahip yüzeyi, ayrıştırıcıyı COZULEMEDI dalına düşürür.
 const gecici = ky + ".yeni";
 writeFileSync(gecici, satirlar.join("\n"));

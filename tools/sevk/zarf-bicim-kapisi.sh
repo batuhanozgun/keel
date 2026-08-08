@@ -571,7 +571,8 @@ if (denetciMi) {
   if (!kalemler) eksikDen.push("KALEMLER");
   if (eksikDen.length) {
     red("denetçi dönüşünde eksik alan: " + eksikDen.join(", "),
-        "çatal denetçisi zarfa üç satır daha ekler: ÇATAL-KAYNAK: G-NN · HÜKÜM: GEÇTİ|DÖNDÜ · KALEMLER: 1=… 5=…");
+        "çatal denetçisi zarfa DÖRT satır daha ekler: ÇATAL-KAYNAK: G-NN · HÜKÜM: GEÇTİ|DÖNDÜ · " +
+        "KALEMLER: 1=geçti 2=geçti 3=geçti 4=geçti 5=geçti · UZAKTAN: uygun|uygun-değil — gerekçe");
   }
   const kaynakGorev = (kaynak.match(/G-\d+/) || [])[0];
   if (!kaynakGorev) red("ÇATAL-KAYNAK görev taşımıyor: " + kaynak, "hükmün konusu olan görevi yaz (ör. «ÇATAL-KAYNAK: G-12»)");
@@ -587,9 +588,50 @@ if (denetciMi) {
   // kapisindan geceMEZdi (denetci ya kural ihlal edecek ya kalem uyduracakti). Karar alani hazir
   // DEGILKEN bu sart aranmaz; hazirken aynen surer.
   const kararHazir = (process.env.KAPI_KARAR_ALANI || "").trim() === "HAZIR";
-  if (hukum === "DONDU" && kararHazir && !/kaldı/.test(kalemler)) {
-    red("HÜKÜM DÖNDÜ ama KALEMLER satırında hiçbir kalem «kaldı» değil", "hangi kalemden düştüğünü işaretle (1..5)");
+  // ── U63 · BEŞ KALEM FİİLEN ÖLÇÜLÜR ──────────────────────────────────────────────────────
+  // Kapi denetciden BES kalem bekleyecegini ILAN ediyordu ama yalniz alanin BOS olmadigina ve
+  // dizede "kaldı" gecip gecmedigine bakiyordu: `KALEMLER: 3=kaldı` bes kalem sayiliyor, GEÇTİ
+  // hukmuyle birlikte gelen bir `kaldı` da fark edilmiyordu — koltugun kendi hukmuyle CELISEN
+  // bir catal sahibe gidiyordu. Jetonlar artik ayristirilir; ilan ile olcum ayni kapsami tutar.
+  //
+  // ISTISNANIN ADI VAR (beyanli): karar alani hazir DEGILKEN denetci kalemleri degerlendiremez
+  // (olcutu okuyamiyor) ve kalem UYDURMAYA zorlanamaz. O halde KALEMLER tek bir jeton tasir:
+  // `karar-alani-yok`. Istisna SESSIZ degil SOYLENMIS olur — "cozulemedim" ile "bes kalem
+  // gecti" ayni dizeyle anlatilamaz (koltuk sozlesmesi: .claude/agents/catal-denetcisi.md).
+  const KALEM_SAYISI = 5;
+  const ISTISNA_JETONU = "karar-alani-yok";
+  const kalemIstisnasi = !kararHazir && kalemler === ISTISNA_JETONU;
+  let kalanKalem = [];
+  if (!kalemIstisnasi) {
+    if (kalemler === ISTISNA_JETONU) {
+      red("KALEMLER «" + ISTISNA_JETONU + "» diyor ama sahibin karar alanı HAZIR",
+          "ölçütü okuyabildiğine göre beş kalemi de yaz: «1=geçti 2=geçti 3=geçti 4=geçti 5=geçti»");
+    }
+    // Jeton BİREBİR bayt: "geçti"/"kaldı". ASCII yazım (gecti/kaldi) kabul EDİLMEZ — bu kapının
+    // her yerinde harf dönüşümü yasak, ve gevşek okuma U40 turunda sessiz-ölü desen üretmişti.
+    const hukumler = new Map();
+    for (const m of kalemler.matchAll(/(\d+)\s*=\s*(geçti|kaldı)(?![\p{L}\p{N}])/gu)) {
+      hukumler.set(Number(m[1]), m[2]);
+    }
+    const eksikKalem = [];
+    for (let i = 1; i <= KALEM_SAYISI; i++) if (!hukumler.has(i)) eksikKalem.push(i);
+    if (eksikKalem.length) {
+      red("KALEMLER beş kalemi taşımıyor — okunamayan/eksik kalem: " + eksikKalem.join(", "),
+          "her kalem için hüküm yaz: «1=geçti 2=geçti 3=geçti 4=kaldı 5=geçti» (yalnız «geçti» ya da «kaldı»)");
+    }
+    kalanKalem = [...hukumler.entries()].filter(([, h]) => h === "kaldı").map(([n]) => n).sort();
+    if (hukum === "DONDU" && !kalanKalem.length) {
+      red("HÜKÜM DÖNDÜ ama KALEMLER satırında hiçbir kalem «kaldı» değil", "hangi kalemden düştüğünü işaretle (1..5)");
+    }
+    // HÜKÜM ile KALEMLER ÇELİŞEMEZ: "GEÇTİ" bir kalemi kalmış çatalı sahibe gönderemez.
+    // Eskiden bu çelişki hiç ölçülmüyordu ve GEÇTİ dalı kuyruğa mekanik ekleme yapıyordu.
+    if (hukum === "GECTI" && kalanKalem.length) {
+      red("HÜKÜM GEÇTİ ama kalan kalem var: " + kalanKalem.join(", "),
+          "kalemi kalan çatal sahibe gitmez — hükmü DÖNDÜ yap ya da o kalemi geçir");
+    }
   }
+  // İstisna dalında GEÇTİ hükmü ayrıca aranmaz: aşağıdaki (5) karar-alanı ön koşulu zaten
+  // "karar alanı yazılı değil — çatal sahibe gidemez" diye DURDURUYOR (tek sebep, tek mesaj).
   // (5) Karar alani on kosulu: profil bos/eksikken catal SAHİBE GİDEMEZ (tasarim §10/E3).
   //     Bos deger HAZIR SAYILMAZ (fail-closed): betik yoksa da soru kanali acilmis olmaz.
   const karar = (process.env.KAPI_KARAR_ALANI || "").trim();

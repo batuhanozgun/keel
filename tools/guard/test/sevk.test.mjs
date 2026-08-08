@@ -8,6 +8,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFi
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { kuyrukBagimliliklariKur } from './kuyruk-bagimliligi.mjs';
 
 const BURASI = dirname(fileURLToPath(import.meta.url));
 const KOK_REPO = join(BURASI, '..', '..', '..');
@@ -36,6 +37,9 @@ function kurulum({ donem = true, kadro = ['e1test'] } = {}) {
   // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
   copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
                join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
+  // Kuyruga yazan kollar icerik suzgecini FAIL-CLOSED arar (U60): kod betigin yanindan,
+  // VERI projenin kokunden gelir. Kurulu projede ikisi de vardir; simulasyon da tasir.
+  kuyrukBagimliliklariKur(kok, KOK_REPO);
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '# test ajanı\n');
   const marker = join(kok, 'tools', 'sevk', '.donem-acik');
   if (donem === true) writeFileSync(marker, 'DONEM-TEST\t2026-07-27T10:00:00Z\n');

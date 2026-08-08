@@ -9,6 +9,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFi
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { kuyrukBagimliliklariKur } from './kuyruk-bagimliligi.mjs';
 
 const BURASI = dirname(fileURLToPath(import.meta.url));
 const KOK_REPO = join(BURASI, '..', '..', '..');
@@ -60,6 +61,9 @@ function kurulum({ donem = true, kadro = ['po', 'catal-denetcisi'], profil = tru
   // FAIL-CLOSED arar (U40 tek evi): kurulu projede hep vardir, simulasyon da tasir.
   copyFileSync(join(KOK_REPO, 'tools', 'sevk', 'zarf-jetonlari.txt'),
                join(kok, 'tools', 'sevk', 'zarf-jetonlari.txt'));
+  // Kuyruga yazan kollar icerik suzgecini FAIL-CLOSED arar (U60): kod betigin yanindan,
+  // VERI projenin kokunden gelir. Kurulu projede ikisi de vardir; simulasyon da tasir.
+  kuyrukBagimliliklariKur(kok, KOK_REPO);
   for (const a of kadro) writeFileSync(join(kok, '.claude', 'agents', a + '.md'), '# test ajanı\n');
   if (donem) writeFileSync(join(kok, 'tools', 'sevk', '.donem-acik'), 'DONEM-TEST\tKT-001\t2026-07-27T10:00:00Z\n');
   writeFileSync(join(kok, '00_pano', 'PANO.md'), '# pano\n');
@@ -280,9 +284,10 @@ test('hasım-13: yapısı okunmayan kuyruk maddesi fail-CLOSED (sessizce "açık
 test('hasım-14: karar alanı YOKKEN denetçinin zorunlu DÖNDÜ dönüşü kendi kapısından geçer', () => {
   // Koltuk sözleşmesi "karar alanı yoksa DÖNDÜ de" diyor; o gerekçe beş kalemden hiçbiri değil.
   // Kapı "DÖNDÜ ⇒ en az bir kalem kaldı" şartını korusaydı, zorunlu dönüş reddedilirdi.
+  // U63: istisnanın artık ADI var — serbest metin değil, tek jeton (`karar-alani-yok`).
   const kok = kurulum({ profil: false });
   writeFileSync(GUNLUK(kok), ''); catalKaydi(kok);
-  const r = kapi(kok, donus('catal-denetcisi', denetciZarfi({ hukum: 'DÖNDÜ', kalemler: 'karar alanı yazılı değil' })));
+  const r = kapi(kok, donus('catal-denetcisi', denetciZarfi({ hukum: 'DÖNDÜ', kalemler: 'karar-alani-yok' })));
   assert.equal(r.status, 0, r.stderr);
   const s = gunluk(kok).find((x) => x.tip === 'catal-suzgec');
   assert.equal(s.hukum, 'DONDU');
@@ -461,6 +466,52 @@ test('kapı/denetçi: DÖNDÜ ama hiçbir kalem "kaldı" değilse red (tutarsız
   const r = kapi(kok, donus('catal-denetcisi', denetciZarfi({ hukum: 'DÖNDÜ' })));
   assert.equal(r.status, 2);
   assert.match(r.stderr, /hiçbir kalem/);
+});
+
+// ── U63 · kapı BEŞ kalemi fiilen ölçer ────────────────────────────────────────────────────
+// Kapı denetçiden beş kalem bekleyeceğini İLAN ediyordu ama yalnız alanın boş olmadığına ve
+// dizede "kaldı" geçip geçmediğine bakıyordu. Aşağıdaki dört yazım o hâlde YEŞİL geçiyordu.
+
+test('U63: eksik kalem kapıdan döner (tek jeton beş kalem sayılmaz)', () => {
+  const kok = kurulum();
+  writeFileSync(GUNLUK(kok), ''); catalKaydi(kok);
+  const r = kapi(kok, donus('catal-denetcisi', denetciZarfi({ hukum: 'DÖNDÜ', kalemler: '3=kaldı' })));
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /beş kalemi taşımıyor/);
+  assert.match(r.stderr, /1, 2, 4, 5/, 'hangi kalemlerin eksik olduğu SAYILMALI');
+});
+
+test('U63: jetonsuz serbest metin kalem değildir ("hepsi tamam" hüküm sayılmaz)', () => {
+  const kok = kurulum();
+  writeFileSync(GUNLUK(kok), ''); catalKaydi(kok);
+  const r = kapi(kok, donus('catal-denetcisi', denetciZarfi({ kalemler: 'hepsi tamam' })));
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /beş kalemi taşımıyor/);
+});
+
+test('U63: jeton BİREBİR yazılır — ASCII "gecti" kalem sayılmaz (harf dönüşümü yok)', () => {
+  const kok = kurulum();
+  writeFileSync(GUNLUK(kok), ''); catalKaydi(kok);
+  const r = kapi(kok, donus('catal-denetcisi', denetciZarfi({ kalemler: '1=gecti 2=geçti 3=geçti 4=geçti 5=geçti' })));
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /eksik kalem: 1/);
+});
+
+test('U63: GEÇTİ ile kalan kalem ÇELİŞİR — kalemi kalan çatal sahibe gidemez', () => {
+  const kok = kurulum();
+  writeFileSync(GUNLUK(kok), ''); catalKaydi(kok);
+  const r = kapi(kok, donus('catal-denetcisi', denetciZarfi({ kalemler: '1=geçti 2=geçti 3=kaldı 4=geçti 5=geçti' })));
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /GEÇTİ ama kalan kalem var: 3/);
+  assert.ok(!existsSync(KUYRUK(kok)), 'çelişkili hüküm kuyruğa madde düşüremez');
+});
+
+test('U63: istisna jetonu YALNIZ karar alanı yokken geçerli (hazırken kalem uydurma bahanesi olmaz)', () => {
+  const kok = kurulum();                                   // profil DOLU → karar alanı HAZIR
+  writeFileSync(GUNLUK(kok), ''); catalKaydi(kok);
+  const r = kapi(kok, donus('catal-denetcisi', denetciZarfi({ hukum: 'DÖNDÜ', kalemler: 'karar-alani-yok' })));
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /karar alanı HAZIR/);
 });
 
 test('kapı/denetçi: DÖNDÜ geçerli → geçer, catal-suzgec kaydı düşer, kuyruğa madde DÜŞMEZ', () => {

@@ -79,6 +79,13 @@ fail-closed'dur — bir yazım farkı sahibin telefonundan basabileceği bir kod
 alanın YOKLUĞU bir karar kanalını açamaz. `uygun-değil` ise kod üretilmez, soru yine gider ama
 posta "bunu bilgisayardan cevaplıyorsun" der.
 
+**`KALEMLER` BEŞ jeton taşır ve kapı beşini de OKUR:** `1=` … `5=`, her biri yalnız `geçti` ya da
+`kaldı` (birebir yazım; `gecti`/`kaldi` geçmez). Eksik kalem kapıdan döner — "hepsi tamam" hüküm
+değildir. **Karar alanı yazılı değilken** (yukarıdaki zorunlu DÖNDÜ'n) kalemleri değerlendiremezsin:
+ölçütü okuyamıyorsun ve kalem UYDURMAZSIN — KALEMLER satırına tek jeton yaz: `karar-alani-yok`.
+İstisnanın adı vardır; "çözemedim" ile "beş kalem geçti" aynı dizeyle anlatılamaz.
+
 `HÜKÜM: DÖNDÜ` ise KALEMLER'de en az biri (1-5 arasından) `kaldı` olmalı ve BİTEN satırın hangi kalemden
-düştüğünü tek cümleyle söylemeli. `GEÇTİ` ise soru kuyruğa mekanik olarak düşer — metnini
-sen değil, kayıt yazar.
+düştüğünü tek cümleyle söylemeli. `GEÇTİ` ise **hiçbir kalem `kaldı` olamaz** (kalemi kalan çatal
+sahibe gitmez: ya hüküm DÖNDÜ olur ya o kalem geçer) ve soru kuyruğa mekanik olarak düşer —
+metnini sen değil, kayıt yazar.

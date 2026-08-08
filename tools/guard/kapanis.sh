@@ -12,9 +12,9 @@
 #   değişkeniyle geçer (yalnız rol damgası varken — rolsüz oturumda sahibe dırdır edilmez);
 #   (1) bekçi denetimi (tools/bekci/bekci.sh varsa — konvansiyon-yol, GENESIS G3.2;
 #   PANO/SAGLIK damgası tazelenir; kuyruk ondan ÖNCE yazılır ki PANO sayacı taze olsun);
-#   (2) 00_pano/oturum-gunlugu.jsonl'e TEK satır oturum-meta (şema surum:3 — Öbek-2'de
-#   `blok` + `bekleyen_eklendi`, dış göz paketinde `porcelain` eklendi; surum:1/2 satırları
-#   eski oturumlardır)
+#   (2) 00_pano/oturum-gunlugu.jsonl'e TEK satır oturum-meta (şema surum:4 — Öbek-2'de
+#   `blok` + `bekleyen_eklendi`, dış göz paketinde `porcelain`, U60'ta `bekleyen_suzuldu` +
+#   `bekleyen_suzgec_notu` eklendi; surum:1/2/3 satırları eski oturumlardır)
 #   (tarih · oturum · neden · rol · blok · porcelain · süre · token · damga-yaşı — transcript'ten OKUNABİLDİĞİ KADAR:
 #   biçim Claude Code'un iç formatıdır, sürümle değişebilir [doc-teyitli]; okunamayan alan null,
 #   satır HEP düşer). Damga-yaşı = SAGLIK "son denetim:" damgasının dakika yaşı (SALT-OKUMA; politika
@@ -69,10 +69,20 @@ fi
 # (0) SENDE BEKLEYEN süzmesi + kuyruk yazımı — bekçiden ÖNCE (PANO sayacı taze olsun).
 # Çapa: son asistan mesajındaki literal "SENDE BEKLEYEN:" satırı (markdown kalınına toleranslı).
 # node yoksa süzme atlanır (blok=bilinmiyor) — bilinçli fail-open, meta satırı yine düşer.
-BLOK="bilinmiyor"; EKLENDI=0
+#
+# KUYRUĞUN ORTAK EVİ (U60 · U69): bu kanca sahibin kuyruğunun DÖRDÜNCÜ yazıcısıdır ve kendi
+# kırpmasını yazmıştı — KARAKTERLE kesiyor (Türkçe harf 2 bayt) ve satırın yapı işaretlerini
+# soymuyordu; ajanın "devretti: Ç-01" içeren bir cümlesi AÇIK bir çatalı DEVREDILDI
+# gösterebiliyordu. Kırpma ve içerik süzgeci artık tools/sevk/kuyruk-ortak.mjs'te, catal-kuyruk
+# ile AYNI evde. Ev yüklenemezse madde YAZILMAZ (fail-closed yazım kararı; kanca yine 0 döner) —
+# ve sayısı `bekleyen_suzuldu` alanıyla günlüğe düşer: süzülme sessiz kalmaz.
+KUYRUK_ORTAK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../sevk/kuyruk-ortak.mjs"
+BLOK="bilinmiyor"; EKLENDI=0; SUZULDU=0; SUZGEC_NOT=""
 if [ -n "$NODE_BIN" ]; then
-  SUZME="$(printf '%s' "$GIRDI" | KAPANIS_KOK="$KOK" KAPANIS_ROL="$ROL" "$NODE_BIN" --input-type=module -e '
+  SUZME="$(printf '%s' "$GIRDI" | KAPANIS_KOK="$KOK" KAPANIS_ROL="$ROL" KAPANIS_ORTAK="$KUYRUK_ORTAK" "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync, writeFileSync, appendFileSync } from "node:fs";
+let KO = null, koHata = "";
+try { KO = await import(process.env.KAPANIS_ORTAK); } catch (e) { koHata = (e && e.message) || "yuklenemedi"; }
 let g = {};
 try { g = JSON.parse(readFileSync(0, "utf8")); } catch {}
 const KOK = process.env.KAPANIS_KOK || ".";
@@ -88,7 +98,8 @@ const BASLIK = [
   "",
   "",
 ].join("\n");
-let blok = "bilinmiyor", eklendi = 0;
+let blok = "bilinmiyor", eklendi = 0, suzuldu = 0;
+let suzgecNotu = koHata ? "kuyruk ortak evi yuklenemedi: " + koHata : "";
 try {
   const tp = g.transcript_path;
   if (tp && existsSync(tp)) {
@@ -133,26 +144,44 @@ try {
           const bugun = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
           const ekler = [];
           for (const ham of maddeler) {
-            let t = ham.replace(/[`*]/g, "").replace(/\s+/g, " ").replace(/"/g, "’").trim();
-            if (t.length > 200) t = t.slice(0, 199) + "…";
+            // ORTAK EV YOKSA YAZILMAZ (fail-closed yazım kararı): kırpma da süzgeç de orada.
+            if (!KO) { suzuldu++; continue; }
+            // KIRPMA BAYT TABANLI (U69): Türkçe harf UTF-8 kodlamasında 2 bayt; karakter yanıltır.
+            // kis() ayrıca satırın KENDİ yapı işaretlerini soyar (· ayracı, cevap:/bekletir:/
+            // kaynak:/devretti: anahtarları, ÇATAL Ç-NN) — ajanın cümlesi ayrıştırıcıyı
+            // kandıramaz: eskiden "devretti: Ç-01" yazan bir madde AÇIK çatalı DEVREDILDI
+            // gösteriyordu ve bağlı işlerin kilidi SESSİZCE açılıyordu.
+            const t = KO.kis(ham, 200);
             if (!t) continue;
             const imza = "· \"" + t + "\" · kaynak: oturum " + oturum;
             if (mevcut.includes(imza)) continue;
             if (ekler.some((e) => e.indexOf(imza) >= 0)) continue;
-            ekler.push("- [ ] " + bugun + " · " + rol + " " + imza);
+            const satir = "- [ ] " + bugun + " · " + rol + " " + imza;
+            // İÇERİK SÜZGECİ (U60): metin ajanın kaleminden geliyor ve sahip yüzeyine düşüyor.
+            // Eşleşmede madde YAZILMAZ; sayısı günlüğe düşer (süzülme sessiz kalamaz).
+            const sz = KO.suzgectenGecir([ham, satir], { kok: KOK });
+            if (!sz.temiz) { suzuldu++; if (!suzgecNotu) suzgecNotu = sz.sebep; continue; }
+            ekler.push(satir);
           }
           if (ekler.length) { appendFileSync(yol, ekler.join("\n") + "\n"); eklendi = ekler.length; }
         }
       }
     }
   }
-} catch {}
-process.stdout.write(blok + "\t" + eklendi);
+} catch (e) { if (!suzgecNotu) suzgecNotu = "suzme kosamadi: " + ((e && e.message) || "hata"); }
+process.stdout.write([blok, eklendi, suzuldu,
+  String(suzgecNotu || "").replace(/\s+/g, " ").slice(0, 200)].join("\t"));
 ' 2>/dev/null || true)"
   case "$SUZME" in
     var*|yok*|bicimsiz*|bilinmiyor*)
-      BLOK="${SUZME%%	*}"; EKLENDI="${SUZME##*	}"
+      BLOK="${SUZME%%	*}"
+      KALAN="${SUZME#*	}"
+      EKLENDI="${KALAN%%	*}"
+      KALAN="${KALAN#*	}"
+      SUZULDU="${KALAN%%	*}"
+      SUZGEC_NOT="${KALAN#*	}"
       case "$EKLENDI" in ''|*[!0-9]*) EKLENDI=0;; esac
+      case "$SUZULDU" in ''|*[!0-9]*) SUZULDU=0;; esac
       ;;
   esac
 fi
@@ -178,13 +207,14 @@ SATIR=""
 if [ -n "$NODE_BIN" ]; then
   SATIR="$(printf '%s' "$GIRDI" | KAPANIS_KOK="$KOK" KAPANIS_ROL="$ROL" KAPANIS_BEKCI="$BEKCI" \
     KAPANIS_BLOK="$BLOK" KAPANIS_EKLENDI="$EKLENDI" KAPANIS_PORCELAIN="$PORCELAIN" \
+    KAPANIS_SUZULDU="$SUZULDU" KAPANIS_SUZGEC_NOT="$SUZGEC_NOT" \
     "$NODE_BIN" --input-type=module -e '
 import { readFileSync, existsSync } from "node:fs";
 let g = {};
 try { g = JSON.parse(readFileSync(0, "utf8")); } catch {}
 const rolHam = process.env.KAPANIS_ROL || "";
 const out = {
-  surum: 3,
+  surum: 4,
   ts: new Date().toISOString(),
   oturum: g.session_id || null,
   neden: g.reason || null,
@@ -192,6 +222,10 @@ const out = {
   bekci: process.env.KAPANIS_BEKCI || "yok",
   blok: process.env.KAPANIS_BLOK || null,
   bekleyen_eklendi: Number(process.env.KAPANIS_EKLENDI) || 0,
+  // U60: kuyruğa YAZILMAYAN madde sayısı ve ilk sebebi. Süzülme sessiz kalmaz — "blok var ama
+  // eklendi 0" ile "blok var, iki madde süzüldü" ayrı hâllerdir ve dış göz ikisini ayırabilmeli.
+  bekleyen_suzuldu: Number(process.env.KAPANIS_SUZULDU) || 0,
+  bekleyen_suzgec_notu: process.env.KAPANIS_SUZGEC_NOT || null,
   porcelain: process.env.KAPANIS_PORCELAIN || "yok",
   damga_yasi_dk: null,
   sure_dk: null, girdi_token: null, cikti_token: null, cache_okuma: null, cache_yazma: null,
@@ -248,7 +282,7 @@ if [ -z "$SATIR" ]; then
   # node yok ya da çözümleyici öldü — DARALTILMIŞ satır yine düşer (iz hiç kaybolmaz)
   TS="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   ROLJ="null"; [ -n "$ROL" ] && ROLJ="\"$ROL\""
-  SATIR="{\"surum\":3,\"ts\":\"$TS\",\"oturum\":null,\"neden\":null,\"rol\":$ROLJ,\"bekci\":\"$BEKCI\",\"blok\":\"$BLOK\",\"bekleyen_eklendi\":$EKLENDI,\"porcelain\":\"$PORCELAIN\",\"damga_yasi_dk\":null,\"sure_dk\":null,\"girdi_token\":null,\"cikti_token\":null,\"cache_okuma\":null,\"cache_yazma\":null,\"not\":\"node yok ya da cozumleyici oldu — daraltilmis meta\"}"
+  SATIR="{\"surum\":4,\"ts\":\"$TS\",\"oturum\":null,\"neden\":null,\"rol\":$ROLJ,\"bekci\":\"$BEKCI\",\"blok\":\"$BLOK\",\"bekleyen_eklendi\":$EKLENDI,\"bekleyen_suzuldu\":$SUZULDU,\"bekleyen_suzgec_notu\":null,\"porcelain\":\"$PORCELAIN\",\"damga_yasi_dk\":null,\"sure_dk\":null,\"girdi_token\":null,\"cikti_token\":null,\"cache_okuma\":null,\"cache_yazma\":null,\"not\":\"node yok ya da cozumleyici oldu — daraltilmis meta\"}"
 fi
 printf '%s\n' "$SATIR" >> "$GUNLUK" 2>/dev/null || printf 'kapanis: gunluk yazilamadi (%s)\n' "$GUNLUK" >&2
 exit 0

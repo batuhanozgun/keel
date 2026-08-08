@@ -5,13 +5,18 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, chmodS
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { kuyrukBagimliliklariKur } from './kuyruk-bagimliligi.mjs';
 
 const BURASI = dirname(fileURLToPath(import.meta.url));
 const KAPANIS = join(BURASI, '..', 'kapanis.sh');
+const KOK_REPO = join(BURASI, '..', '..', '..');
 
 function kurulum({ pano = true, damga = null, bekci = null, bekciIcerik = null } = {}) {
   const kok = mkdtempSync(join(tmpdir(), 'kapanis-test-'));
   mkdirSync(join(kok, 'tools', 'guard'), { recursive: true });
+  // Kanca kuyruğa yazarken içerik süzgecini FAIL-CLOSED arar (U60): VERİ dosyaları projenin
+  // kökünden gelir. Kurulu projede hep vardır; simülasyon da taşımak zorunda.
+  kuyrukBagimliliklariKur(kok, KOK_REPO);
   if (pano) mkdirSync(join(kok, '00_pano'), { recursive: true });
   if (damga) writeFileSync(join(kok, 'tools', 'guard', '.aktif-rol'), damga);
   if (bekci != null || bekciIcerik != null) {
@@ -95,7 +100,7 @@ test('tam akış: satır düşer — oturum/neden stdin\'den, rol damgadan, bek�
   const satirlar = readFileSync(gunluk(kok), 'utf8').trim().split('\n');
   assert.equal(satirlar.length, 1);
   const j = JSON.parse(satirlar[0]);
-  assert.equal(j.surum, 3); // Öbek-2: blok + bekleyen_eklendi · dış göz paketi: porcelain
+  assert.equal(j.surum, 4); // Öbek-2: blok + bekleyen_eklendi · dış göz: porcelain · U60: bekleyen_suzuldu
   assert.equal(j.oturum, 'test-oturum-1');
   assert.equal(j.neden, 'other');
   assert.equal(j.rol, 'denetci');
